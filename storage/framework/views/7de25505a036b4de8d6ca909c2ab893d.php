@@ -40,27 +40,17 @@ unset($__defined_vars, $__key, $__value); ?>
 
 <?php
     $href = \App\Support\Workspace\WorkspaceCatalog::embedUrl($route, $params);
+    $openJs = 'event.preventDefault();'
+        .'if(window.parent&&window.parent!==window){window.parent.postMessage({type:\'be-workspace-open\',route:'.Illuminate\Support\Js::from($route).',params:'.Illuminate\Support\Js::from($params).',title:'.Illuminate\Support\Js::from($title).'},\'*\');}'
+        .'else if(window.beWorkspace&&typeof window.beWorkspace.open===\'function\'){window.beWorkspace.open('.Illuminate\Support\Js::from($route).','.Illuminate\Support\Js::from($params).','.Illuminate\Support\Js::from($title).');}'
+        .'else if(typeof beOpenWorkspace===\'function\'){beOpenWorkspace('.Illuminate\Support\Js::from($route).','.Illuminate\Support\Js::from($params).','.Illuminate\Support\Js::from($title).');}'
+        .'else{window.location.assign('.Illuminate\Support\Js::from($href).');}';
 ?>
 
 <a
     href="<?php echo e($href); ?>"
     <?php echo e($attributes->merge(['class' => $class])); ?>
 
-    @click.prevent="
-        if (window.parent && window.parent !== window) {
-            window.parent.postMessage({
-                type: 'be-workspace-open',
-                route: <?php echo \Illuminate\Support\Js::from($route)->toHtml() ?>,
-                params: <?php echo \Illuminate\Support\Js::from($params)->toHtml() ?>,
-                title: <?php echo \Illuminate\Support\Js::from($title)->toHtml() ?>,
-            }, '*');
-        } else if (window.beWorkspace && typeof window.beWorkspace.open === 'function') {
-            window.beWorkspace.open(<?php echo \Illuminate\Support\Js::from($route)->toHtml() ?>, <?php echo \Illuminate\Support\Js::from($params)->toHtml() ?>, <?php echo \Illuminate\Support\Js::from($title)->toHtml() ?>);
-        } else if (typeof beOpenWorkspace === 'function') {
-            beOpenWorkspace(<?php echo \Illuminate\Support\Js::from($route)->toHtml() ?>, <?php echo \Illuminate\Support\Js::from($params)->toHtml() ?>, <?php echo \Illuminate\Support\Js::from($title)->toHtml() ?>);
-        } else {
-            window.location.assign(<?php echo \Illuminate\Support\Js::from($href)->toHtml() ?>);
-        }
-    "
+    onclick="<?php echo $openJs; ?>"
 ><?php echo e($slot); ?></a>
 <?php /**PATH F:\laragon\www\bargain-enterprise\resources\views/components/erp/workspace-link.blade.php ENDPATH**/ ?>

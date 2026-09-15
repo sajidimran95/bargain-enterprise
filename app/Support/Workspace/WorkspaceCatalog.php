@@ -78,6 +78,8 @@ class WorkspaceCatalog
             'reports.purchase-by-item' => ['type' => 'reports', 'title' => 'Purchases by Item', 'closable' => true],
             'company.info' => ['type' => 'company', 'title' => 'My Company', 'closable' => true],
             'settings.index' => ['type' => 'settings', 'title' => 'Preferences', 'closable' => true],
+            'employees.time' => ['type' => 'employees', 'title' => 'Enter Time', 'closable' => true],
+            'employees.payroll' => ['type' => 'employees', 'title' => 'Turn On Payroll', 'closable' => true],
             'audit.index' => ['type' => 'audit', 'title' => 'Audit Log', 'closable' => true],
             'import.index' => ['type' => 'import', 'title' => 'QB Import', 'closable' => true],
             'profile' => ['type' => 'profile', 'title' => 'Profile', 'closable' => true],

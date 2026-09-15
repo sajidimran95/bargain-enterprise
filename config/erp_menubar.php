@@ -112,8 +112,8 @@ return [
         ['label' => 'Pay Bills', 'route' => 'vendor-payments.create'],
     ],
     'Employees' => [
-        ['label' => 'Enter Time', 'action' => 'toast', 'message' => 'Enter Time — time tracking opens from Employees when enabled.'],
-        ['label' => 'Payroll Center', 'action' => 'toast', 'message' => 'Payroll — enable under Employees when ready.'],
+        ['label' => 'Enter Time', 'route' => 'employees.time'],
+        ['label' => 'Payroll Center', 'route' => 'employees.payroll'],
     ],
     'Banking' => [
         ['label' => 'Bank Accounts', 'route' => 'banking.index'],

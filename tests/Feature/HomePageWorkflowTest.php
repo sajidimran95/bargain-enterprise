@@ -53,7 +53,25 @@ class HomePageWorkflowTest extends TestCase
             ->assertSee('Record Deposits')
             ->assertSee('Check Register')
             ->assertSee('New Business Loans')
-            ->assertSee('Manage Sales Tax');
+            ->assertSee('Manage Sales Tax')
+            ->assertSee('href="/purchase-orders/create?embed=1"', false)
+            ->assertSee('href="/employees/time?embed=1"', false)
+            ->assertSee('href="/employees/payroll?embed=1"', false)
+            ->assertSee('href="/banking/create?embed=1"', false);
+    }
+
+    public function test_enter_time_and_payroll_pages_load(): void
+    {
+        $this->actingAs($this->owner);
+
+        $this->get(route('employees.time'))
+            ->assertOk()
+            ->assertSee('Enter Time')
+            ->assertSee('Weekly Timesheet');
+
+        $this->get(route('employees.payroll'))
+            ->assertOk()
+            ->assertSee('Turn On Payroll');
     }
 
     public function test_home_page_shows_live_open_invoice_badge(): void

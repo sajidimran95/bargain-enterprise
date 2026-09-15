@@ -17,6 +17,8 @@ use App\Livewire\Banking\ReconciliationWorksheet;
 use App\Livewire\Customers\CustomerCenter;
 use App\Livewire\Customers\CustomerForm;
 use App\Livewire\Dashboard\CompanySnapshot;
+use App\Livewire\Employees\EnterTime;
+use App\Livewire\Employees\PayrollCenter;
 use App\Livewire\Import\QbImportWizard;
 use App\Livewire\Inventory\InventoryAdjustmentIndex;
 use App\Livewire\Inventory\InventoryIndex;
@@ -157,6 +159,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('reports/purchases-by-item', PurchaseByItemReport::class)->name('reports.purchase-by-item');
         Route::get('company', MyCompany::class)->name('company.info');
         Route::get('settings', CompanySettings::class)->name('settings.index');
+        Route::get('employees/time', EnterTime::class)->name('employees.time');
+        Route::get('employees/payroll', PayrollCenter::class)->name('employees.payroll');
         Route::get('audit-log', AuditLogIndex::class)->name('audit.index');
         Route::get('import/quickbooks', QbImportWizard::class)->name('import.index');
     });
