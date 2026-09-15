@@ -76,6 +76,8 @@ class ErpNavigationAndToolbarTest extends TestCase
             'reports.index',
             'company.info',
             'settings.index',
+            'employees.time',
+            'employees.payroll',
             'audit.index',
         ];
 
