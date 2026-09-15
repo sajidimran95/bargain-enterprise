@@ -393,11 +393,18 @@
     }
 
     .be-invoice-actions .be-btn:hover {
+        color: #1f2937;
         background-image: linear-gradient(#ffffff, #e8e8e8);
     }
 
     .be-invoice-actions .be-btn--primary {
-        @apply text-gray-900;
+        @apply border-blue-700 text-white;
+        background-image: linear-gradient(#4a90d9, #2b6cb0);
+    }
+
+    .be-invoice-actions .be-btn--primary:hover {
+        color: #fff;
+        background-image: linear-gradient(#5ba0e8, #3568a8);
     }
 
     .be-invoice-inspector-toggle {
@@ -1363,18 +1370,39 @@
     }
 
     .be-btn {
-        @apply inline-flex items-center gap-1 rounded-sm border px-2 py-1 text-[11px];
+        @apply inline-flex items-center gap-1 rounded-sm border px-2 py-1 text-[11px] text-gray-800 no-underline;
         border-color: var(--be-border-dark);
         background: linear-gradient(#fff, #e8e8e8);
     }
 
     .be-btn:hover {
-        background: linear-gradient(#fff, #dfe8f5);
+        color: #1f2937;
+        background: linear-gradient(#ffffff, #d8e2f0);
+    }
+
+    .be-btn:disabled,
+    .be-btn[disabled] {
+        @apply cursor-not-allowed opacity-60;
     }
 
     .be-btn--primary {
         @apply border-blue-700 text-white;
         background: linear-gradient(#4a90d9, #2b6cb0);
+    }
+
+    .be-btn--primary:hover {
+        color: #fff;
+        background: linear-gradient(#5ba0e8, #3568a8);
+    }
+
+    .be-btn--danger {
+        @apply border-red-800 text-white;
+        background: linear-gradient(#e57373, #c62828);
+    }
+
+    .be-btn--danger:hover {
+        color: #fff;
+        background: linear-gradient(#ef9a9a, #b71c1c);
     }
 
     .be-table {
@@ -1475,11 +1503,6 @@
 
     .be-widget__body {
         @apply p-3 text-[12px] text-gray-600;
-    }
-
-    .be-btn--danger {
-        @apply border-red-800 text-white;
-        background: linear-gradient(#e57373, #c62828);
     }
 
     .be-select {
@@ -1785,7 +1808,18 @@
     }
 
     .be-report__toolbar .be-btn:hover {
-        @apply bg-white;
+        color: #1f2937;
+        background: #ffffff;
+    }
+
+    .be-report__toolbar .be-btn--primary {
+        @apply border-blue-700 text-white;
+        background: linear-gradient(#4a90d9, #2b6cb0);
+    }
+
+    .be-report__toolbar .be-btn--primary:hover {
+        color: #fff;
+        background: linear-gradient(#5ba0e8, #3568a8);
     }
 
     .be-report__toolbar-sep {
@@ -2093,6 +2127,11 @@
         @apply w-full justify-center rounded-none px-2 py-1 text-[12px] font-semibold;
         background: linear-gradient(#5b9bd5, #2f6fad) !important;
         border-color: #1f5a8a !important;
+        color: #fff !important;
+    }
+
+    .be-item-dialog__ok:hover {
+        background: linear-gradient(#6baae0, #3a7bc0) !important;
         color: #fff !important;
     }
 
