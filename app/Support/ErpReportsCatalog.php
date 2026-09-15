@@ -90,6 +90,82 @@ class ErpReportsCatalog
         ];
     }
 
+    public static function reportKey(array $report): string
+    {
+        $raw = mb_strtolower(($report['route'] ?? 'none').'::'.($report['label'] ?? ''));
+
+        return str_replace(['.', '/', ' '], ['_', '-', '-'], $raw);
+    }
+
+    /**
+     * Every report card from every category, keyed for favorites / recent / memorized.
+     *
+     * @return list<array{key: string, label: string, route: ?string, category: string}>
+     */
+    public static function flatReports(): array
+    {
+        $reports = [];
+
+        foreach (self::catalog()['categories'] as $category) {
+            foreach ($category['groups'] as $group) {
+                foreach ($group['reports'] as $report) {
+                    if (empty($report['label'])) {
+                        continue;
+                    }
+
+                    $entry = [
+                        'key' => self::reportKey($report),
+                        'label' => $report['label'],
+                        'route' => $report['route'] ?? null,
+                        'category' => $category['id'],
+                    ];
+                    $reports[$entry['key']] = $entry;
+                }
+            }
+        }
+
+        return array_values($reports);
+    }
+
+    /**
+     * @param  list<string>  $keys
+     * @return list<array{key: string, label: string, route: ?string, category: string}>
+     */
+    public static function reportsByKeys(array $keys): array
+    {
+        $index = collect(self::flatReports())->keyBy('key');
+
+        return collect($keys)
+            ->map(fn (string $key) => $index->get($key))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Company-shared / contributed report cards (MSA + core financials).
+     *
+     * @return list<array{key: string, label: string, route: ?string, category: string}>
+     */
+    public static function contributedReports(): array
+    {
+        $wanted = [
+            'MSA Customer List',
+            'MSA Inventory',
+            'MSA Sales Report',
+            'Profit & Loss',
+            'Balance Sheet',
+            'A/R Aging Summary',
+            'A/P Aging Summary',
+            'Inventory Valuation Summary',
+        ];
+
+        return collect(self::flatReports())
+            ->filter(fn (array $report) => in_array($report['label'], $wanted, true))
+            ->values()
+            ->all();
+    }
+
     /**
      * Flat list of Manufacturing & Wholesale reports for the Mfg & Whsle menubar.
      *

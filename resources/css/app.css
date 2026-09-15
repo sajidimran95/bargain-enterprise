@@ -239,34 +239,36 @@
     }
 
     .be-report-card__preview {
-        @apply relative flex h-[120px] items-center justify-center overflow-hidden border bg-white;
+        @apply relative h-[128px] overflow-hidden border bg-white p-1.5;
         border-color: #8a8a8a;
     }
 
-    .be-report-card__sample {
-        @apply absolute inset-0 flex items-center justify-center text-[28px] font-bold tracking-wide text-gray-300;
-        transform: rotate(-28deg);
-        pointer-events: none;
+    .be-report-card__mini {
+        @apply w-full border-collapse text-left;
+        font-size: 9px;
+        line-height: 1.25;
+        color: #222;
     }
 
-    .be-report-card__preview-lines {
-        @apply relative z-[1] flex w-[80%] flex-col gap-1.5;
+    .be-report-card__mini th {
+        @apply border-b px-0.5 pb-0.5 font-semibold text-gray-700;
+        border-color: #c8c8c8;
+        white-space: nowrap;
     }
 
-    .be-report-card__preview-lines span {
-        @apply block h-2 rounded-sm bg-gray-200;
+    .be-report-card__mini td {
+        @apply truncate px-0.5 py-px text-gray-800;
+        max-width: 72px;
+        border-bottom: 1px solid #eee;
     }
 
-    .be-report-card__preview-lines span:nth-child(2) {
-        width: 90%;
+    .be-report-card__mini tr:last-child td {
+        border-bottom: 0;
     }
 
-    .be-report-card__preview-lines span:nth-child(3) {
-        width: 70%;
-    }
-
-    .be-report-card__preview-lines span:nth-child(4) {
-        width: 85%;
+    .be-report-card__mini td:last-child,
+    .be-report-card__mini th:last-child {
+        text-align: right;
     }
 
     .be-report-card__dates {
@@ -277,8 +279,16 @@
         @apply flex items-center gap-1;
     }
 
-    .be-report-card__dates .be-input {
-        @apply max-w-[180px];
+    .be-report-card__dates-select {
+        @apply min-w-[200px] max-w-[220px];
+    }
+
+    .be-report-card__date-range {
+        @apply mt-1 flex items-center gap-1;
+    }
+
+    .be-report-card__date-range .be-input {
+        @apply max-w-[110px] px-1 py-0.5 text-[11px];
     }
 
     .be-report-card__actions {
@@ -295,17 +305,32 @@
     }
 
     .be-report-card__icon {
-        @apply inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-[11px] text-gray-700;
+        @apply inline-flex h-6 w-6 items-center justify-center rounded-full border-0 bg-gray-200 text-[11px] text-gray-700 no-underline;
+        cursor: pointer;
     }
 
     .be-report-card__icon--fav {
         color: #c62828;
         background: #fde8e8;
+        border: 0;
+        cursor: pointer;
+    }
+
+    .be-report-card__icon--fav.is-on {
+        background: #c62828;
+        color: #fff;
     }
 
     .be-report-card__icon--help {
         color: #1565c0;
         background: #e3f2fd;
+        border: 0;
+        cursor: pointer;
+    }
+
+    .be-report-card__icon--help.is-on {
+        background: #1565c0;
+        color: #fff;
     }
 
     .be-report-center__empty,

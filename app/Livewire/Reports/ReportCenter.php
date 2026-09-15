@@ -6,8 +6,11 @@ use App\Livewire\Concerns\WithErpListActions;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Item;
+use App\Models\Setting;
 use App\Models\VendorBill;
 use App\Support\ErpReportsCatalog;
+use App\Support\QbDatePresets;
+use App\Support\ReportCenterPreview;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -28,6 +31,24 @@ class ReportCenter extends Component
 
     public string $search = '';
 
+    /** @var array<string, string> */
+    public array $datePresets = [];
+
+    /** @var array<string, string> */
+    public array $customFrom = [];
+
+    /** @var array<string, string> */
+    public array $customTo = [];
+
+    /** @var list<string> */
+    public array $favoriteKeys = [];
+
+    /** @var list<string> */
+    public array $memorizedKeys = [];
+
+    /** @var list<string> */
+    public array $recentKeys = [];
+
     public function mount(): void
     {
         abort_unless(auth()->user()?->hasPermission('report.view'), 403);
@@ -35,6 +56,17 @@ class ReportCenter extends Component
         if (ErpReportsCatalog::category($this->category) === null) {
             $this->category = 'mfg-wholesale';
         }
+
+        $userId = (int) auth()->id();
+        $this->favoriteKeys = array_values(array_filter(
+            Setting::getValue($this->settingKey('favorites', $userId), []) ?: []
+        ));
+        $this->memorizedKeys = array_values(array_filter(
+            Setting::getValue($this->settingKey('memorized', $userId), []) ?: []
+        ));
+        $this->recentKeys = array_values(array_filter(
+            Setting::getValue($this->settingKey('recent', $userId), []) ?: []
+        ));
     }
 
     public function selectCategory(string $id): void
@@ -53,6 +85,75 @@ class ReportCenter extends Component
         }
 
         $this->tab = $tab;
+    }
+
+    public function setDatePreset(string $key, string $preset): void
+    {
+        if (! array_key_exists($preset, QbDatePresets::options())) {
+            return;
+        }
+
+        $this->datePresets[$key] = $preset;
+
+        if ($preset !== 'custom') {
+            [$from, $to] = QbDatePresets::dateStrings($preset);
+            $this->customFrom[$key] = $from;
+            $this->customTo[$key] = $to;
+        } elseif (! isset($this->customFrom[$key], $this->customTo[$key])) {
+            [$from, $to] = QbDatePresets::dateStrings('this_fiscal_ytd');
+            $this->customFrom[$key] = $from;
+            $this->customTo[$key] = $to;
+        }
+    }
+
+    public function setCustomFrom(string $key, string $value): void
+    {
+        $this->datePresets[$key] = 'custom';
+        $this->customFrom[$key] = $value !== '' ? $value : ($this->customFrom[$key] ?? now()->toDateString());
+    }
+
+    public function setCustomTo(string $key, string $value): void
+    {
+        $this->datePresets[$key] = 'custom';
+        $this->customTo[$key] = $value !== '' ? $value : ($this->customTo[$key] ?? now()->toDateString());
+    }
+
+    public function toggleFavorite(string $key): void
+    {
+        if (in_array($key, $this->favoriteKeys, true)) {
+            $this->favoriteKeys = array_values(array_filter(
+                $this->favoriteKeys,
+                fn (string $existing) => $existing !== $key
+            ));
+        } else {
+            $this->favoriteKeys[] = $key;
+        }
+
+        $this->persistList('favorites', $this->favoriteKeys);
+    }
+
+    public function toggleMemorize(string $key): void
+    {
+        if (in_array($key, $this->memorizedKeys, true)) {
+            $this->memorizedKeys = array_values(array_filter(
+                $this->memorizedKeys,
+                fn (string $existing) => $existing !== $key
+            ));
+        } else {
+            $this->memorizedKeys[] = $key;
+        }
+
+        $this->persistList('memorized', $this->memorizedKeys);
+    }
+
+    public function recordRecent(string $key): void
+    {
+        $this->recentKeys = array_values(array_unique([
+            $key,
+            ...array_filter($this->recentKeys, fn (string $existing) => $existing !== $key),
+        ]));
+        $this->recentKeys = array_slice($this->recentKeys, 0, 24);
+        $this->persistList('recent', $this->recentKeys);
     }
 
     public function exportCustomers(): StreamedResponse
@@ -180,36 +281,101 @@ class ReportCenter extends Component
     {
         $categories = ErpReportsCatalog::sidebarCategories();
         $active = ErpReportsCatalog::category($this->category) ?? ErpReportsCatalog::category('mfg-wholesale');
+        $previewCache = [];
 
-        $groups = collect($active['groups'] ?? [])
-            ->map(function (array $group) {
-                $reports = collect($group['reports'] ?? [])
-                    ->filter(function (array $report) {
-                        if ($this->search === '') {
-                            return true;
-                        }
+        $enrich = function (array $report) use (&$previewCache): array {
+            $key = ErpReportsCatalog::reportKey($report);
+            $preset = $this->datePresets[$key] ?? 'this_fiscal_ytd';
 
-                        return str_contains(
-                            mb_strtolower($report['label'] ?? ''),
-                            mb_strtolower($this->search)
-                        );
-                    })
-                    ->values()
-                    ->all();
+            if ($preset === 'custom') {
+                $from = $this->customFrom[$key] ?? now()->startOfYear()->toDateString();
+                $to = $this->customTo[$key] ?? now()->toDateString();
+            } else {
+                [$from, $to] = QbDatePresets::dateStrings($preset);
+            }
 
-                return [
-                    'title' => $group['title'] ?? null,
-                    'reports' => $reports,
-                ];
-            })
-            ->filter(fn (array $group) => $group['reports'] !== [])
-            ->values()
-            ->all();
+            $route = $report['route'] ?? null;
+            $cacheKey = ($route ?? 'none').'|'.$from.'|'.$to;
+
+            if (! isset($previewCache[$cacheKey])) {
+                $previewCache[$cacheKey] = ReportCenterPreview::forRoute($route, $from, $to);
+            }
+
+            return [
+                'key' => $key,
+                'label' => $report['label'] ?? 'Report',
+                'route' => $route,
+                'date_preset' => $preset,
+                'from' => $from,
+                'to' => $to,
+                'from_display' => QbDatePresets::display($from),
+                'to_display' => QbDatePresets::display($to),
+                'is_favorite' => in_array($key, $this->favoriteKeys, true),
+                'is_memorized' => in_array($key, $this->memorizedKeys, true),
+                'preview' => $previewCache[$cacheKey],
+            ];
+        };
+
+        $filterSearch = function (array $report): bool {
+            if ($this->search === '') {
+                return true;
+            }
+
+            return str_contains(
+                mb_strtolower($report['label'] ?? ''),
+                mb_strtolower($this->search)
+            );
+        };
+
+        if ($this->tab === 'standard') {
+            $groups = collect($active['groups'] ?? [])
+                ->map(function (array $group) use ($enrich, $filterSearch) {
+                    $reports = collect($group['reports'] ?? [])
+                        ->filter($filterSearch)
+                        ->map($enrich)
+                        ->values()
+                        ->all();
+
+                    return [
+                        'title' => $group['title'] ?? null,
+                        'reports' => $reports,
+                    ];
+                })
+                ->filter(fn (array $group) => $group['reports'] !== [])
+                ->values()
+                ->all();
+        } else {
+            $source = match ($this->tab) {
+                'favorites' => ErpReportsCatalog::reportsByKeys($this->favoriteKeys),
+                'memorized' => $this->memorizedKeys !== []
+                    ? ErpReportsCatalog::reportsByKeys($this->memorizedKeys)
+                    : collect(ErpReportsCatalog::flatReports())
+                        ->filter(fn (array $report) => str_contains(mb_strtolower($report['label']), 'msa')
+                            || in_array($report['label'], ['Profit & Loss', 'Balance Sheet', 'A/R Aging Summary', 'Open Invoices'], true))
+                        ->take(8)
+                        ->values()
+                        ->all(),
+                'recent' => ErpReportsCatalog::reportsByKeys($this->recentKeys),
+                'contributed' => ErpReportsCatalog::contributedReports(),
+                default => [],
+            };
+
+            $reports = collect($source)
+                ->filter($filterSearch)
+                ->map($enrich)
+                ->values()
+                ->all();
+
+            $groups = $reports === []
+                ? []
+                : [['title' => null, 'reports' => $reports]];
+        }
 
         return view('livewire.reports.report-center', [
             'categories' => $categories,
             'activeCategory' => $active,
             'groups' => $groups,
+            'datePresetOptions' => QbDatePresets::options(),
             'tabs' => [
                 'standard' => 'Standard',
                 'memorized' => 'Memorized',
@@ -221,5 +387,23 @@ class ReportCenter extends Component
             'title' => 'Reports',
             'windowTitle' => 'Report Center',
         ]);
+    }
+
+    private function settingKey(string $bucket, int $userId): string
+    {
+        return "report_center.{$bucket}.{$userId}";
+    }
+
+    /**
+     * @param  list<string>  $keys
+     */
+    private function persistList(string $bucket, array $keys): void
+    {
+        Setting::setValue(
+            $this->settingKey($bucket, (int) auth()->id()),
+            array_values($keys),
+            'json',
+            'reports'
+        );
     }
 }

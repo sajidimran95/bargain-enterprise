@@ -3,6 +3,7 @@
 namespace App\Livewire\Concerns;
 
 use App\Support\CsvExporter;
+use App\Support\QbDatePresets;
 use Carbon\Carbon;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -39,20 +40,19 @@ trait WithReportFilters
         $preset ??= $this->datePreset;
         $this->datePreset = $preset;
 
-        [$from, $to] = match ($preset) {
-            'today' => [now()->startOfDay(), now()->endOfDay()],
-            'this_week' => [now()->startOfWeek(), now()->endOfWeek()],
-            'last_week' => [now()->subWeek()->startOfWeek(), now()->subWeek()->endOfWeek()],
-            'this_month' => [now()->startOfMonth(), now()->endOfMonth()],
-            'last_month' => [now()->subMonthNoOverflow()->startOfMonth(), now()->subMonthNoOverflow()->endOfMonth()],
-            'this_year', 'this_fiscal_year' => [now()->startOfYear(), now()->endOfYear()],
-            'last_year', 'last_fiscal_year' => [now()->subYear()->startOfYear(), now()->subYear()->endOfYear()],
-            'all' => [Carbon::parse('2000-01-01')->startOfDay(), now()->endOfDay()],
-            default => [now()->startOfMonth(), now()->endOfMonth()],
-        };
+        if ($preset === 'custom') {
+            if ($this->from === '' || $this->to === '') {
+                [$from, $to] = QbDatePresets::dateStrings('this_month');
+                $this->from = $from;
+                $this->to = $to;
+            }
 
-        $this->from = $from->toDateString();
-        $this->to = $to->toDateString();
+            return;
+        }
+
+        [$from, $to] = QbDatePresets::dateStrings($preset);
+        $this->from = $from;
+        $this->to = $to;
     }
 
     public function refreshReport(): void
@@ -107,19 +107,7 @@ trait WithReportFilters
      */
     protected function datePresetOptions(): array
     {
-        return [
-            'today' => 'Today',
-            'this_week' => 'This Week',
-            'last_week' => 'Last Week',
-            'this_month' => 'This Month',
-            'last_month' => 'Last Month',
-            'this_year' => 'This Year',
-            'last_year' => 'Last Year',
-            'this_fiscal_year' => 'This Fiscal Year',
-            'last_fiscal_year' => 'Last Fiscal Year',
-            'all' => 'All Dates',
-            'custom' => 'Custom',
-        ];
+        return QbDatePresets::options();
     }
 
     /**

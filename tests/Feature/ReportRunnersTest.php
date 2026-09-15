@@ -5,12 +5,14 @@ namespace Tests\Feature;
 use App\Livewire\Reports\CustomerDirectoryReport;
 use App\Livewire\Reports\CustomerOpenBalanceReport;
 use App\Livewire\Reports\InventoryStockReport;
+use App\Livewire\Reports\ReportCenter;
 use App\Livewire\Reports\SalesByItemReport;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\InvoiceLine;
 use App\Models\Item;
 use App\Models\User;
+use App\Support\ErpReportsCatalog;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -38,7 +40,9 @@ class ReportRunnersTest extends TestCase
             ->assertOk()
             ->assertSee('Report Center')
             ->assertSee('Mfg & Wholesale')
-            ->assertSee('MSA Inventory');
+            ->assertSee('MSA Inventory')
+            ->assertDontSee('SAMPLE')
+            ->assertSee('Dates:');
         $this->get(route('reports.customers'))
             ->assertOk()
             ->assertSee('MSA Customer List')
@@ -163,6 +167,52 @@ class ReportRunnersTest extends TestCase
             ->assertSee('SODA-COKE')
             ->assertSee('INV-SALES-1')
             ->assertSee('Show Filters');
+    }
+
+    public function test_report_center_shows_live_preview_not_sample(): void
+    {
+        $this->actingAs($this->owner);
+
+        Customer::factory()->create([
+            'display_name' => 'Preview Customer LLC',
+            'customer_number' => '9001',
+            'is_active' => true,
+            'balance' => 125.50,
+        ]);
+
+        Livewire::test(ReportCenter::class)
+            ->set('category', 'customers-receivables')
+            ->assertDontSee('SAMPLE')
+            ->assertSee('MSA Customer List')
+            ->assertSee('Preview Customer')
+            ->assertSee('9001')
+            ->assertSee('125.50')
+            ->assertSee('This Fiscal Year-to-date')
+            ->assertSee('This Week-to-date')
+            ->assertSee('Last Fiscal Quarter')
+            ->assertSee('Next 4 Weeks')
+            ->assertSee('Custom')
+            ->call('selectTab', 'contributed')
+            ->assertSee('MSA Inventory')
+            ->assertDontSee('will appear here');
+    }
+
+    public function test_report_center_favorites_and_date_preset(): void
+    {
+        $this->actingAs($this->owner);
+
+        $key = ErpReportsCatalog::reportKey([
+            'label' => 'MSA Inventory',
+            'route' => 'reports.inventory',
+        ]);
+
+        $component = Livewire::test(ReportCenter::class)
+            ->call('toggleFavorite', $key)
+            ->call('selectTab', 'favorites')
+            ->assertSee('MSA Inventory')
+            ->call('setDatePreset', $key, 'this_month');
+
+        $this->assertSame('this_month', $component->get('datePresets')[$key] ?? null);
     }
 
     public function test_inventory_stock_report_matches_msa_layout(): void
