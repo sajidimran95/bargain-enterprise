@@ -6,26 +6,21 @@
         :title="'Open AR: '.number_format((float) $openBalance, 2).' · '.$invoices->total().' invoices'"
     />
 
-    <div class="be-panel m-0 rounded-none border-0 border-t" style="border-color: var(--be-border);">
+    <div class="be-panel be-list-panel">
         <div class="be-panel__body">
-            <div class="mb-2 flex flex-wrap items-end gap-2">
-                <div class="be-field">
-                    <label class="be-field__label">Look for</label>
-                    <x-erp.input x-ref="listSearch" wire:model.live.debounce.300ms="search" placeholder="Invoice # / customer…" class="w-56" />
-                </div>
-                <div class="be-field">
-                    <label class="be-field__label">Status</label>
-                    <x-erp.select
-                        wire:model.live="status"
-                        :options="[
-                            'all' => 'All invoices',
-                            'open' => 'Open',
-                            'partial' => 'Partial',
-                            'paid' => 'Paid',
-                            'draft' => 'Draft',
-                        ]"
-                    />
-                </div>
+            <x-erp.look-for placeholder="Invoice # / customer…" />
+            <div class="be-field mb-2">
+                <label class="be-field__label">Status</label>
+                <x-erp.select
+                    wire:model.live="status"
+                    :options="[
+                        'all' => 'All invoices',
+                        'open' => 'Open',
+                        'partial' => 'Partial',
+                        'paid' => 'Paid',
+                        'draft' => 'Draft',
+                    ]"
+                />
             </div>
 
             <table class="be-table be-table--line-select">

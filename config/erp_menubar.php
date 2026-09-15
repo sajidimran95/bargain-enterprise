@@ -55,7 +55,7 @@ return [
     'Mfg & Whsle' => [
         ['label' => 'Create Quotes (Estimates)', 'route' => 'quotes.create'],
         ['label' => 'Create Sales Orders', 'route' => 'sales-orders.create'],
-        ['label' => 'Sales Order Fulfillment Worksheet', 'coming_soon' => true, 'action' => 'toast', 'message' => 'Sales Order Fulfillment Worksheet — coming soon.'],
+        ['label' => 'Sales Order Fulfillment Worksheet', 'route' => 'sales-orders.index'],
         ['label' => 'Create Invoices', 'route' => 'invoices.create', 'shortcut' => 'Ctrl+I'],
         ['label' => 'Receive Payments', 'route' => 'payments.create'],
         ['label' => 'Make Deposits', 'route' => 'deposits.create'],

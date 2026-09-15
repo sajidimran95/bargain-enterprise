@@ -1,10 +1,11 @@
 <div class="be-page" x-data @be-focus-list-search.window="$refs.listSearch?.focus()">
     <x-erp.list-toolbar heading="Quote List" new-route="quotes.create" new-label="New Quote" :title="$quotes->total().' quotes'" />
 
-    <div class="be-panel m-3">
+    <div class="be-panel be-list-panel">
         <div class="be-panel__body">
-            <div class="mb-2 flex flex-wrap gap-2">
-                <x-erp.input x-ref="listSearch" wire:model.live.debounce.300ms="search" placeholder="Search quote # / customer…" class="max-w-sm" />
+            <x-erp.look-for placeholder="Quote # / customer…" />
+            <div class="be-field mb-2">
+                <label class="be-field__label">Status</label>
                 <x-erp.select
                     wire:model.live="status"
                     :options="[

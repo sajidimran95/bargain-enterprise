@@ -571,6 +571,29 @@
         background: #e8f1ff;
     }
 
+    .be-doc-toolbar {
+        @apply flex flex-wrap items-center gap-1 border-b px-2 py-1;
+        border-color: var(--be-border);
+        background: #f0f0f0;
+    }
+
+    .be-doc-toolbar__title {
+        @apply ml-auto text-[11px] font-semibold text-gray-600;
+    }
+
+    .be-look-for {
+        @apply mb-2 flex flex-wrap items-end gap-2;
+    }
+
+    .be-look-for .be-field__label {
+        @apply text-[11px];
+    }
+
+    .be-list-panel {
+        @apply m-0 rounded-none border-0 border-t;
+        border-color: var(--be-border);
+    }
+
     .be-invoice-footer {
         @apply mt-2 grid gap-4 lg:grid-cols-[1fr_220px];
     }

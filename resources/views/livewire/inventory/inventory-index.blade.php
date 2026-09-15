@@ -1,39 +1,42 @@
 <div class="be-page" x-data @be-focus-list-search.window="$refs.listSearch?.focus()">
     <x-erp.list-toolbar
-        heading="Inventory"
+        heading="Inventory Stock Status"
         new-route="inventory.adjustments"
         :new-params="['new' => 1]"
         new-label="New Adjustment"
         :title="$items->total().' SKUs'"
     >
         <x-erp.workspace-link route="items.index" class="be-btn">Item List</x-erp.workspace-link>
+        <x-erp.workspace-link route="reports.inventory" class="be-btn">MSA Inventory</x-erp.workspace-link>
     </x-erp.list-toolbar>
 
-    <div class="be-panel m-3">
+    <div class="be-panel be-list-panel">
         <div class="be-panel__body">
-            <div class="mb-2 flex flex-wrap gap-2">
-                <x-erp.input x-ref="listSearch" wire:model.live.debounce.300ms="search" placeholder="Search SKU / name…" class="max-w-xs" />
-                <x-erp.select
-                    wire:model.live="stock"
-                    :options="[
-                        'all' => 'All stock',
-                        'low' => 'At/below reorder',
-                        'zero' => 'Zero on hand',
-                        'negative' => 'Negative on hand',
-                    ]"
-                />
-            </div>
+            <x-erp.look-for placeholder="SKU / name…">
+                <div class="be-field">
+                    <label class="be-field__label">Stock</label>
+                    <x-erp.select
+                        wire:model.live="stock"
+                        :options="[
+                            'all' => 'All stock',
+                            'low' => 'At/below reorder',
+                            'zero' => 'Zero on hand',
+                            'negative' => 'Negative on hand',
+                        ]"
+                    />
+                </div>
+            </x-erp.look-for>
 
             <table class="be-table be-table--line-select">
                 <thead>
                     <tr>
-                        <th>SKU</th>
-                        <th>Description</th>
-                        <th>Category</th>
-                        <th class="text-right">On Hand</th>
-                        <th class="text-right">Avg Cost</th>
-                        <th class="text-right">Reorder Min</th>
-                        <th>Promotion</th>
+                        <th>NAME</th>
+                        <th>DESCRIPTION</th>
+                        <th>TYPE</th>
+                        <th class="text-right">QTY</th>
+                        <th class="text-right">PRICE</th>
+                        <th class="text-right">COST</th>
+                        <th class="text-right">REORDER</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -45,11 +48,11 @@
                         >
                             <td>{{ $item->sku }}</td>
                             <td>{{ $item->sales_description ?: $item->name }}</td>
-                            <td>{{ $item->category?->code }}</td>
+                            <td>{{ $item->type ?: $item->category?->code }}</td>
                             <td class="num {{ (float) $item->on_hand < 0 ? 'text-red-700' : '' }}">{{ number_format((float) $item->on_hand, 2) }}</td>
-                            <td class="num">{{ number_format((float) $item->average_cost, 4) }}</td>
+                            <td class="num">{{ number_format((float) $item->sales_price, 2) }}</td>
+                            <td class="num">{{ number_format((float) ($item->average_cost ?: 0), 4) }}</td>
                             <td class="num">{{ number_format((float) ($item->reorder_min ?? 0), 2) }}</td>
-                            <td>{{ $item->promotion ?: '—' }}</td>
                         </tr>
                     @endforeach
                 </tbody>

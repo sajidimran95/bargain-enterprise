@@ -1,130 +1,156 @@
-<div class="be-page">
-    <x-erp.toolbar>
+<div class="be-page be-invoice-page" x-data @be-focus-scan.window="$refs.scanInput?.focus()">
+    <div class="be-doc-toolbar">
         <x-erp.button type="button" variant="primary" wire:click="save">Save</x-erp.button>
-        <a href="{{ route($cancelRoute) }}" class="be-btn">Cancel</a>
-        <span class="ml-auto text-[11px] text-gray-500">{{ $pageTitle }}</span>
-    </x-erp.toolbar>
+        <x-erp.workspace-link :route="$cancelRoute" class="be-btn">Cancel</x-erp.workspace-link>
+        <x-erp.button type="button" onclick="window.print()">Print</x-erp.button>
+        <span class="be-doc-toolbar__title">{{ $pageTitle }}</span>
+    </div>
 
-    <div class="be-panel m-3">
-        <div class="be-panel__header">
-            <h1 class="be-panel__title">{{ $pageTitle }}</h1>
-        </div>
-        <div class="be-panel__body">
-            <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-                <div>
-                    <label class="be-label">{{ $numberLabel }}</label>
-                    <x-erp.input wire:model="{{ $numberField }}" />
-                    @error($numberField) <p class="text-xs text-red-600">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <label class="be-label">{{ $partyLabel }} *</label>
-                    <x-erp.select wire:model="{{ $partyField }}" :options="['' => 'Select…'] + $partyOptions" />
-                    @error($partyField) <p class="text-xs text-red-600">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <label class="be-label">{{ $dateLabel }}</label>
-                    <x-erp.input type="date" wire:model="{{ $dateField }}" />
-                    @error($dateField) <p class="text-xs text-red-600">{{ $message }}</p> @enderror
-                </div>
-                @if ($showPaymentMethod ?? false)
-                    <div>
-                        <label class="be-label">Payment Method</label>
-                        <x-erp.select
-                            wire:model="payment_method"
-                            :options="[
-                                'cash' => 'Cash',
-                                'check' => 'Check',
-                                'credit_card' => 'Credit Card',
-                                'other' => 'Other',
-                            ]"
-                        />
+    <div class="be-invoice-layout be-invoice-layout--inspector-collapsed">
+        <div class="be-invoice-main">
+            <div class="be-invoice-doc">
+                <div class="be-invoice-toprow">
+                    <div class="be-field be-field--grow">
+                        <label class="be-field__label be-field__label--caps be-field__label--on-blue">{{ $partyLabel }}</label>
+                        <select wire:model.live="{{ $partyField }}" class="be-input be-input--combo be-input--customer">
+                            <option value="">Select {{ strtolower($partyLabel) }}…</option>
+                            @foreach ($partyOptions as $id => $label)
+                                <option value="{{ $id }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        @error($partyField) <span class="be-field__error">{{ $message }}</span> @enderror
                     </div>
-                @endif
-                @if ($showDueDate ?? false)
-                    <div>
-                        <label class="be-label">Due Date</label>
-                        <x-erp.input type="date" wire:model="due_date" />
+                    <div class="be-field be-field--template">
+                        <label class="be-field__label be-field__label--caps be-field__label--on-blue">Template</label>
+                        <input type="text" class="be-input be-input--combo" value="Intuit {{ $pageTitle }}" readonly>
                     </div>
-                @endif
-                @if ($showExpiry ?? false)
-                    <div>
-                        <label class="be-label">Expiry Date</label>
-                        <x-erp.input type="date" wire:model="expiry_date" />
-                    </div>
-                @endif
-                                @if ($showExpected ?? false)
-                    <div>
-                        <label class="be-label">Expected Date</label>
-                        <x-erp.input type="date" wire:model="expected_date" />
-                    </div>
-                @endif
-                <div class="md:col-span-2">
-                    <label class="be-label">Memo</label>
-                    <x-erp.input wire:model="memo" />
                 </div>
-            </div>
 
-            <div class="mt-4 flex flex-wrap items-end gap-2">
-                <div class="flex-1">
-                    <label class="be-label">Scan barcode / Item code</label>
-                    <x-erp.input
+                <div class="be-invoice-midrow">
+                    <div class="be-invoice-midrow__left">
+                        <h1 class="be-invoice-title">{{ $pageTitle }}</h1>
+                    </div>
+                    <div class="be-invoice-midrow__right">
+                        <div class="be-field be-field--inline">
+                            <label class="be-field__label be-field__label--caps">{{ $dateLabel }}</label>
+                            <x-erp.input type="date" wire:model="{{ $dateField }}" class="be-input--combo" />
+                            @error($dateField) <span class="be-field__error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="be-field be-field--inline">
+                            <label class="be-field__label be-field__label--caps">{{ $numberLabel }}</label>
+                            <x-erp.input wire:model="{{ $numberField }}" class="be-input--combo" />
+                            @error($numberField) <span class="be-field__error">{{ $message }}</span> @enderror
+                        </div>
+                        @if ($showPaymentMethod ?? false)
+                            <div class="be-field be-field--inline">
+                                <label class="be-field__label be-field__label--caps">Payment Method</label>
+                                <x-erp.select
+                                    wire:model="payment_method"
+                                    class="be-input--combo"
+                                    :options="[
+                                        'cash' => 'Cash',
+                                        'check' => 'Check',
+                                        'credit_card' => 'Credit Card',
+                                        'other' => 'Other',
+                                    ]"
+                                />
+                            </div>
+                        @endif
+                        @if ($showDueDate ?? false)
+                            <div class="be-field be-field--inline">
+                                <label class="be-field__label be-field__label--caps">Due Date</label>
+                                <x-erp.input type="date" wire:model="due_date" class="be-input--combo" />
+                            </div>
+                        @endif
+                        @if ($showExpiry ?? false)
+                            <div class="be-field be-field--inline">
+                                <label class="be-field__label be-field__label--caps">Expiry Date</label>
+                                <x-erp.input type="date" wire:model="expiry_date" class="be-input--combo" />
+                            </div>
+                        @endif
+                        @if ($showExpected ?? false)
+                            <div class="be-field be-field--inline">
+                                <label class="be-field__label be-field__label--caps">Expected Date</label>
+                                <x-erp.input type="date" wire:model="expected_date" class="be-input--combo" />
+                            </div>
+                        @endif
+                        <div class="be-field">
+                            <label class="be-field__label be-field__label--caps">Memo</label>
+                            <x-erp.input wire:model="memo" class="be-input--combo" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="be-scan-bar be-scan-bar--compact">
+                    <label class="be-field__label be-field__label--caps mb-0">Item / Scan</label>
+                    <input
+                        x-ref="scanInput"
+                        type="text"
+                        class="be-input be-scan-input"
                         wire:model="scanCode"
                         wire:keydown.enter.prevent="scanItem"
-                        placeholder="Scan UPC / barcode / SKU then Enter"
-                        class="font-mono"
-                    />
+                        placeholder="Barcode / SKU / UPC — Enter"
+                    >
+                    <button type="button" class="be-btn be-btn--primary" wire:click="scanItem">Add</button>
+                    <button type="button" class="be-btn" wire:click="addLine">Add Line</button>
                 </div>
-                <x-erp.button type="button" variant="primary" wire:click="scanItem">Add Scan</x-erp.button>
-                <x-erp.button type="button" wire:click="addLine">Add Line</x-erp.button>
-            </div>
-            @error('lines') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
+                @error('lines') <p class="be-invoice-error">{{ $message }}</p> @enderror
 
-            <table class="be-table mt-2">
-                <thead>
-                    <tr>
-                        <th style="width:16%">Item Code</th>
-                        <th style="width:22%">Item</th>
-                        <th>Description</th>
-                        <th class="text-right" style="width:10%">Qty</th>
-                        <th class="text-right" style="width:12%">{{ $rateLabel ?? 'Rate' }}</th>
-                        <th class="text-right" style="width:12%">Amount</th>
-                        <th style="width:6%"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($lines as $index => $line)
-                        <tr wire:key="line-{{ $index }}">
-                            <td>
-                                <x-erp.input wire:model.blur="lines.{{ $index }}.item_code" placeholder="SKU/barcode" class="font-mono" />
-                            </td>
-                            <td>
-                                <x-erp.select wire:model.live="lines.{{ $index }}.item_id" :options="['' => 'Select…'] + $itemOptions" />
-                                @error("lines.$index.item_id") <p class="text-xs text-red-600">{{ $message }}</p> @enderror
-                            </td>
-                            <td>
-                                <x-erp.input wire:model="lines.{{ $index }}.description" />
-                            </td>
-                            <td>
-                                <x-erp.input type="number" step="0.0001" min="0" class="text-right" wire:model.live="lines.{{ $index }}.quantity" />
-                            </td>
-                            <td>
-                                <x-erp.input type="number" step="0.01" min="0" class="text-right" wire:model.live="lines.{{ $index }}.rate" />
-                            </td>
-                            <td class="num">{{ number_format((float) ($line['amount'] ?? 0), 2) }}</td>
-                            <td class="text-right">
-                                <x-erp.button type="button" wire:click="removeLine({{ $index }})">×</x-erp.button>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="5" class="text-right font-semibold">Subtotal</td>
-                        <td class="num font-semibold">{{ number_format((float) collect($lines)->sum(fn ($l) => (float) ($l['amount'] ?? 0)), 2) }}</td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-            </table>
+                <div class="be-invoice-grid-wrap">
+                    <table class="be-table be-invoice-grid">
+                        <thead>
+                            <tr>
+                                <th style="width:14%">ITEM CODE</th>
+                                <th style="width:8%" class="text-right">QTY</th>
+                                <th>DESCRIPTION</th>
+                                <th style="width:22%">ITEM</th>
+                                <th class="text-right" style="width:12%">{{ strtoupper($rateLabel ?? 'RATE') }}</th>
+                                <th class="text-right" style="width:12%">AMOUNT</th>
+                                <th style="width:5%"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($lines as $index => $line)
+                                <tr wire:key="line-{{ $index }}">
+                                    <td>
+                                        <x-erp.input wire:model.blur="lines.{{ $index }}.item_code" placeholder="SKU" class="font-mono be-input--grid" />
+                                    </td>
+                                    <td>
+                                        <x-erp.input type="number" step="0.0001" min="0" class="text-right be-input--grid" wire:model.live="lines.{{ $index }}.quantity" />
+                                    </td>
+                                    <td>
+                                        <x-erp.input wire:model="lines.{{ $index }}.description" class="be-input--grid" />
+                                    </td>
+                                    <td>
+                                        <x-erp.select wire:model.live="lines.{{ $index }}.item_id" class="be-input--grid" :options="['' => 'Select…'] + $itemOptions" />
+                                        @error("lines.$index.item_id") <span class="be-field__error">{{ $message }}</span> @enderror
+                                    </td>
+                                    <td>
+                                        <x-erp.input type="number" step="0.01" min="0" class="text-right be-input--grid" wire:model.live="lines.{{ $index }}.rate" />
+                                    </td>
+                                    <td class="num">{{ number_format((float) ($line['amount'] ?? 0), 2) }}</td>
+                                    <td class="text-right">
+                                        <button type="button" class="be-link-btn" wire:click="removeLine({{ $index }})">×</button>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="be-invoice-footer">
+                    <div class="be-invoice-totals">
+                        <div class="be-invoice-totals__row">
+                            <span>Subtotal</span>
+                            <strong>{{ number_format((float) collect($lines)->sum(fn ($l) => (float) ($l['amount'] ?? 0)), 2) }}</strong>
+                        </div>
+                        <div class="be-invoice-totals__row be-invoice-totals__row--total">
+                            <span>Total</span>
+                            <strong>{{ number_format((float) collect($lines)->sum(fn ($l) => (float) ($l['amount'] ?? 0)), 2) }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

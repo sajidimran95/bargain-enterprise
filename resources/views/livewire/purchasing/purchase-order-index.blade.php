@@ -1,22 +1,24 @@
 <div class="be-page" x-data @be-focus-list-search.window="$refs.listSearch?.focus()">
     <x-erp.list-toolbar heading="Purchase Order List" new-route="purchase-orders.create" new-label="New PO" :title="$orders->total().' purchase orders'" />
 
-    <div class="be-panel m-3">
+    <div class="be-panel be-list-panel">
         <div class="be-panel__body">
-            <div class="mb-2 flex flex-wrap gap-2">
-                <x-erp.input x-ref="listSearch" wire:model.live.debounce.300ms="search" placeholder="Search PO # / vendor…" class="max-w-sm" />
-                <x-erp.select
-                    wire:model.live="status"
-                    :options="[
-                        'all' => 'All statuses',
-                        'draft' => 'Draft',
-                        'open' => 'Open',
-                        'partial' => 'Partial',
-                        'received' => 'Received',
-                        'cancelled' => 'Cancelled',
-                    ]"
-                />
-            </div>
+            <x-erp.look-for placeholder="PO # / vendor…">
+                <div class="be-field">
+                    <label class="be-field__label">Status</label>
+                    <x-erp.select
+                        wire:model.live="status"
+                        :options="[
+                            'all' => 'All statuses',
+                            'draft' => 'Draft',
+                            'open' => 'Open',
+                            'partial' => 'Partial',
+                            'received' => 'Received',
+                            'cancelled' => 'Cancelled',
+                        ]"
+                    />
+                </div>
+            </x-erp.look-for>
 
             <table class="be-table be-table--line-select">
                 <thead>
