@@ -1,176 +1,336 @@
-<div class="be-page">
-    <x-erp.toolbar>
-        <x-erp.button type="button" variant="primary" wire:click="save">Save</x-erp.button>
-        <x-erp.button type="button" wire:click="addLine">New Line</x-erp.button>
-        <x-erp.button type="button" wire:click="selectPurchaseOrder">Select PO</x-erp.button>
-        <a href="{{ route('vendor-payments.create') }}" class="be-btn">Pay Bill</a>
-        <a href="{{ route('vendor-bills.index') }}" class="be-btn">Cancel</a>
-        <span class="ml-auto text-[11px] text-gray-500">Enter Bills</span>
-    </x-erp.toolbar>
+<div class="be-page be-invoice-page be-bill-page" x-data @be-focus-scan.window="$refs.scanInput?.focus()">
+    <x-erp.document-ribbon
+        find-route-name="vendor-bills.index"
+        new-route-name="vendor-bills.create"
+        :active-tab="$ribbonTab"
+        :is-pending="$is_pending"
+        :show-apply-credits="false"
+        :show-receive-payments="false"
+        :show-refund-credit="false"
+        :show-add-time-costs="false"
+        :attachment-count="count($pendingAttachments)"
+        :formatting-font-size="$formattingFontSize"
+        :formatting-bold="$formattingBold"
+    >
+        <x-slot:extra>
+            <button type="button" class="be-ribbon__btn" wire:click="selectPurchaseOrder" title="Select PO">
+                <span class="be-ribbon__icon">📋</span><span>Select PO</span>
+            </button>
+            <button type="button" class="be-ribbon__btn" wire:click="clearSplits" title="Clear Splits">
+                <span class="be-ribbon__icon">⌫</span><span>Clear Splits</span>
+            </button>
+            <button type="button" class="be-ribbon__btn" wire:click="recalculate" title="Recalculate">
+                <span class="be-ribbon__icon">∑</span><span>Recalculate</span>
+            </button>
+            <x-erp.workspace-link route="vendor-payments.create" class="be-ribbon__btn" title="Pay Bill">
+                <span class="be-ribbon__icon">💵</span><span>Pay Bill</span>
+            </x-erp.workspace-link>
+        </x-slot:extra>
+    </x-erp.document-ribbon>
 
-    <div class="be-panel m-3">
-        <div class="be-panel__body">
-            <div class="be-bill-header">
-                <div class="mb-2 flex flex-wrap items-center gap-4">
-                    <label class="inline-flex items-center gap-1 text-[12px] font-semibold">
-                        <input type="radio" wire:model.live="docType" value="bill"> Bill
+    @include('livewire.sales.partials.document-ribbon-modals')
+
+    @if ($is_pending)
+        <div class="be-invoice-pending">Pending — will not post AP until cleared.</div>
+    @endif
+
+    <div class="be-invoice-layout {{ $inspectorOpen ? '' : 'be-invoice-layout--inspector-collapsed' }}">
+        <div class="be-invoice-main">
+            <div class="be-invoice-doc be-bill-doc">
+                <div class="be-bill-typebar">
+                    <div class="be-bill-typebar__radios">
+                        <label class="be-bill-radio">
+                            <input type="radio" wire:model.live="docType" value="bill"> Bill
+                        </label>
+                        <label class="be-bill-radio">
+                            <input type="radio" wire:model.live="docType" value="credit"> Credit
+                        </label>
+                    </div>
+                    <label class="be-bill-received">
+                        <input type="checkbox" wire:model.live="bill_received"> Bill Received
                     </label>
-                    <label class="inline-flex items-center gap-1 text-[12px] font-semibold">
-                        <input type="radio" wire:model.live="docType" value="credit"> Credit
-                    </label>
-                    <span class="text-[16px] font-semibold text-gray-700">{{ $docType === 'credit' ? 'Credit' : 'Bill' }}</span>
                 </div>
 
-                <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-                    <div class="lg:col-span-2">
-                        <label class="be-label">Vendor</label>
-                        <x-erp.select wire:model.live="vendor_id" :options="['' => 'Select vendor…'] + $vendors" />
-                        @error('vendor_id') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
-                        @if ($selectedVendor)
-                            <div class="mt-1 whitespace-pre-line text-[11px] text-gray-600">{{ implode("\n", $selectedVendor->billFromLines()) }}</div>
-                        @endif
+                <div class="be-bill-header-grid">
+                    <div class="be-bill-header-grid__left">
+                        <div class="be-field">
+                            <label class="be-field__label be-field__label--caps">Vendor</label>
+                            <select wire:model.live="vendor_id" class="be-input be-input--combo be-input--customer">
+                                <option value="">Select vendor…</option>
+                                @foreach ($vendors as $id => $name)
+                                    <option value="{{ $id }}">{{ $name }}</option>
+                                @endforeach
+                            </select>
+                            @error('vendor_id') <span class="be-field__error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="be-field">
+                            <label class="be-field__label be-field__label--caps">Address</label>
+                            <textarea class="be-input be-bill-address" rows="4" wire:model="address"></textarea>
+                        </div>
+                        <div class="be-field be-field--inline">
+                            <label class="be-field__label be-field__label--caps">Terms</label>
+                            <x-erp.select
+                                wire:model="terms"
+                                class="be-input--combo"
+                                :options="[
+                                    'Due on receipt' => 'Due on receipt',
+                                    'Net 15' => 'Net 15',
+                                    'Net 30' => 'Net 30',
+                                    'Net 60' => 'Net 60',
+                                ]"
+                            />
+                        </div>
+                        <div class="be-field be-field--inline">
+                            <label class="be-field__label be-field__label--caps">Memo</label>
+                            <x-erp.input
+                                wire:model="memo"
+                                class="be-input--combo {{ $formattingBold ? 'font-bold' : '' }}"
+                                style="font-size: {{ $formattingFontSize }}px"
+                            />
+                        </div>
                     </div>
-                    <div>
-                        <label class="be-label">Date</label>
-                        <x-erp.input type="date" wire:model="bill_date" />
-                    </div>
-                    <div>
-                        <label class="be-label">Bill Due</label>
-                        <x-erp.input type="date" wire:model="due_date" />
-                    </div>
-                    <div>
-                        <label class="be-label">Ref. No.</label>
-                        <x-erp.input wire:model="ref_no" />
-                    </div>
-                    <div>
-                        <label class="be-label">{{ $docType === 'credit' ? 'Credit #' : 'Bill #' }}</label>
-                        <x-erp.input wire:model="bill_number" />
-                        @error('bill_number') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
-                    </div>
-                    <div>
-                        <label class="be-label">Amount Due</label>
-                        <x-erp.input class="num font-semibold" value="{{ number_format((float) $amountDue, 2, '.', '') }}" readonly />
-                    </div>
-                    <div>
-                        <label class="be-label">Terms</label>
-                        <x-erp.select wire:model="terms" :options="['Due on receipt' => 'Due on receipt', 'Net 15' => 'Net 15', 'Net 30' => 'Net 30', 'Net 60' => 'Net 60']" />
-                    </div>
-                    <div>
-                        <label class="be-label">Select PO</label>
-                        <x-erp.select wire:model="purchase_order_id" :options="$poOptions" />
-                        @error('purchase_order_id') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
-                    </div>
-                    <div class="md:col-span-2 lg:col-span-4">
-                        <label class="be-label">Memo</label>
-                        <x-erp.input wire:model="memo" />
+
+                    <div class="be-bill-header-grid__right">
+                        <div class="be-field be-field--inline">
+                            <label class="be-field__label be-field__label--caps">Date</label>
+                            <x-erp.input type="date" wire:model="bill_date" class="be-input--combo" />
+                        </div>
+                        <div class="be-field be-field--inline">
+                            <label class="be-field__label be-field__label--caps">Ref. No.</label>
+                            <x-erp.input wire:model="ref_no" class="be-input--combo" />
+                        </div>
+                        <div class="be-field be-field--inline">
+                            <label class="be-field__label be-field__label--caps">Amount Due</label>
+                            <x-erp.input class="be-input--combo num font-semibold" value="{{ number_format((float) $amountDue, 2, '.', '') }}" readonly />
+                        </div>
+                        <div class="be-field be-field--inline">
+                            <label class="be-field__label be-field__label--caps">Bill Due</label>
+                            <x-erp.input type="date" wire:model="due_date" class="be-input--combo" />
+                        </div>
+                        <div class="be-field be-field--inline">
+                            <label class="be-field__label be-field__label--caps">{{ $docType === 'credit' ? 'Credit #' : 'Bill #' }}</label>
+                            <x-erp.input wire:model="bill_number" class="be-input--combo" />
+                            @error('bill_number') <span class="be-field__error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="be-field be-field--inline">
+                            <label class="be-field__label be-field__label--caps">Select PO</label>
+                            <x-erp.select wire:model="purchase_order_id" class="be-input--combo" :options="$poOptions" />
+                            @error('purchase_order_id') <span class="be-field__error">{{ $message }}</span> @enderror
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="be-doc-tabs">
-                <button type="button" class="{{ $lineTab === 'expenses' ? 'is-active' : '' }}" wire:click="$set('lineTab', 'expenses')">
-                    Expenses (${{ number_format((float) $this->expensesTotal(), 2) }})
-                </button>
-                <button type="button" class="{{ $lineTab === 'items' ? 'is-active' : '' }}" wire:click="$set('lineTab', 'items')">
-                    Items (${{ number_format((float) $this->linesSubtotal(), 2) }})
-                </button>
-            </div>
-
-            @error('lines') <p class="mt-2 text-xs text-red-600">{{ $message }}</p> @enderror
-
-            @if ($lineTab === 'expenses')
-                <div class="mt-2 flex justify-end gap-2">
-                    <x-erp.button type="button" wire:click="addExpenseLine">Add Expense Line</x-erp.button>
+                <div class="be-doc-tabs be-bill-tabs">
+                    <button type="button" class="{{ $lineTab === 'expenses' ? 'is-active' : '' }}" wire:click="$set('lineTab', 'expenses')">
+                        Expenses (${{ number_format((float) $this->expensesTotal(), 2) }})
+                    </button>
+                    <button type="button" class="{{ $lineTab === 'items' ? 'is-active' : '' }}" wire:click="$set('lineTab', 'items')">
+                        Items (${{ number_format((float) $this->linesSubtotal(), 2) }})
+                    </button>
                 </div>
-                <table class="be-table mt-2">
-                    <thead>
-                        <tr>
-                            <th style="width:20%">Account</th>
-                            <th>Description</th>
-                            <th class="text-right" style="width:16%">Amount</th>
-                            <th style="width:6%"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($expenseLines as $index => $line)
-                            <tr wire:key="exp-{{ $index }}">
-                                <td>
-                                    <x-erp.input wire:model="expenseLines.{{ $index }}.account" placeholder="6000" class="font-mono" />
-                                </td>
-                                <td>
-                                    <x-erp.input wire:model="expenseLines.{{ $index }}.description" />
-                                </td>
-                                <td>
-                                    <x-erp.input type="number" step="0.01" min="0" class="text-right" wire:model.live="expenseLines.{{ $index }}.amount" />
-                                </td>
-                                <td class="text-right">
-                                    <x-erp.button type="button" wire:click="removeExpenseLine({{ $index }})">×</x-erp.button>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            @else
-                <div class="mt-2 flex flex-wrap items-end gap-2">
-                    <div class="flex-1">
-                        <label class="be-label">Scan barcode / Item code</label>
-                        <x-erp.input
+
+                @error('lines') <p class="be-invoice-error">{{ $message }}</p> @enderror
+
+                @if ($lineTab === 'items')
+                    <div class="be-scan-bar be-scan-bar--compact">
+                        <label class="be-field__label be-field__label--caps mb-0">Item / Scan</label>
+                        <input
+                            x-ref="scanInput"
+                            type="text"
+                            class="be-input be-scan-input"
                             wire:model="scanCode"
                             wire:keydown.enter.prevent="scanItem"
-                            placeholder="Scan UPC / barcode / SKU then Enter"
-                            class="font-mono"
-                        />
+                            placeholder="Barcode / SKU / UPC — Enter"
+                        >
+                        <button type="button" class="be-btn be-btn--primary" wire:click="scanItem">Add</button>
                     </div>
-                    <x-erp.button type="button" variant="primary" wire:click="scanItem">Add Scan</x-erp.button>
-                    <x-erp.button type="button" wire:click="addLine">Add Line</x-erp.button>
-                    <x-erp.button type="button" wire:click="selectPurchaseOrder">Receive All from PO</x-erp.button>
+                @endif
+
+                <div class="be-invoice-grid-wrap">
+                    @if ($lineTab === 'expenses')
+                        <table class="be-table be-invoice-grid">
+                            <thead>
+                                <tr>
+                                    <th style="width:16%">ACCOUNT</th>
+                                    <th>DESCRIPTION</th>
+                                    <th style="width:12%" class="text-right">AMOUNT</th>
+                                    <th style="width:16%">CUSTOMER:JOB</th>
+                                    <th style="width:7%" class="text-center">BILLABLE</th>
+                                    <th style="width:10%">CLASS</th>
+                                    <th style="width:3%"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($expenseLines as $index => $line)
+                                    <tr wire:key="exp-{{ $index }}" class="{{ $index % 2 ? 'be-row-alt' : '' }}">
+                                        <td>
+                                            <x-erp.input wire:model="expenseLines.{{ $index }}.account" class="be-input--bare font-mono" />
+                                        </td>
+                                        <td>
+                                            <x-erp.input wire:model="expenseLines.{{ $index }}.description" class="be-input--bare" />
+                                        </td>
+                                        <td>
+                                            <x-erp.input type="number" step="0.01" min="0" class="text-right be-input--bare" wire:model.live="expenseLines.{{ $index }}.amount" />
+                                        </td>
+                                        <td>
+                                            <x-erp.input wire:model="expenseLines.{{ $index }}.customer_job" class="be-input--bare" />
+                                        </td>
+                                        <td class="text-center">
+                                            <input type="checkbox" wire:model="expenseLines.{{ $index }}.billable" class="be-invoice-tax">
+                                        </td>
+                                        <td>
+                                            <x-erp.input wire:model="expenseLines.{{ $index }}.class" class="be-input--bare" />
+                                        </td>
+                                        <td class="text-center">
+                                            <button type="button" class="be-link-btn" wire:click="removeExpenseLine({{ $index }})">×</button>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    @else
+                        <table class="be-table be-invoice-grid">
+                            <thead>
+                                <tr>
+                                    <th style="width:16%">ITEM</th>
+                                    <th>DESCRIPTION</th>
+                                    <th style="width:8%" class="text-right">QTY</th>
+                                    <th style="width:10%" class="text-right">COST</th>
+                                    <th style="width:10%" class="text-right">AMOUNT</th>
+                                    <th style="width:14%">CUSTOMER:JOB</th>
+                                    <th style="width:7%" class="text-center">BILLABLE</th>
+                                    <th style="width:9%">CLASS</th>
+                                    <th style="width:3%"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($lines as $index => $line)
+                                    <tr wire:key="line-{{ $index }}" class="{{ $index % 2 ? 'be-row-alt' : '' }}">
+                                        <td>
+                                            <x-erp.select
+                                                wire:model.live="lines.{{ $index }}.item_id"
+                                                class="be-input--bare"
+                                                :options="['' => ''] + $itemOptions"
+                                            />
+                                        </td>
+                                        <td>
+                                            <x-erp.input wire:model="lines.{{ $index }}.description" class="be-input--bare" />
+                                        </td>
+                                        <td>
+                                            <x-erp.input type="number" step="0.0001" min="0" class="text-right be-input--bare" wire:model.live="lines.{{ $index }}.quantity" />
+                                        </td>
+                                        <td>
+                                            <x-erp.input type="number" step="0.01" min="0" class="text-right be-input--bare" wire:model.live="lines.{{ $index }}.rate" />
+                                        </td>
+                                        <td class="num be-invoice-amount">{{ number_format((float) ($line['amount'] ?? 0), 2) }}</td>
+                                        <td>
+                                            <x-erp.input wire:model="lines.{{ $index }}.customer_job" class="be-input--bare" />
+                                        </td>
+                                        <td class="text-center">
+                                            <input type="checkbox" wire:model="lines.{{ $index }}.billable" class="be-invoice-tax">
+                                        </td>
+                                        <td>
+                                            <x-erp.input wire:model="lines.{{ $index }}.class" class="be-input--bare" />
+                                        </td>
+                                        <td class="text-center">
+                                            @if (filled($line['item_id'] ?? null))
+                                                <button type="button" class="be-link-btn" wire:click="removeLine({{ $index }})">×</button>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    @endif
                 </div>
 
-                <table class="be-table mt-2">
-                    <thead>
-                        <tr>
-                            <th style="width:16%">Item</th>
-                            <th style="width:22%">Item Code</th>
-                            <th>Description</th>
-                            <th class="text-right" style="width:10%">Qty</th>
-                            <th class="text-right" style="width:12%">Cost</th>
-                            <th class="text-right" style="width:12%">Amount</th>
-                            <th style="width:6%"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($lines as $index => $line)
-                            <tr wire:key="line-{{ $index }}" class="{{ $index % 2 ? 'be-row-alt' : '' }}">
-                                <td>
-                                    <x-erp.select wire:model.live="lines.{{ $index }}.item_id" :options="['' => 'Select…'] + $itemOptions" />
-                                </td>
-                                <td>
-                                    <x-erp.input wire:model.blur="lines.{{ $index }}.item_code" placeholder="SKU/barcode" class="font-mono" />
-                                </td>
-                                <td>
-                                    <x-erp.input wire:model="lines.{{ $index }}.description" />
-                                </td>
-                                <td>
-                                    <x-erp.input type="number" step="0.0001" min="0" class="text-right" wire:model.live="lines.{{ $index }}.quantity" />
-                                </td>
-                                <td>
-                                    <x-erp.input type="number" step="0.01" min="0" class="text-right" wire:model.live="lines.{{ $index }}.rate" />
-                                </td>
-                                <td class="num">{{ number_format((float) ($line['amount'] ?? 0), 2) }}</td>
-                                <td class="text-right">
-                                    <x-erp.button type="button" wire:click="removeLine({{ $index }})">×</x-erp.button>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            @endif
-
-            <div class="mt-4 flex justify-end gap-2">
-                <a href="{{ route('vendor-bills.index') }}" class="be-btn">Clear</a>
-                <x-erp.button type="button" wire:click="save">Save & Close</x-erp.button>
-                <x-erp.button type="button" variant="primary" wire:click="save">Save & New</x-erp.button>
+                <div class="be-bill-grid-footer">
+                    <div class="be-bill-grid-footer__left">
+                        <button type="button" class="be-btn" wire:click="receiveAll" @disabled($purchase_order_id === '')>Receive All</button>
+                        <button type="button" class="be-btn" wire:click="selectPurchaseOrder" @disabled($purchase_order_id === '')>Show PO</button>
+                        @if ($lineTab === 'expenses')
+                            <button type="button" class="be-btn" wire:click="addExpenseLine">Add Expense Line</button>
+                        @else
+                            <button type="button" class="be-btn" wire:click="addLine">Add Line</button>
+                        @endif
+                    </div>
+                    <div class="be-invoice-actions be-bill-actions">
+                        <button type="button" class="be-btn" wire:click="saveAndClose">Save &amp; Close</button>
+                        <button type="button" class="be-btn be-btn--primary" wire:click="saveAndNew">Save &amp; New</button>
+                        <button type="button" class="be-btn" wire:click="clearForm">Clear</button>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <button type="button" class="be-invoice-inspector-toggle" wire:click="toggleInspector" title="{{ $inspectorOpen ? 'Hide panel' : 'Show panel' }}">
+            {{ $inspectorOpen ? '›' : '‹' }}
+        </button>
+
+        @if ($inspectorOpen)
+            <aside class="be-invoice-inspector">
+                @if ($selectedVendor)
+                    <div class="be-inspector-head">
+                        <div class="be-inspector-head__id">{{ $selectedVendor->vendor_number ?: '—' }}</div>
+                        <div class="be-inspector-head__name">{{ $selectedVendor->display_name }}</div>
+                    </div>
+                @endif
+
+                <div class="be-inspector-tabs">
+                    <button type="button" class="{{ $inspectorTab === 'name' ? 'is-active' : '' }}" wire:click="$set('inspectorTab', 'name')">Name</button>
+                    <button type="button" class="{{ $inspectorTab === 'transaction' ? 'is-active' : '' }}" wire:click="$set('inspectorTab', 'transaction')">Transaction</button>
+                </div>
+
+                @if ($inspectorTab === 'transaction')
+                    <div class="be-inspector-section">
+                        <div class="be-inspector-section__title"><h3>Transaction</h3></div>
+                        <dl class="be-inspector-summary">
+                            <div><dt>Type</dt><dd>{{ $docType === 'credit' ? 'Credit' : 'Bill' }}</dd></div>
+                            <div><dt>Status</dt><dd>{{ $is_pending ? 'Pending' : 'Open' }}</dd></div>
+                            <div><dt>Bill received</dt><dd>{{ $bill_received ? 'Yes' : 'No' }}</dd></div>
+                            <div><dt>Amount due</dt><dd>{{ number_format((float) $amountDue, 2) }}</dd></div>
+                        </dl>
+                    </div>
+                @elseif ($selectedVendor)
+                    <div class="be-inspector-section">
+                        <div class="be-inspector-section__title"><h3>Summary</h3></div>
+                        <dl class="be-inspector-summary">
+                            <div>
+                                <dt>Open balance</dt>
+                                <dd class="be-inspector-balance {{ (float) $selectedVendor->balance > 0 ? 'is-due' : '' }}">
+                                    {{ number_format((float) $selectedVendor->balance, 2) }}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>Terms</dt>
+                                <dd>{{ $selectedVendor->terms ?: $terms }}</dd>
+                            </div>
+                            <div>
+                                <dt>Account #</dt>
+                                <dd>{{ $selectedVendor->account_number ?: '—' }}</dd></div>
+                        </dl>
+                    </div>
+                    <div class="be-inspector-section">
+                        <div class="be-inspector-section__title"><h3>Recent Transactions</h3></div>
+                        @forelse ($recentBills as $bill)
+                            <div class="be-inspector-txn">
+                                <span>{{ $bill->bill_date?->format('m/d/y') }} Bill</span>
+                                <span class="be-inspector-txn__amt">{{ number_format((float) $bill->total, 2) }}</span>
+                            </div>
+                        @empty
+                            <p class="be-inspector-empty">No recent bills.</p>
+                        @endforelse
+                    </div>
+                    <div class="be-inspector-section">
+                        <div class="be-inspector-section__title"><h3>Notes</h3></div>
+                        <p class="be-inspector-notes">{{ $selectedVendor->notes ?: '' }}</p>
+                    </div>
+                @else
+                    <div class="be-inspector-section">
+                        <p class="be-inspector-empty">Select a vendor to see balance, recent transactions, and notes.</p>
+                    </div>
+                @endif
+            </aside>
+        @endif
     </div>
 </div>

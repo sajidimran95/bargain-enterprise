@@ -97,9 +97,9 @@ return [
     ],
     'Reports' => [
         ['label' => 'Report Center', 'route' => 'reports.index'],
-        ['label' => 'Customer Directory', 'route' => 'reports.customers'],
-        ['label' => 'Inventory / Stock', 'route' => 'reports.inventory'],
-        ['label' => 'Sales by Item', 'route' => 'reports.sales-by-item'],
+        ['label' => 'MSA Customer List', 'route' => 'reports.customers'],
+        ['label' => 'MSA Inventory', 'route' => 'reports.inventory'],
+        ['label' => 'MSA Sales Report', 'route' => 'reports.sales-by-item'],
         ['label' => 'Customer Open Balance', 'route' => 'reports.open-balance'],
         ['label' => 'Company Snapshot', 'route' => 'dashboard.snapshots'],
     ],

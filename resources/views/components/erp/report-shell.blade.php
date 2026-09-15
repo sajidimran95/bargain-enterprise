@@ -3,6 +3,7 @@
     'subtitle' => null,
     'showDates' => true,
     'showBasis' => false,
+    'showFilterBar' => null,
     'basis' => 'accrual',
     'hideHeader' => false,
     'showExtraFilters' => false,
@@ -11,6 +12,7 @@
     'datePresetOptions' => [
         'today' => 'Today',
         'this_week' => 'This Week',
+        'last_week' => 'Last Week',
         'this_month' => 'This Month',
         'last_month' => 'Last Month',
         'this_year' => 'This Year',
@@ -28,6 +30,10 @@
     ],
 ])
 
+@php
+    $showFilterBar = $showFilterBar ?? ($showDates || $showBasis || isset($filters));
+@endphp
+
 <div class="be-page be-report">
     <div class="be-report__toolbar">
         <x-erp.button type="button" wire:click="customizeReport">Customize Report</x-erp.button>
@@ -43,10 +49,16 @@
         <span class="be-report__toolbar-sep" aria-hidden="true"></span>
         <x-erp.button type="button" wire:click="toggleHideHeader">{{ $hideHeader ? 'Show Header' : 'Hide Header' }}</x-erp.button>
         <x-erp.button type="button" wire:click="refreshReport">Refresh</x-erp.button>
-        <a href="{{ route('reports.index') }}" class="be-btn be-report__toolbar-link">Report Center</a>
+        <div class="be-report__toolbar-right">
+            <div class="be-field be-report__view">
+                <label class="be-field__label">View</label>
+                <x-erp.select wire:model.live="sortBy" :options="$sortByOptions" />
+            </div>
+            <a href="{{ route('reports.index') }}" class="be-btn">Report Center</a>
+        </div>
     </div>
 
-    @if ($showDates || $showBasis)
+    @if ($showFilterBar)
         <div class="be-report__filters">
             <div class="be-report__filters-row">
                 @if ($showDates)
@@ -119,7 +131,9 @@
             </div>
         @endunless
 
-        {{ $slot }}
+        <div class="be-report__grid">
+            {{ $slot }}
+        </div>
     </div>
 
     <x-erp.email-modal :show="$showEmailModal" />

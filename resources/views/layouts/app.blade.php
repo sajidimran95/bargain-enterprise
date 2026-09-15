@@ -133,216 +133,19 @@
         </header>
 
         <div class="be-shell">
-            <aside class="be-sidebar" aria-label="My Shortcuts">
+            <aside class="be-sidebar" aria-label="Navigation">
                 <div class="be-sidebar__search">
                     <input
                         type="search"
                         class="be-input be-input--sidebar"
-                        placeholder="Search shortcuts"
+                        placeholder="Search Company or Help"
                         x-ref="shortcutSearch"
                         @input="filterShortcuts($event.target.value)"
-                        aria-label="Search shortcuts"
+                        aria-label="Search Company or Help"
                     >
                 </div>
 
-                <nav class="be-sidebar__nav" x-ref="shortcutNav">
-                    <p class="be-sidebar__heading">My Shortcuts</p>
-                    @php
-                        $navGroups = [
-                            [
-                                'label' => 'Home',
-                                'route' => 'dashboard.home',
-                                'icon' => 'home',
-                                'match' => 'dashboard.home',
-                            ],
-                            [
-                                'label' => 'Snapshots',
-                                'route' => 'dashboard.snapshots',
-                                'icon' => 'chart',
-                                'match' => 'dashboard.snapshots',
-                            ],
-                            [
-                                'label' => 'Customers',
-                                'icon' => 'users',
-                                'match' => 'customers.*',
-                                'children' => [
-                                    ['label' => 'Customer Center', 'route' => 'customers.index'],
-                                    ['label' => 'New Customer', 'route' => 'customers.create'],
-                                ],
-                            ],
-                            [
-                                'label' => 'Vendors',
-                                'icon' => 'truck',
-                                'match' => 'vendors.*',
-                                'children' => [
-                                    ['label' => 'Vendor Center', 'route' => 'vendors.index'],
-                                    ['label' => 'New Vendor', 'route' => 'vendors.create'],
-                                ],
-                            ],
-                            [
-                                'label' => 'Items',
-                                'icon' => 'box',
-                                'match' => ['items.*', 'lookups.*'],
-                                'children' => [
-                                    ['label' => 'Item List', 'route' => 'items.index'],
-                                    ['label' => 'New Item', 'route' => 'items.create'],
-                                    ['label' => 'Lookups', 'route' => 'lookups.index'],
-                                ],
-                            ],
-                            [
-                                'label' => 'Inventory',
-                                'icon' => 'layers',
-                                'match' => 'inventory.*',
-                                'children' => [
-                                    ['label' => 'Stock Status', 'route' => 'inventory.index'],
-                                    ['label' => 'Adjustments', 'route' => 'inventory.adjustments'],
-                                ],
-                            ],
-                            [
-                                'label' => 'Sales',
-                                'icon' => 'file',
-                                'match' => ['invoices.*', 'payments.*', 'quotes.*', 'sales-orders.*', 'credit-memos.*', 'sales-receipts.*'],
-                                'children' => [
-                                    ['label' => 'Invoice List', 'route' => 'invoices.index'],
-                                    ['label' => 'Create Invoices', 'route' => 'invoices.create'],
-                                    ['label' => 'Receive Payments', 'route' => 'payments.index'],
-                                    ['label' => 'Quotes', 'route' => 'quotes.index'],
-                                    ['label' => 'Sales Orders', 'route' => 'sales-orders.index'],
-                                    ['label' => 'Credit Memos', 'route' => 'credit-memos.index'],
-                                    ['label' => 'Sales Receipts', 'route' => 'sales-receipts.index'],
-                                ],
-                            ],
-                            [
-                                'label' => 'Purchasing',
-                                'icon' => 'cart',
-                                'match' => ['purchase-orders.*', 'goods-receipts.*', 'vendor-bills.*', 'vendor-payments.*'],
-                                'children' => [
-                                    ['label' => 'Purchase Orders', 'route' => 'purchase-orders.index'],
-                                    ['label' => 'Receive Inventory', 'route' => 'goods-receipts.index'],
-                                    ['label' => 'Enter Bills', 'route' => 'vendor-bills.index'],
-                                    ['label' => 'Pay Bills', 'route' => 'vendor-payments.index'],
-                                ],
-                            ],
-                            [
-                                'label' => 'Banking',
-                                'icon' => 'bank',
-                                'match' => ['banking.*', 'deposits.*', 'checks.*', 'reconciliation.*'],
-                                'children' => [
-                                    ['label' => 'Bank Accounts', 'route' => 'banking.index'],
-                                    ['label' => 'Deposits', 'route' => 'deposits.index'],
-                                    ['label' => 'Checks', 'route' => 'checks.index'],
-                                    ['label' => 'Reconcile', 'route' => 'reconciliation.index'],
-                                ],
-                            ],
-                            [
-                                'label' => 'Accounting',
-                                'icon' => 'ledger',
-                                'match' => 'accounting.*',
-                                'children' => [
-                                    ['label' => 'Chart of Accounts', 'route' => 'accounting.chart'],
-                                    ['label' => 'Journal Entries', 'route' => 'accounting.journals'],
-                                ],
-                            ],
-                            [
-                                'label' => 'Reports',
-                                'route' => 'reports.index',
-                                'icon' => 'report',
-                                'match' => 'reports.*',
-                            ],
-                            [
-                                'label' => 'Audit Log',
-                                'route' => 'audit.index',
-                                'icon' => 'file',
-                                'match' => 'audit.*',
-                            ],
-                            [
-                                'label' => 'QB Import',
-                                'route' => 'import.index',
-                                'icon' => 'gear',
-                                'match' => 'import.*',
-                            ],
-                            [
-                                'label' => 'Settings',
-                                'route' => 'settings.index',
-                                'icon' => 'gear',
-                                'match' => 'settings.*',
-                            ],
-                        ];
-
-                        $routeMatches = function ($match) {
-                            foreach ((array) $match as $pattern) {
-                                if (request()->routeIs($pattern)) {
-                                    return true;
-                                }
-                            }
-
-                            return false;
-                        };
-                    @endphp
-                    @foreach ($navGroups as $item)
-                        @php
-                            $isActive = $routeMatches($item['match'] ?? ($item['route'] ?? ''));
-                            $hasChildren = ! empty($item['children']);
-                        @endphp
-                        @if ($hasChildren)
-                            <div
-                                class="be-sidebar__group"
-                                data-label="{{ strtolower($item['label'].' '.collect($item['children'])->pluck('label')->implode(' ')) }}"
-                                x-data="{ open: {{ $isActive ? 'true' : 'false' }} }"
-                            >
-                                <button
-                                    type="button"
-                                    class="be-sidebar__link be-sidebar__link--parent {{ $isActive ? 'is-active' : '' }}"
-                                    @click="open = !open"
-                                    :aria-expanded="open.toString()"
-                                >
-                                    <span class="be-sidebar__icon" aria-hidden="true">@include('components.erp.icons.'.$item['icon'])</span>
-                                    <span class="flex-1 text-left">{{ $item['label'] }}</span>
-                                    <span class="be-sidebar__chevron" :class="open ? 'is-open' : ''" aria-hidden="true">▸</span>
-                                </button>
-                                <div class="be-sidebar__sub" x-show="open" x-cloak>
-                                    @foreach ($item['children'] as $child)
-                                        <a
-                                            href="{{ route('dashboard', ['open' => $child['route']]) }}"
-                                            class="be-sidebar__link be-sidebar__link--child {{ request()->routeIs($child['route']) ? 'is-active' : '' }}"
-                                            data-label="{{ strtolower($child['label']) }}"
-                                            @click.prevent="beOpenWorkspace(@js($child['route']))"
-                                        >
-                                            <span>{{ $child['label'] }}</span>
-                                        </a>
-                                    @endforeach
-                                </div>
-                            </div>
-                        @else
-                            <a
-                                href="{{ route('dashboard', ['open' => $item['route']]) }}"
-                                class="be-sidebar__link {{ $isActive ? 'is-active' : '' }}"
-                                data-label="{{ strtolower($item['label']) }}"
-                                @click.prevent="beOpenWorkspace(@js($item['route']))"
-                            >
-                                <span class="be-sidebar__icon" aria-hidden="true">@include('components.erp.icons.'.$item['icon'])</span>
-                                <span>{{ $item['label'] }}</span>
-                            </a>
-                        @endif
-                    @endforeach
-                </nav>
-
-                <div class="be-sidebar__footer">
-                    <a href="{{ route('dashboard', ['open' => 'accounting.chart']) }}" class="be-sidebar__footer-link" @click.prevent="beOpenWorkspace('accounting.chart')">View Balances</a>
-                    <a href="{{ route('dashboard', ['open' => 'reports.index']) }}" class="be-sidebar__footer-link" @click.prevent="beOpenWorkspace('reports.index')">Run Favorite Reports</a>
-                    <div class="be-sidebar__open-windows">
-                        <p class="be-sidebar__heading">Open Windows</p>
-                        @forelse (($workspaceTabs ?? []) as $wsTab)
-                            <button
-                                type="button"
-                                class="be-sidebar__window-item {{ ($workspaceActiveId ?? '') === $wsTab['id'] ? 'is-active' : '' }}"
-                                @click="beOpenWorkspace(@js($wsTab['route']), @js($wsTab['params'] ?? []))"
-                            >{{ $wsTab['title'] }}</button>
-                        @empty
-                            <p class="be-sidebar__muted">{{ $windowTitle ?? 'Home Page' }}</p>
-                        @endforelse
-                    </div>
-                </div>
+                <livewire:workspace.my-shortcuts />
             </aside>
 
             <main class="be-main" id="main-content" tabindex="-1">
@@ -370,13 +173,17 @@
                 toast: { show: false, message: '' },
                 filterShortcuts(value) {
                     const q = (value || '').toLowerCase().trim();
-                    this.$refs.shortcutNav.querySelectorAll('[data-label]').forEach((el) => {
+                    const nav = this.$el.querySelector('.be-sidebar__nav');
+                    if (!nav) {
+                        return;
+                    }
+                    nav.querySelectorAll('[data-label]').forEach((el) => {
                         el.style.display = !q || el.dataset.label.includes(q) ? '' : 'none';
                     });
                     if (!q) {
                         return;
                     }
-                    this.$refs.shortcutNav.querySelectorAll('.be-sidebar__group').forEach((group) => {
+                    nav.querySelectorAll('.be-sidebar__group').forEach((group) => {
                         if (group.style.display === 'none') {
                             return;
                         }

@@ -140,8 +140,9 @@
     @else
         <div class="be-ribbon__actions">
             <x-erp.workspace-link route="reports.open-balance" class="be-ribbon__btn"><span>Customer Open Balance</span></x-erp.workspace-link>
-            <x-erp.workspace-link route="reports.sales-by-item" class="be-ribbon__btn"><span>Sales by Item</span></x-erp.workspace-link>
-            <x-erp.workspace-link route="reports.inventory" class="be-ribbon__btn"><span>Inventory Stock</span></x-erp.workspace-link>
+            <x-erp.workspace-link route="reports.sales-by-item" class="be-ribbon__btn"><span>MSA Sales Report</span></x-erp.workspace-link>
+            <x-erp.workspace-link route="reports.inventory" class="be-ribbon__btn"><span>MSA Inventory</span></x-erp.workspace-link>
+            <x-erp.workspace-link route="reports.customers" class="be-ribbon__btn"><span>MSA Customer List</span></x-erp.workspace-link>
             <x-erp.workspace-link route="invoices.index" class="be-ribbon__btn"><span>Invoice List</span></x-erp.workspace-link>
         </div>
     @endif

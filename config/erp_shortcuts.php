@@ -1,0 +1,187 @@
+<?php
+
+/**
+ * Left sidebar shortcut catalog (QuickBooks-style My Shortcuts).
+ * Keys are stable IDs used for user pin order. Routes open workspace tabs.
+ *
+ * @return array{
+ *     defaults: list<string>,
+ *     catalog: array<string, array{label: string, route: string, icon: string, permission?: string|null, match?: string|list<string>}>
+ * }
+ */
+return [
+    'defaults' => [
+        'home',
+        'company',
+        'income_tracker',
+        'bill_tracker',
+        'snapshots',
+        'customers',
+        'vendors',
+        'items',
+        'inventory',
+        'msa_inventory',
+        'sales',
+        'purchasing',
+        'banking',
+        'reports',
+        'msa_customer_list',
+        'msa_sales_report',
+        'settings',
+    ],
+
+    'catalog' => [
+        'home' => [
+            'label' => 'Home',
+            'route' => 'dashboard.home',
+            'icon' => 'home',
+            'match' => 'dashboard.home',
+        ],
+        'company' => [
+            'label' => 'My Company',
+            'route' => 'settings.index',
+            'icon' => 'gear',
+            'permission' => 'settings.manage',
+            'match' => 'settings.*',
+        ],
+        'income_tracker' => [
+            'label' => 'Income Tracker',
+            'route' => 'payments.index',
+            'icon' => 'cash',
+            'permission' => 'payment.view',
+            'match' => 'payments.*',
+        ],
+        'bill_tracker' => [
+            'label' => 'Bill Tracker',
+            'route' => 'vendor-bills.index',
+            'icon' => 'clipboard',
+            'permission' => 'purchase.view',
+            'match' => 'vendor-bills.*',
+        ],
+        'snapshots' => [
+            'label' => 'Snapshots',
+            'route' => 'dashboard.snapshots',
+            'icon' => 'chart',
+            'match' => 'dashboard.snapshots',
+        ],
+        'customers' => [
+            'label' => 'Customers',
+            'route' => 'customers.index',
+            'icon' => 'users',
+            'permission' => 'customer.view',
+            'match' => 'customers.*',
+        ],
+        'vendors' => [
+            'label' => 'Vendors',
+            'route' => 'vendors.index',
+            'icon' => 'truck',
+            'permission' => 'vendor.view',
+            'match' => 'vendors.*',
+        ],
+        'items' => [
+            'label' => 'Items',
+            'route' => 'items.index',
+            'icon' => 'box',
+            'permission' => 'item.view',
+            'match' => 'items.*',
+        ],
+        'inventory' => [
+            'label' => 'Inventory',
+            'route' => 'inventory.index',
+            'icon' => 'layers',
+            'permission' => 'inventory.view',
+            'match' => 'inventory.*',
+        ],
+        'msa_inventory' => [
+            'label' => 'MSA Inventory',
+            'route' => 'reports.inventory',
+            'icon' => 'layers',
+            'permission' => 'report.view',
+            'match' => 'reports.inventory',
+        ],
+        'msa_customer_list' => [
+            'label' => 'MSA Customer List',
+            'route' => 'reports.customers',
+            'icon' => 'users',
+            'permission' => 'report.view',
+            'match' => 'reports.customers',
+        ],
+        'msa_sales_report' => [
+            'label' => 'MSA Sales Report',
+            'route' => 'reports.sales-by-item',
+            'icon' => 'report',
+            'permission' => 'report.view',
+            'match' => 'reports.sales-by-item',
+        ],
+        'sales' => [
+            'label' => 'Sales',
+            'route' => 'invoices.index',
+            'icon' => 'file',
+            'permission' => 'invoice.view',
+            'match' => ['invoices.*', 'quotes.*', 'sales-orders.*', 'credit-memos.*', 'sales-receipts.*'],
+        ],
+        'purchasing' => [
+            'label' => 'Purchasing',
+            'route' => 'purchase-orders.index',
+            'icon' => 'cart',
+            'permission' => 'purchase.view',
+            'match' => ['purchase-orders.*', 'goods-receipts.*', 'vendor-payments.*'],
+        ],
+        'receive_inventory' => [
+            'label' => 'Receive Inventory',
+            'route' => 'goods-receipts.create',
+            'icon' => 'layers',
+            'permission' => 'purchase.create',
+            'match' => 'goods-receipts.*',
+        ],
+        'enter_bills' => [
+            'label' => 'Enter Bills',
+            'route' => 'vendor-bills.create',
+            'icon' => 'clipboard',
+            'permission' => 'purchase.create',
+            'match' => 'vendor-bills.create',
+        ],
+        'banking' => [
+            'label' => 'Bank Feeds',
+            'route' => 'banking.index',
+            'icon' => 'bank',
+            'permission' => 'banking.view',
+            'match' => ['banking.*', 'deposits.*', 'checks.*', 'reconciliation.*'],
+        ],
+        'reports' => [
+            'label' => 'Reports',
+            'route' => 'reports.index',
+            'icon' => 'report',
+            'permission' => 'report.view',
+            'match' => 'reports.*',
+        ],
+        'accounting' => [
+            'label' => 'Accounting',
+            'route' => 'accounting.chart',
+            'icon' => 'ledger',
+            'permission' => 'accounting.view',
+            'match' => 'accounting.*',
+        ],
+        'docs' => [
+            'label' => 'Docs',
+            'route' => 'audit.index',
+            'icon' => 'file',
+            'permission' => 'audit.view',
+            'match' => 'audit.*',
+        ],
+        'import' => [
+            'label' => 'QuickBooks',
+            'route' => 'import.index',
+            'icon' => 'gear',
+            'permission' => 'import.manage',
+            'match' => 'import.*',
+        ],
+        'settings' => [
+            'label' => 'Settings',
+            'route' => 'settings.index',
+            'icon' => 'gear',
+            'permission' => 'settings.manage',
+            'match' => 'settings.*',
+        ],
+    ],
+];

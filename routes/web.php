@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Purchasing\VendorBillPdfController;
 use App\Http\Controllers\Sales\CreditMemoPdfController;
 use App\Http\Controllers\Sales\InvoicePdfController;
 use App\Http\Middleware\RedirectToWorkspace;
@@ -137,6 +138,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // PDF routes stay outside workspace redirect.
     Route::get('invoices/{invoice}/pdf', InvoicePdfController::class)->name('invoices.pdf');
     Route::get('credit-memos/{creditMemo}/pdf', CreditMemoPdfController::class)->name('credit-memos.pdf');
+    Route::get('vendor-bills/{vendorBill}/pdf', VendorBillPdfController::class)->name('vendor-bills.pdf');
 });
 
 require __DIR__.'/auth.php';

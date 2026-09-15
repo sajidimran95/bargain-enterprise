@@ -49,9 +49,11 @@ class InsightsTabsTest extends TestCase
         Livewire::test(VendorBillForm::class)
             ->assertSee('Bill')
             ->assertSee('Credit')
+            ->assertSee('Bill Received')
             ->assertSee('Expenses')
             ->assertSee('Items')
             ->assertSee('Select PO')
+            ->assertSee('Pay Bill')
             ->set('lineTab', 'expenses')
             ->assertSee('Add Expense Line');
     }

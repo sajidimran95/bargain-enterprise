@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\Reports\CustomerDirectoryReport;
 use App\Livewire\Reports\CustomerOpenBalanceReport;
+use App\Livewire\Reports\InventoryStockReport;
 use App\Livewire\Reports\SalesByItemReport;
 use App\Models\Customer;
 use App\Models\Invoice;
@@ -33,10 +35,41 @@ class ReportRunnersTest extends TestCase
         $this->actingAs($this->owner);
 
         $this->get(route('reports.index'))->assertOk()->assertSee('Run Report');
-        $this->get(route('reports.customers'))->assertOk()->assertSee('Customer Contact List');
-        $this->get(route('reports.inventory'))->assertOk()->assertSee('Inventory / Stock');
-        $this->get(route('reports.sales-by-item'))->assertOk()->assertSee('Sales by Item');
+        $this->get(route('reports.customers'))
+            ->assertOk()
+            ->assertSee('MSA Customer List')
+            ->assertSee('Show Filters')
+            ->assertSee('Primary Contact')
+            ->assertSee('Street1');
+        $this->get(route('reports.inventory'))->assertOk()->assertSee('MSA Inventory');
+        $this->get(route('reports.sales-by-item'))->assertOk()->assertSee('MSA Sales Report');
         $this->get(route('reports.open-balance'))->assertOk()->assertSee('Customer Open Balance');
+    }
+
+    public function test_customer_directory_filters_and_sorts(): void
+    {
+        $this->actingAs($this->owner);
+
+        Customer::factory()->create([
+            'display_name' => 'Alpha Mart',
+            'customer_number' => '1001',
+            'bill_to_city' => 'Portland',
+            'is_active' => true,
+        ]);
+        Customer::factory()->create([
+            'display_name' => 'Beta Store',
+            'customer_number' => '2002',
+            'bill_to_city' => 'Hartford',
+            'is_active' => true,
+        ]);
+
+        Livewire::test(CustomerDirectoryReport::class)
+            ->set('search', 'Alpha')
+            ->assertSee('1001 (Alpha Mart)')
+            ->assertDontSee('2002 (Beta Store)')
+            ->set('search', '')
+            ->set('sortBy', 'city')
+            ->assertSee('Hartford');
     }
 
     public function test_open_balance_report_groups_open_invoices(): void
@@ -124,6 +157,38 @@ class ReportRunnersTest extends TestCase
         Livewire::test(SalesByItemReport::class)
             ->set('datePreset', 'this_month')
             ->assertSee('SODA-COKE')
-            ->assertSee('INV-SALES-1');
+            ->assertSee('INV-SALES-1')
+            ->assertSee('Show Filters');
+    }
+
+    public function test_inventory_stock_report_matches_msa_layout(): void
+    {
+        $this->actingAs($this->owner);
+
+        Item::factory()->create([
+            'sku' => 'SKU-INV',
+            'barcode' => '0012300044868',
+            'sales_description' => 'Camel Snus Yellow 5ct',
+            'on_hand' => 12,
+            'items_per_container' => 5,
+            'promotion' => '2 For $1.39',
+            'is_active' => true,
+        ]);
+
+        $this->get(route('reports.inventory'))
+            ->assertOk()
+            ->assertSee('TOTAL QUANTITY ON HAND')
+            ->assertSee('PRICE')
+            ->assertSee('COST')
+            ->assertSee('0012300044868')
+            ->assertSee('Camel Snus Yellow 5ct')
+            ->assertSee('Look for')
+            ->assertSee('Hide Filters');
+
+        Livewire::test(InventoryStockReport::class)
+            ->set('search', '0012300044868')
+            ->call('runSearch')
+            ->assertSee('Camel Snus Yellow 5ct')
+            ->assertDontSee('No inventory items.');
     }
 }

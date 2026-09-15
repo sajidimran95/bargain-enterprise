@@ -42,6 +42,7 @@ trait WithReportFilters
         [$from, $to] = match ($preset) {
             'today' => [now()->startOfDay(), now()->endOfDay()],
             'this_week' => [now()->startOfWeek(), now()->endOfWeek()],
+            'last_week' => [now()->subWeek()->startOfWeek(), now()->subWeek()->endOfWeek()],
             'this_month' => [now()->startOfMonth(), now()->endOfMonth()],
             'last_month' => [now()->subMonthNoOverflow()->startOfMonth(), now()->subMonthNoOverflow()->endOfMonth()],
             'this_year', 'this_fiscal_year' => [now()->startOfYear(), now()->endOfYear()],
@@ -109,6 +110,7 @@ trait WithReportFilters
         return [
             'today' => 'Today',
             'this_week' => 'This Week',
+            'last_week' => 'Last Week',
             'this_month' => 'This Month',
             'last_month' => 'Last Month',
             'this_year' => 'This Year',

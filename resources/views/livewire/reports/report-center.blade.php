@@ -4,7 +4,7 @@
     <div class="m-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         <div class="be-panel">
             <div class="be-panel__header">
-                <h2 class="be-panel__title">Customer Contact List</h2>
+                <h2 class="be-panel__title">MSA Customer List</h2>
             </div>
             <div class="be-panel__body">
                 <p class="text-2xl font-semibold">{{ number_format($customerCount) }}</p>
@@ -18,7 +18,7 @@
 
         <div class="be-panel">
             <div class="be-panel__header">
-                <h2 class="be-panel__title">Inventory / Stock</h2>
+                <h2 class="be-panel__title">MSA Inventory</h2>
             </div>
             <div class="be-panel__body">
                 <p class="text-2xl font-semibold">{{ number_format((float) $inventoryUnits, 2) }}</p>
@@ -32,7 +32,7 @@
 
         <div class="be-panel">
             <div class="be-panel__header">
-                <h2 class="be-panel__title">Sales by Item</h2>
+                <h2 class="be-panel__title">MSA Sales Report</h2>
             </div>
             <div class="be-panel__body">
                 <p class="text-2xl font-semibold">{{ number_format((float) $salesThisMonth, 2) }}</p>

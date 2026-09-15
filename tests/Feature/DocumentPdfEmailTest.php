@@ -79,7 +79,7 @@ class DocumentPdfEmailTest extends TestCase
 
         Livewire::test(CustomerDirectoryReport::class)
             ->call('exportPdf')
-            ->assertFileDownloaded('customer-directory.pdf');
+            ->assertFileDownloaded('msa-customer-list.pdf');
     }
 
     public function test_invoice_email_sends_pdf_attachment(): void
@@ -117,7 +117,7 @@ class DocumentPdfEmailTest extends TestCase
 
         Mail::assertSent(DocumentMail::class, function (DocumentMail $mail) {
             return $mail->hasTo('reports@example.com')
-                && $mail->headline === 'Customer Contact List'
+                && $mail->headline === 'MSA Customer List'
                 && count($mail->attachments()) === 1;
         });
     }
