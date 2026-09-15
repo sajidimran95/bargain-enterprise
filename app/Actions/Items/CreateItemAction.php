@@ -45,7 +45,7 @@ class CreateItemAction
     {
         $validator = Validator::make($data, [
             'sku' => ['required', 'string', 'max:100', 'unique:items,sku'],
-            'barcode' => ['nullable', 'string', 'max:64'],
+            'barcode' => ['nullable', 'string', 'max:64', 'unique:items,barcode'],
             'name' => ['nullable', 'string', 'max:255'],
             'type' => ['nullable', 'string', 'max:50'],
             'parent_id' => ['nullable', 'exists:items,id'],

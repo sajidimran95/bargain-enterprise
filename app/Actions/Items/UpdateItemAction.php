@@ -53,7 +53,7 @@ class UpdateItemAction
     {
         $validator = Validator::make($data, [
             'sku' => ['required', 'string', 'max:100', Rule::unique('items', 'sku')->ignore($item->id)],
-            'barcode' => ['nullable', 'string', 'max:64'],
+            'barcode' => ['nullable', 'string', 'max:64', Rule::unique('items', 'barcode')->ignore($item->id)],
             'name' => ['required', 'string', 'max:255'],
             'type' => ['nullable', 'string', 'max:50'],
             'parent_id' => ['nullable', 'exists:items,id', Rule::notIn([$item->id])],

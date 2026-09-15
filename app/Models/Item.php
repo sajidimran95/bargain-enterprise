@@ -106,6 +106,11 @@ class Item extends Model
         return $this->hasMany(ItemPrice::class);
     }
 
+    public function notes(): HasMany
+    {
+        return $this->hasMany(ItemNote::class);
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
