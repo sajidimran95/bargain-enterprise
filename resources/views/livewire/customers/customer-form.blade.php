@@ -1,15 +1,16 @@
-<div class="be-page">
-    <x-erp.toolbar>
-        <x-erp.button variant="primary" wire:click="save" type="button">Save</x-erp.button>
-        <a href="{{ route('customers.index') }}" class="be-btn">Cancel</a>
-        <span class="ml-auto text-[11px] text-gray-500">{{ $customer ? 'Edit Customer' : 'New Customer' }}</span>
-    </x-erp.toolbar>
+<div class="be-page be-entity-page">
+    <div class="be-doc-toolbar">
+        <x-erp.button variant="primary" wire:click="save" type="button">OK</x-erp.button>
+        <x-erp.workspace-link route="customers.index" class="be-btn">Cancel</x-erp.workspace-link>
+        <span class="be-doc-toolbar__title">{{ $customer ? 'Edit Customer' : 'New Customer' }}</span>
+    </div>
 
-    <div class="be-panel">
-        <div class="be-panel__header">
-            <h1 class="be-panel__title">{{ $customer ? 'Edit Customer' : 'New Customer' }}</h1>
+    <div class="be-entity-dialog">
+        <div class="be-entity-dialog__header">
+            <h1 class="be-entity-dialog__title">{{ $customer ? 'Edit Customer' : 'New Customer' }}</h1>
         </div>
-        <div class="be-panel__body">
+
+        <div class="be-entity-dialog__body">
             <div class="be-form-grid">
                 <div class="be-field">
                     <label class="be-field__label">Customer #</label>

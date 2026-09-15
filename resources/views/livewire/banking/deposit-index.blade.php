@@ -1,11 +1,9 @@
 <div class="be-page" x-data @be-focus-list-search.window="$refs.listSearch?.focus()">
     <x-erp.list-toolbar heading="Deposit List" new-route="deposits.create" new-label="Record Deposit" :title="$deposits->total().' deposits'" />
 
-    <div class="be-panel m-3">
+    <div class="be-panel be-list-panel">
         <div class="be-panel__body">
-            <div class="mb-2">
-                <x-erp.input x-ref="listSearch" wire:model.live.debounce.300ms="search" placeholder="Search deposit # / bank…" class="max-w-sm" />
-            </div>
+            <x-erp.look-for placeholder="Deposit # / bank…" />
 
             <table class="be-table be-table--line-select">
                 <thead>

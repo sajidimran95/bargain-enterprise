@@ -1,14 +1,16 @@
-<div class="be-page">
-    <x-erp.toolbar>
-        <x-erp.button variant="primary" wire:click="save">Save</x-erp.button>
-        <a href="{{ route('vendors.index') }}" class="be-btn">Cancel</a>
-    </x-erp.toolbar>
+<div class="be-page be-entity-page">
+    <div class="be-doc-toolbar">
+        <x-erp.button variant="primary" wire:click="save">OK</x-erp.button>
+        <x-erp.workspace-link route="vendors.index" class="be-btn">Cancel</x-erp.workspace-link>
+        <span class="be-doc-toolbar__title">{{ $vendor ? 'Edit Vendor' : 'New Vendor' }}</span>
+    </div>
 
-    <div class="be-panel">
-        <div class="be-panel__header">
-            <h1 class="be-panel__title">{{ $vendor ? 'Edit Vendor' : 'New Vendor' }}</h1>
+    <div class="be-entity-dialog">
+        <div class="be-entity-dialog__header">
+            <h1 class="be-entity-dialog__title">{{ $vendor ? 'Edit Vendor' : 'New Vendor' }}</h1>
         </div>
-        <div class="be-panel__body">
+
+        <div class="be-entity-dialog__body">
             <div class="be-form-grid">
                 <div class="be-field">
                     <label class="be-field__label">Vendor #</label>

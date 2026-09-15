@@ -6,7 +6,7 @@
     </x-erp.list-toolbar>
 
     @if ($showForm)
-        <div class="be-panel m-3">
+        <div class="be-panel be-list-panel">
             <div class="be-panel__header">
                 <h2 class="be-panel__title">New Inventory Adjustment</h2>
             </div>
@@ -46,11 +46,9 @@
         </div>
     @endif
 
-    <div class="be-panel m-3">
+    <div class="be-panel be-list-panel">
         <div class="be-panel__body">
-            <div class="mb-2">
-                <x-erp.input x-ref="listSearch" wire:model.live.debounce.300ms="search" placeholder="Search SKU / memo…" class="max-w-sm" />
-            </div>
+            <x-erp.look-for placeholder="SKU / memo…" />
             <table class="be-table be-table--line-select">
                 <thead>
                     <tr>

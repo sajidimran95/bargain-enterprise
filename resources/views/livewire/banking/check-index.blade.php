@@ -1,11 +1,9 @@
 <div class="be-page" x-data @be-focus-list-search.window="$refs.listSearch?.focus()">
     <x-erp.list-toolbar heading="Check List" new-route="checks.create" new-label="Write Checks" :title="$checks->total().' checks'" />
 
-    <div class="be-panel m-3">
+    <div class="be-panel be-list-panel">
         <div class="be-panel__body">
-            <div class="mb-2">
-                <x-erp.input x-ref="listSearch" wire:model.live.debounce.300ms="search" placeholder="Search check # / payee…" class="max-w-sm" />
-            </div>
+            <x-erp.look-for placeholder="Check # / payee…" />
 
             <table class="be-table be-table--line-select">
                 <thead>

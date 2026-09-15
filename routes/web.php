@@ -56,6 +56,7 @@ use App\Livewire\Sales\PaymentIndex;
 use App\Livewire\Sales\QuoteForm;
 use App\Livewire\Sales\QuoteIndex;
 use App\Livewire\Sales\SalesOrderForm;
+use App\Livewire\Sales\SalesOrderFulfillmentWorksheet;
 use App\Livewire\Sales\SalesOrderIndex;
 use App\Livewire\Sales\SalesReceiptForm;
 use App\Livewire\Sales\SalesReceiptIndex;
@@ -97,6 +98,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('quotes/create', QuoteForm::class)->name('quotes.create');
 
         Route::get('sales-orders', SalesOrderIndex::class)->name('sales-orders.index');
+        Route::get('sales-orders/fulfillment', SalesOrderFulfillmentWorksheet::class)->name('sales-orders.fulfillment');
         Route::get('sales-orders/create', SalesOrderForm::class)->name('sales-orders.create');
 
         Route::get('invoices', InvoiceIndex::class)->name('invoices.index');

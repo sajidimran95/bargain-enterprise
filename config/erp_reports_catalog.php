@@ -59,7 +59,7 @@ return [
                     'children' => [
                         ['label' => 'Inventory Reorder Report by Vendor', 'route' => 'reports.inventory'],
                         ['label' => 'Open Purchase Orders by Item', 'route' => 'purchase-orders.index'],
-                        ['label' => 'Open Sales Orders by Item', 'route' => 'sales-orders.index'],
+                        ['label' => 'Open Sales Orders by Item', 'route' => 'sales-orders.fulfillment'],
                         ['label' => 'Profitability by Product', 'route' => 'reports.sales-by-item'],
                         ['label' => 'Sales Volume by Customer', 'route' => 'reports.sales-by-item'],
                     ],
@@ -108,7 +108,7 @@ return [
                 [
                     'title' => 'Open Orders',
                     'reports' => [
-                        ['label' => 'Open Sales Orders by Item', 'route' => 'sales-orders.index'],
+                        ['label' => 'Open Sales Orders by Item', 'route' => 'sales-orders.fulfillment'],
                         ['label' => 'Open Purchase Orders by Item', 'route' => 'purchase-orders.index'],
                     ],
                 ],

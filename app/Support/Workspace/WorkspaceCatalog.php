@@ -32,6 +32,7 @@ class WorkspaceCatalog
             'quotes.index' => ['type' => 'quotes', 'title' => 'Quotes', 'closable' => true],
             'quotes.create' => ['type' => 'quote-form', 'title' => 'Create Quote', 'closable' => true],
             'sales-orders.index' => ['type' => 'sales-orders', 'title' => 'Sales Orders', 'closable' => true],
+            'sales-orders.fulfillment' => ['type' => 'sales-orders', 'title' => 'SO Fulfillment', 'closable' => true],
             'sales-orders.create' => ['type' => 'sales-order-form', 'title' => 'Create Sales Order', 'closable' => true],
             'invoices.index' => ['type' => 'invoices', 'title' => 'Invoices', 'closable' => true],
             'invoices.create' => ['type' => 'invoice-form', 'title' => 'Create Invoices', 'closable' => true],
