@@ -1898,8 +1898,9 @@
     }
 
     .be-global-search__result {
-        @apply block border-b px-2 py-1.5 text-gray-800 no-underline hover:bg-blue-50;
+        @apply block w-full border-0 border-b bg-transparent px-2 py-1.5 text-left text-gray-800 hover:bg-blue-50;
         border-color: var(--be-border);
+        cursor: pointer;
     }
 
     .be-global-search__result-title {
@@ -1908,6 +1909,10 @@
 
     .be-global-search__result-sub {
         @apply text-[11px] text-gray-500;
+    }
+
+    .be-global-search__empty {
+        @apply px-3 py-3 text-[12px] text-gray-500;
     }
 
     .be-toast {
