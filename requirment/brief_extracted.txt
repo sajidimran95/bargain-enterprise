@@ -1,0 +1,123 @@
+﻿JAPS TECH INC.
+Hollis, Queens, New York
+DEVELOPER BRIEF
+Wholesale & Tobacco Distribution POS/ERP System
+Reference Client
+Bargain Enterprise Inc.
+Current system: QuickBooks Premier — Manufacturing and Wholesale Edition 2019
+September 9, 2026
+
+1. Overview & Purpose
+This brief documents the functional requirements for a wholesale distribution POS/ERP system, reverse-engineered from a reference client's current QuickBooks Premier (Manufacturing and Wholesale Edition 2019) setup. The client is a wholesale distributor of convenience-store goods (tobacco, vape, energy drinks, snacks) operating across many small retail accounts (gas stations, smoke shops, bodegas, convenience stores), and currently runs all invoicing, inventory, and compliance reporting inside QuickBooks.
+The goal is to replicate the workflows and data captured below in a modern platform, while resolving the data-quality issues QuickBooks does not prevent (e.g., negative on-hand inventory) and adding tobacco/vape category compliance reporting as a first-class feature rather than a bolt-on via custom fields.
+Note: Client name “Bargain Enterprise Inc.” is taken directly from the QuickBooks title bar in the reference screenshots — confirm the actual legal/DBA name with the client before this brief is finalized.
+2. Scope Summary
+Sales: invoice creation, credit memos/refunds, tax handling, customer-facing payment status
+Customer management: customer directory, contact info, per-customer balance and transaction history
+Inventory & item catalog: stock levels, item categories, container/pack sizing, promotional pricing
+Purchasing: vendor bill entry against inventory receipts
+Reporting: sales, inventory, customer, and open-balance reports
+Dashboard: business snapshot (income/expense trend, top customers, best sellers, receivables)
+Compliance: tobacco/vape category tagging on items to support MSA/OTP-style state reporting
+
+3. Dashboard (“Company Snapshot” Equivalent)
+A landing dashboard giving the owner/manager an at-a-glance view of business health, shown on login.
+Widgets required
+Income & Expense Trend — bar chart, monthly, filterable by year (This Year / prior years)
+Period-over-Period Comparison — bar chart comparing a metric (e.g., income) across two periods on a weekly cadence
+Account Balances — running balances for key accounts (Accounts Receivable, Sales Tax Payable, Accounts Payable, Payroll Liabilities), linking out to a full Chart of Accounts
+Customers Who Owe Money — table of customer, due date, amount due, sorted by due date, with a one-click “Receive Payment” action per row
+Top Customers by Sales — horizontal bar chart, filterable by period, ranked by sales volume
+Best-Selling Items — horizontal bar chart by item, filterable by metric (amount/qty) and period
+Expense Breakdown — chart with a graceful empty state when no expense data exists for the selected period
+Note: The reference dashboard's widgets are user-configurable (add/remove/restore default) — recommend the same for the new system rather than a fixed layout.
+4. Sales — Invoicing
+Invoice creation screen
+Header fields: Customer/Job (searchable dropdown), Class, Template (document layout selector), Date, Invoice #, Bill To address block
+Line items grid: Item Code, Qty, Description, Price Each, Class, Amount, Tax (per-line taxability)
+Totals: Tax (rate + calculated amount), Total, Payments Applied, Balance Due
+Footer: Customer Message (canned message dropdown), Memo (internal), Customer Tax Code
+Actions: New, Save (& Close / & New), Delete, Create a Copy, Memorize (recurring), Mark As Pending, Print (now/later), Email (now/later), Attach File, Add Time/Costs, Create a Batch, Receive Payments, Refund/Credit
+Customer context panel (shown while invoicing)
+Summary: preferred delivery method, open balance (flagged visually when non-zero), active estimates count, sales orders pending invoicing
+Customer Payment: online payment eligibility status, with a link to edit customer payment preferences
+Recent Transactions: last few transactions for this customer with date, type, and amount (overdue amounts flagged)
+Notes: free-text notes panel
+Tax auto-applies based on the selected customer's tax code (e.g., 6.35%), with a banner if the customer cannot pay the invoice online
+5. Sales — Credit Memos & Refunds
+Same header/line-item structure as invoices: Customer/Job, Class, Template, Date, Credit No., P.O. No., Bill-To block
+Line items: Item, Description, Tax, Qty, Rate, Amount
+Running “Remaining Credit” total
+Two resolution actions: “Use credit to give refund” and “Use credit to apply to invoice”
+
+6. Customer Management (Customer Center)
+Customer directory (list view)
+Filterable list (e.g., Active Customers) with search, sortable Name / Balance / Attachments columns
+Toolbar: New Customer & Job, New Transactions, Print, Export to Excel, Export to Word, Income Tracker
+Customer detail view
+Customer Information: Company Name, Full Name / primary contact, Price Level (tiered pricing assignment), Bill To address, map/directions links
+Tabs: Transactions, Contacts, To Do's, Notes, Sent Email
+Transactions tab: filterable table (Show / Filter By / Date) listing Type, Num, Date, Account, Amount, with Manage Transactions and Run Reports actions
+Reports for this customer shortcut panel: QuickReport, Open Balance, Show Estimates, Customer Snapshot
+Pinned Note field for free-text account notes
+7. Inventory & Item Catalog
+Item record (Inventory Part)
+Item Name/Number (often a UPC/SKU), optional Subitem-of grouping, Manufacturer's Part Number
+Unit of Measure (enable/configure, e.g., each vs. case)
+Purchase Information: purchase description, Cost, COGS Account, Preferred Vendor
+Sales Information: sales description, Sales Price, Tax Code, Income Account
+Inventory Information: Asset Account, Reorder Point (Min/Max), On Hand, Average Cost, On P.O., On Sales Order
+Item is inactive flag (soft-delete/discontinue)
+Custom category fields (tobacco/vape compliance)
+Category — numeric product category code (e.g., 3251) used for state tobacco/OTP reporting
+Items Per Container — pack/case size, used to convert selling units to reportable units
+Promotion — free-text current promotional pricing (e.g., “2 For $1.39”), shown on the stock/inventory report
+Item Type — product classification (e.g., “Tobacco”), used to filter compliance-relevant items
+Note: In the reference system these are QuickBooks “Custom Fields” bolted onto a generic Item record, with a per-plan cap on the number of items the company file can hold (the reference file has hit its limit — “You can add only 0 more items with your current product”). The new system should model Category, Items Per Container, Promotion, and Item Type as native, unlimited item attributes rather than custom fields, and support the same category coding scheme for reporting.
+Item list / stock table (list view)
+Columns: Item, Description, Quantity On Hand, Category, Items per Container, Promotion (and, in the item-list variant: Type, Item Type, Total Quantity On Hand, Price, Cost)
+Search (“Look for”) across all fields or a selected field, with a “Search within results” refinement and an “Include inactive” toggle
+Row-level actions: Item, Activities, Reports, Export to Excel, Attach
+Note: The reference data shows numerous items with negative Quantity On Hand (e.g., -4,725), meaning sales are allowed to post past zero stock without any block or warning. Flag this with the client as a decision point: the new system should decide explicitly whether to allow negative stock (and warn) or hard-block oversells.
+
+8. Purchasing — Vendor Bills Against Inventory
+Bill / Credit toggle, with a “Bill Received” checkbox
+Header: Vendor, Address, Date, Ref No., Amount Due, Bill Due date, Terms, Memo
+Expenses tab vs. Items tab (two ways to code a bill — direct GL expense lines, or inventory item receipt lines)
+Items tab grid: Item, Description, Qty, Cost, Amount, Customer:Job, Billable, Class — receiving a bill against these lines increases inventory On Hand
+Actions: Select PO (pull in an existing purchase order), Enter Time, Clear Splits, Recalculate, Pay Bill
+9. Reporting
+Report
+Key Columns
+Purpose
+Customer Directory / Contact Report
+Customer, Primary Contact, Work Phone, Fax, Street1/2, City, State, Zip
+Mailing/contact export across the full customer base
+Inventory / Stock Report
+Item, Description, Quantity On Hand, Category, Items per Container, Promotion
+Inventory position by item, tagged with compliance category and current promo
+Sales Report
+Date, Num, Customer Name, Item, Qty, Amount, running Balance — grouped by item
+Item-level sales detail for a selected date range
+Customer Open Balance Report
+Type, Date, Num, Memo, Due Date, Open Balance, Amount — grouped by customer, with a grand total
+Outstanding receivables by customer for a selected fiscal period
+All reports should support: a date-range selector with common presets (Last Week, Last Fiscal Year, etc.), Accrual vs. Cash basis toggle where relevant, column customization, and export to Excel/PDF/email, matching the reference system's report toolbar (Customize Report, Comment on Report, Print, E-mail, Excel, Refresh).
+10. Workflow / Navigation Map
+The reference system's Home Page presents the business process as a flowchart grouped by Vendors, Customers, Banking, and Employees, with arrows showing the natural sequence of transactions. Recommend the new system's dashboard/navigation reflect the same grouped, sequential structure so the workflow is self-explanatory to non-technical staff:
+Vendors: Purchase Orders → Receive Inventory → Enter Bills Against Inventory → Pay Bills
+Customers: Quotes/Estimates → Sales Orders → Create Invoices → Receive Payments → Record Deposits; Create Sales Receipts and Accept Credit Cards as direct-sale shortcuts; Refunds & Credits and Statements as supporting flows
+Banking: Record Deposits, Reconcile, Write Checks, Print Checks, Check Register
+Employees: Enter Time, Payroll (if in scope)
+11. Data Migration & Known Issues
+Negative on-hand inventory across many SKUs in the source data — needs a reconciliation pass before go-live, and a policy decision on oversell handling going forward (see Section 7)
+The source QuickBooks file has hit its item-count limit, blocking new item creation — confirms the client's item catalog has outgrown QuickBooks and is a driver for this migration
+Category/Item Type data lives in loosely-typed custom fields (free text for Promotion, numeric string for Category) — migration should normalize Category into a proper lookup table and Item Type into an enum/taxonomy rather than copying the free-text values as-is
+Customer address data is inconsistent in completeness (Street2, contact name, and phone are blank for many customers) — treat these fields as optional but migrate whatever is present
+12. Non-Functional Requirements
+Role-based permissions (owner/manager vs. sales/counter staff vs. bookkeeper) — not present in the reference single-user desktop file, but expected in a modern multi-user system
+Print/PDF and email delivery for invoices, credit memos, and all reports
+Excel export for reports and list views
+WCAG 2.1 AA accessibility compliance
+Audit trail on invoices, credit memos, and bills (who created/modified, when)
+Prepared by JAPS Tech Inc. from a review of the client's existing QuickBooks Premier (Manufacturing and Wholesale Edition 2019) company file. Section numbering and scope are a starting point for developer estimation and are expected to be refined once requirements are confirmed with the client.

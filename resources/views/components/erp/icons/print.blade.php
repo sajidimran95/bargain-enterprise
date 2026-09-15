@@ -1,0 +1,1 @@
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M6 8V4h12v4M6 17h12M8 20h8"/><path d="M8 8h8v9H8z"/></svg>
