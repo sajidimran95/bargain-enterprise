@@ -1,6 +1,6 @@
 <div class="be-page">
     <x-erp.toolbar>
-        <span class="text-[12px] font-semibold text-gray-800">Import from QuickBooks</span>
+        <span class="text-[12px] font-semibold text-gray-800">Import from JapsPOS</span>
         <span class="ml-2 text-[11px] text-gray-500">Raw → Normalize → Validate → Transform → Production</span>
         <x-erp.button type="button" class="ml-auto" wire:click="downloadSample">Download Sample CSV</x-erp.button>
     </x-erp.toolbar>

@@ -55,7 +55,7 @@
         @isset($title)
             {{ $title }} — {{ config('bargain.company_name') }}
         @else
-            {{ config('bargain.company_name') }} — Bargain Enterprise
+            {{ config('bargain.company_name') }} — {{ config('bargain.product_name') }}
         @endisset
     </title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -72,7 +72,7 @@
             <div class="be-titlebar">
                 <span class="be-titlebar__company">{{ config('bargain.company_name') }}</span>
                 <span class="be-titlebar__sep">—</span>
-                <span class="be-titlebar__product">Bargain Enterprise POS/ERP</span>
+                <span class="be-titlebar__product">{{ config('bargain.product_name') }}</span>
                 @isset($windowTitle)
                     <span class="be-titlebar__sep">—</span>
                     <span class="be-titlebar__window">[{{ $windowTitle }}]</span>

@@ -33,7 +33,7 @@ class QbImportPipelineTest extends TestCase
         $this->actingAs($this->owner);
 
         Livewire::test(QbImportWizard::class)
-            ->assertSee('Import from QuickBooks')
+            ->assertSee('Import from JapsPOS')
             ->assertSee('Raw → Normalize → Validate → Transform → Production');
     }
 

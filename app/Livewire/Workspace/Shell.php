@@ -10,7 +10,7 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 
 #[Layout('layouts.app')]
-#[Title('Bargain Enterprise')]
+#[Title('JapsPOS')]
 class Shell extends Component
 {
     /** @var list<array<string, mixed>> */

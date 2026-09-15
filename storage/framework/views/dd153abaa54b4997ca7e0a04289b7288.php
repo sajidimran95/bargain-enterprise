@@ -61,7 +61,8 @@
             <?php echo e($title); ?> — <?php echo e(config('bargain.company_name')); ?>
 
         <?php else: ?>
-            <?php echo e(config('bargain.company_name')); ?> — Bargain Enterprise
+            <?php echo e(config('bargain.company_name')); ?> — <?php echo e(config('bargain.product_name')); ?>
+
         <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
     </title>
     <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css', 'resources/js/app.js']); ?>
@@ -79,7 +80,7 @@
             <div class="be-titlebar">
                 <span class="be-titlebar__company"><?php echo e(config('bargain.company_name')); ?></span>
                 <span class="be-titlebar__sep">—</span>
-                <span class="be-titlebar__product">Bargain Enterprise POS/ERP</span>
+                <span class="be-titlebar__product"><?php echo e(config('bargain.product_name')); ?></span>
                 <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(isset($windowTitle)): ?>
                     <span class="be-titlebar__sep">—</span>
                     <span class="be-titlebar__window">[<?php echo e($windowTitle); ?>]</span>

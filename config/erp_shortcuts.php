@@ -192,7 +192,7 @@ return [
             'match' => 'audit.*',
         ],
         'import' => [
-            'label' => 'QuickBooks',
+            'label' => 'JapsPOS',
             'route' => 'import.index',
             'icon' => 'gear',
             'permission' => 'import.manage',

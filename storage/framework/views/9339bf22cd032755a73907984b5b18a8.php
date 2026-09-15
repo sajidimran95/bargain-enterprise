@@ -1,9 +1,7 @@
 <?php $attributes ??= new \Illuminate\View\ComponentAttributeBag;
 
 $__newAttributes = [];
-$__propNames = \Illuminate\View\ComponentAttributeBag::extractPropNames(([
-    'message' => 'Loading…',
-]));
+$__propNames = \Illuminate\View\ComponentAttributeBag::extractPropNames((['value']));
 
 foreach ($attributes->all() as $__key => $__value) {
     if (in_array($__key, $__propNames)) {
@@ -18,9 +16,7 @@ $attributes = new \Illuminate\View\ComponentAttributeBag($__newAttributes);
 unset($__propNames);
 unset($__newAttributes);
 
-foreach (array_filter(([
-    'message' => 'Loading…',
-]), 'is_string', ARRAY_FILTER_USE_KEY) as $__key => $__value) {
+foreach (array_filter((['value']), 'is_string', ARRAY_FILTER_USE_KEY) as $__key => $__value) {
     $$__key = $$__key ?? $__value;
 }
 
@@ -32,8 +28,8 @@ foreach ($attributes->all() as $__key => $__value) {
 
 unset($__defined_vars, $__key, $__value); ?>
 
-<div <?php echo e($attributes->class(['be-loading'])); ?> wire:loading.flex>
-    <span class="be-loading__spinner" aria-hidden="true"></span>
-    <span><?php echo e($message); ?></span>
-</div>
-<?php /**PATH F:\laragon\www\bargain-enterprise\resources\views/components/erp/loading-state.blade.php ENDPATH**/ ?>
+<label <?php echo e($attributes->merge(['class' => 'block font-medium text-sm text-gray-700'])); ?>>
+    <?php echo e($value ?? $slot); ?>
+
+</label>
+<?php /**PATH F:\laragon\www\bargain-enterprise\resources\views/components/input-label.blade.php ENDPATH**/ ?>

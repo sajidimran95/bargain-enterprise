@@ -87,7 +87,7 @@ return [
         ['label' => 'Company Snapshot', 'route' => 'dashboard.snapshots'],
         ['label' => 'Advanced Reporting', 'route' => 'reports.index'],
         ['label' => 'Process Multiple Reports', 'route' => 'reports.index'],
-        ['label' => 'QuickBooks Desktop Statement Writer', 'route' => 'reports.profit-loss'],
+        ['label' => 'JapsPOS Statement Writer', 'route' => 'reports.profit-loss'],
         ['label' => 'Combine Reports from Multiple Companies', 'route' => 'reports.index'],
     ],
 

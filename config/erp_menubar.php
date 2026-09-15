@@ -49,10 +49,10 @@ return [
             ['label' => 'Purchase Orders', 'route' => 'purchase-orders.index'],
         ]],
         ['separator' => true],
-        ['label' => 'Import from QuickBooks…', 'route' => 'import.index'],
+        ['label' => 'Import from JapsPOS…', 'route' => 'import.index'],
         ['label' => 'Utilities', 'children' => [
             ['label' => 'Audit Log', 'route' => 'audit.index'],
-            ['label' => 'QB Import Wizard', 'route' => 'import.index'],
+            ['label' => 'JapsPOS Import Wizard', 'route' => 'import.index'],
             ['label' => 'Verify Data (Audit)', 'route' => 'audit.index'],
         ]],
         ['separator' => true],
@@ -169,7 +169,7 @@ return [
         ['label' => 'Planning & Budgeting', 'route' => 'reports.profit-loss'],
         ['label' => 'Set Up Users and Passwords', 'route' => 'profile'],
         ['separator' => true],
-        ['label' => 'Import from QuickBooks…', 'route' => 'import.index'],
+        ['label' => 'Import from JapsPOS…', 'route' => 'import.index'],
         ['label' => 'Audit Log', 'route' => 'audit.index'],
     ],
 
@@ -286,9 +286,9 @@ return [
     ],
 
     'Help' => [
-        ['label' => 'QuickBooks Help Topics', 'action' => 'toast', 'message' => 'Use Report Center and Home Page workflows — Bargain Enterprise mirrors QB Desktop menus.'],
+        ['label' => 'JapsPOS Help Topics', 'action' => 'toast', 'message' => 'Use Report Center and Home Page workflows — JapsPOS desktop POS menus.'],
         ['label' => 'App Center / Profile', 'route' => 'profile'],
         ['separator' => true],
-        ['label' => 'About Bargain Enterprise', 'action' => 'toast', 'message' => 'Bargain Enterprise POS/ERP — QuickBooks Desktop–style wholesale distribution.'],
+        ['label' => 'About JapsPOS', 'action' => 'toast', 'message' => 'JapsPOS — wholesale distribution POS/ERP.'],
     ],
 ];

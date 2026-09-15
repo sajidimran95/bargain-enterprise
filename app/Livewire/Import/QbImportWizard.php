@@ -10,7 +10,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 
 #[Layout('layouts.app')]
-#[Title('Import from QuickBooks')]
+#[Title('Import from JapsPOS')]
 class QbImportWizard extends Component
 {
     use WithFileUploads;
@@ -110,7 +110,7 @@ class QbImportWizard extends Component
                 'vendors' => 'Vendors',
             ],
         ])->layoutData([
-            'title' => 'Import from QuickBooks',
+            'title' => 'Import from JapsPOS',
             'windowTitle' => 'QB Import',
         ]);
     }

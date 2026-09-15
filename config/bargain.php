@@ -3,17 +3,17 @@
 return [
     /*
     |--------------------------------------------------------------------------
-    | Company
+    | Product & Company
     |--------------------------------------------------------------------------
+    | UI follows QuickBooks Desktop POS style; brand shown to users is JapsPOS.
     */
-    'company_name' => env('COMPANY_NAME', 'Bargain Enterprise Inc.'),
+    'product_name' => env('PRODUCT_NAME', 'JapsPOS'),
+    'company_name' => env('COMPANY_NAME', 'JapsPOS Inc.'),
 
     /*
     |--------------------------------------------------------------------------
     | Inventory negative stock policy: ALLOW | WARN | BLOCK
     |--------------------------------------------------------------------------
-    | Source QuickBooks data contains large negatives. Default WARN until the
-    | client confirms (see REQUIREMENTS.md Q2).
     */
     'inventory' => [
         'negative_policy' => env('INVENTORY_NEGATIVE_POLICY', 'WARN'),
