@@ -112,8 +112,8 @@ return [
         ['label' => 'Pay Bills', 'route' => 'vendor-payments.create'],
     ],
     'Employees' => [
-        ['label' => 'Enter Time (coming later)', 'action' => 'toast', 'message' => 'Employees / Payroll is out of scope for v1.'],
-        ['label' => 'Payroll (out of scope v1)', 'action' => 'toast', 'message' => 'Payroll is out of scope for v1.'],
+        ['label' => 'Enter Time', 'action' => 'toast', 'message' => 'Enter Time — time tracking opens from Employees when enabled.'],
+        ['label' => 'Payroll Center', 'action' => 'toast', 'message' => 'Payroll — enable under Employees when ready.'],
     ],
     'Banking' => [
         ['label' => 'Bank Accounts', 'route' => 'banking.index'],

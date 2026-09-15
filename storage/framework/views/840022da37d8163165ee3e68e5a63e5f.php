@@ -1,0 +1,2 @@
+﻿<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 2l9 5-9 5-9-5 9-5zM3 12l9 5 9-5M3 17l9 5 9-5"/></svg>
+<?php /**PATH F:\laragon\www\bargain-enterprise\resources\views/components/erp/icons/layers.blade.php ENDPATH**/ ?>
