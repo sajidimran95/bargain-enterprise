@@ -126,9 +126,13 @@
                         <span class="be-side-panel__icon" aria-hidden="true">@include('components.erp.icons.search')</span>
                         Lookups
                     </a>
+                    <a href="{{ route('company.info') }}">
+                        <span class="be-side-panel__icon" aria-hidden="true">@include('components.erp.icons.home')</span>
+                        My Company
+                    </a>
                     <a href="{{ route('settings.index') }}">
                         <span class="be-side-panel__icon" aria-hidden="true">@include('components.erp.icons.gear')</span>
-                        Company Settings
+                        Preferences
                     </a>
                     <a href="{{ route('dashboard.snapshots', request()->boolean('embed') ? ['embed' => 1] : []) }}">
                         <span class="be-side-panel__icon" aria-hidden="true">@include('components.erp.icons.camera')</span>

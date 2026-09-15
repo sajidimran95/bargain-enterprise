@@ -19,7 +19,8 @@ return [
         ['label' => 'Enter Bills', 'route' => 'vendor-bills.create'],
         ['separator' => true],
         ['label' => 'Import from QuickBooks…', 'route' => 'import.index'],
-        ['label' => 'Company Settings', 'route' => 'settings.index'],
+        ['label' => 'Company Information', 'route' => 'company.info'],
+        ['label' => 'Preferences', 'route' => 'settings.index'],
         ['separator' => true],
         ['label' => 'Sign Out', 'action' => 'logout'],
     ],
@@ -83,12 +84,14 @@ return [
     'Company' => [
         ['label' => 'Home Page', 'route' => 'dashboard.home'],
         ['label' => 'Company Snapshot', 'route' => 'dashboard.snapshots'],
+        ['label' => 'Company Information', 'route' => 'company.info'],
+        ['label' => 'Preferences', 'route' => 'settings.index'],
+        ['separator' => true],
         ['label' => 'Chart of Accounts', 'route' => 'accounting.chart'],
         ['label' => 'Journal Entries', 'route' => 'accounting.journals'],
         ['separator' => true],
         ['label' => 'Import from QuickBooks…', 'route' => 'import.index'],
         ['label' => 'Audit Log', 'route' => 'audit.index'],
-        ['label' => 'Settings', 'route' => 'settings.index'],
     ],
     'Customers' => [
         ['label' => 'Customer Center', 'route' => 'customers.index'],
@@ -98,6 +101,7 @@ return [
         ['label' => 'Create Sales Receipts', 'route' => 'sales-receipts.create'],
         ['label' => 'Receive Payments', 'route' => 'payments.create'],
         ['label' => 'Create Credit Memos / Refunds', 'route' => 'credit-memos.create'],
+        ['label' => 'Create Statements', 'route' => 'customers.statements'],
         ['label' => 'Invoice List', 'route' => 'invoices.index'],
     ],
     'Vendors' => [

@@ -188,7 +188,8 @@
                                     <button type="button" wire:click="duplicate">Duplicate</button>
                                 @endcan
                                 <a href="{{ route('lookups.index') }}">Price Levels / Tax</a>
-                                <a href="{{ route('settings.index') }}">Settings</a>
+                                <a href="{{ route('company.info') }}">My Company</a>
+                                <a href="{{ route('settings.index') }}">Preferences</a>
                             </div>
                         </div>
                     </div>

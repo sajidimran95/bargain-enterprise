@@ -39,10 +39,10 @@ return [
         ],
         'company' => [
             'label' => 'My Company',
-            'route' => 'settings.index',
-            'icon' => 'gear',
+            'route' => 'company.info',
+            'icon' => 'home',
             'permission' => 'settings.manage',
-            'match' => 'settings.*',
+            'match' => ['company.info', 'company.*'],
         ],
         'income_tracker' => [
             'label' => 'Income Tracker',
@@ -177,7 +177,7 @@ return [
             'match' => 'import.*',
         ],
         'settings' => [
-            'label' => 'Settings',
+            'label' => 'Preferences',
             'route' => 'settings.index',
             'icon' => 'gear',
             'permission' => 'settings.manage',

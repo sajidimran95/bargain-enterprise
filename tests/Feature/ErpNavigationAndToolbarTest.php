@@ -74,6 +74,7 @@ class ErpNavigationAndToolbarTest extends TestCase
             'credit-memos.create',
             'payments.create',
             'reports.index',
+            'company.info',
             'settings.index',
             'audit.index',
         ];

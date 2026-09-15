@@ -49,6 +49,7 @@ use App\Livewire\Reports\VendorBalanceReport;
 use App\Livewire\Sales\CreditMemoApply;
 use App\Livewire\Sales\CreditMemoForm;
 use App\Livewire\Sales\CreditMemoIndex;
+use App\Livewire\Sales\CustomerStatement;
 use App\Livewire\Sales\InvoiceForm;
 use App\Livewire\Sales\InvoiceIndex;
 use App\Livewire\Sales\PaymentForm;
@@ -61,6 +62,7 @@ use App\Livewire\Sales\SalesOrderIndex;
 use App\Livewire\Sales\SalesReceiptForm;
 use App\Livewire\Sales\SalesReceiptIndex;
 use App\Livewire\Settings\CompanySettings;
+use App\Livewire\Settings\MyCompany;
 use App\Livewire\Vendors\VendorCenter;
 use App\Livewire\Vendors\VendorForm;
 use App\Livewire\Workspace\Shell;
@@ -78,6 +80,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('customers', CustomerCenter::class)->name('customers.index');
         Route::get('customers/create', CustomerForm::class)->name('customers.create');
+        Route::get('customers/statements', CustomerStatement::class)->name('customers.statements');
         Route::get('customers/{customer}/edit', CustomerForm::class)->name('customers.edit');
         Route::get('customers/{customer}', CustomerCenter::class)->name('customers.show');
 
@@ -152,6 +155,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('reports/cash-flow', CashFlowReport::class)->name('reports.cash-flow');
         Route::get('reports/vendor-balance', VendorBalanceReport::class)->name('reports.vendor-balance');
         Route::get('reports/purchases-by-item', PurchaseByItemReport::class)->name('reports.purchase-by-item');
+        Route::get('company', MyCompany::class)->name('company.info');
         Route::get('settings', CompanySettings::class)->name('settings.index');
         Route::get('audit-log', AuditLogIndex::class)->name('audit.index');
         Route::get('import/quickbooks', QbImportWizard::class)->name('import.index');

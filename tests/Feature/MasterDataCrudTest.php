@@ -178,13 +178,11 @@ class MasterDataCrudTest extends TestCase
 
         Livewire::actingAs($user)
             ->test(CompanySettings::class)
-            ->set('company_name', 'Bargain Enterprise LLC')
             ->set('negative_policy', 'BLOCK')
             ->set('allow_manager_override', false)
             ->call('save')
             ->assertHasNoErrors();
 
-        $this->assertSame('Bargain Enterprise LLC', Setting::getValue('company.name'));
         $this->assertSame('BLOCK', Setting::getValue('inventory.negative_policy'));
         $this->assertFalse(Setting::getValue('inventory.allow_manager_override'));
     }

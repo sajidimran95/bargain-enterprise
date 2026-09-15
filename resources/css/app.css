@@ -1986,6 +1986,33 @@
         @apply inline-block h-3 w-3 animate-spin rounded-full border border-gray-400 border-t-transparent;
     }
 
+    .be-apply-tabs {
+        @apply mb-3 flex gap-1 border-b px-1;
+        border-color: var(--be-border);
+    }
+
+    .be-apply-tabs__btn {
+        @apply border border-b-0 px-3 py-1 text-[12px] text-gray-700;
+        border-color: #b0b0b0;
+        background: #cfcfcf;
+        border-radius: 3px 3px 0 0;
+    }
+
+    .be-apply-tabs__btn.is-active {
+        background: #fff;
+        color: #111;
+        font-weight: 600;
+    }
+
+    .be-entity-dialog--inline {
+        @apply m-2;
+    }
+
+    .be-statement-meta {
+        @apply mb-3 flex flex-wrap items-start justify-between gap-4 border-b px-1 pb-3 text-[12px];
+        border-color: var(--be-border);
+    }
+
     .be-entity-page {
         @apply flex min-h-0 flex-1 flex-col;
         background: #c8c8c8;
