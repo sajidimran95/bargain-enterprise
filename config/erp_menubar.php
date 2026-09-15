@@ -1,10 +1,12 @@
 <?php
 
+use App\Support\ErpReportsCatalog;
+
 /**
  * QuickBooks-style main menubar (order matches Home Page screenshot).
- * Each item: route (workspace tab) and/or action (shell command).
+ * Each item: route (workspace tab), action (shell command), and/or children (flyout).
  *
- * @return array<string, list<array{label: string, route?: string, action?: string, separator?: bool}>>
+ * @return array<string, list<array{label?: string, route?: string, action?: string, separator?: bool, children?: list<array<string, mixed>>, shortcut?: string, disabled?: bool, message?: string}>>
  */
 return [
     'File' => [
@@ -51,11 +53,32 @@ return [
         ['label' => 'Customer Center', 'route' => 'customers.index'],
     ],
     'Mfg & Whsle' => [
+        ['label' => 'Create Quotes (Estimates)', 'route' => 'quotes.create'],
+        ['label' => 'Create Sales Orders', 'route' => 'sales-orders.create'],
+        ['label' => 'Sales Order Fulfillment Worksheet', 'coming_soon' => true, 'action' => 'toast', 'message' => 'Sales Order Fulfillment Worksheet — coming soon.'],
+        ['label' => 'Create Invoices', 'route' => 'invoices.create', 'shortcut' => 'Ctrl+I'],
+        ['label' => 'Receive Payments', 'route' => 'payments.create'],
+        ['label' => 'Make Deposits', 'route' => 'deposits.create'],
+        ['separator' => true],
+        ['label' => 'Create Purchase Orders', 'route' => 'purchase-orders.create'],
+        ['label' => 'Receive Items', 'route' => 'goods-receipts.create'],
+        ['label' => 'Enter Bill for Received Items', 'route' => 'vendor-bills.create'],
+        ['label' => 'Enter Bills', 'route' => 'vendor-bills.create'],
+        ['label' => 'Pay Bills', 'route' => 'vendor-payments.create'],
+        ['separator' => true],
         ['label' => 'Item List', 'route' => 'items.index'],
-        ['label' => 'Inventory Stock Status', 'route' => 'inventory.index'],
-        ['label' => 'Inventory Adjustments', 'route' => 'inventory.adjustments'],
-        ['label' => 'Receive Inventory', 'route' => 'goods-receipts.create'],
-        ['label' => 'Purchase Orders', 'route' => 'purchase-orders.index'],
+        [
+            'label' => 'Inventory Activities',
+            'children' => [
+                ['label' => 'Inventory Stock Status', 'route' => 'inventory.index'],
+                ['label' => 'Inventory Adjustments', 'route' => 'inventory.adjustments'],
+                ['label' => 'Receive Inventory', 'route' => 'goods-receipts.create'],
+            ],
+        ],
+        [
+            'label' => 'Manufacturing and Wholesale Reports',
+            'children' => ErpReportsCatalog::manufacturingWholesaleMenu(),
+        ],
     ],
     'Company' => [
         ['label' => 'Home Page', 'route' => 'dashboard.home'],
@@ -95,14 +118,7 @@ return [
         ['label' => 'Reconcile', 'route' => 'reconciliation.index'],
         ['label' => 'Check Register', 'route' => 'checks.index'],
     ],
-    'Reports' => [
-        ['label' => 'Report Center', 'route' => 'reports.index'],
-        ['label' => 'MSA Customer List', 'route' => 'reports.customers'],
-        ['label' => 'MSA Inventory', 'route' => 'reports.inventory'],
-        ['label' => 'MSA Sales Report', 'route' => 'reports.sales-by-item'],
-        ['label' => 'Customer Open Balance', 'route' => 'reports.open-balance'],
-        ['label' => 'Company Snapshot', 'route' => 'dashboard.snapshots'],
-    ],
+    'Reports' => ErpReportsCatalog::menubarItems(),
     'Window' => [
         ['label' => 'Home Page', 'route' => 'dashboard.home'],
         ['separator' => true],

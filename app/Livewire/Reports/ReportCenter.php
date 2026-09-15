@@ -7,8 +7,10 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Item;
 use App\Models\VendorBill;
+use App\Support\ErpReportsCatalog;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -18,9 +20,39 @@ class ReportCenter extends Component
 {
     use WithErpListActions;
 
+    #[Url]
+    public string $tab = 'standard';
+
+    #[Url]
+    public string $category = 'mfg-wholesale';
+
+    public string $search = '';
+
     public function mount(): void
     {
         abort_unless(auth()->user()?->hasPermission('report.view'), 403);
+
+        if (ErpReportsCatalog::category($this->category) === null) {
+            $this->category = 'mfg-wholesale';
+        }
+    }
+
+    public function selectCategory(string $id): void
+    {
+        if (ErpReportsCatalog::category($id) === null) {
+            return;
+        }
+
+        $this->category = $id;
+    }
+
+    public function selectTab(string $tab): void
+    {
+        if (! in_array($tab, ['standard', 'memorized', 'favorites', 'recent', 'contributed'], true)) {
+            return;
+        }
+
+        $this->tab = $tab;
     }
 
     public function exportCustomers(): StreamedResponse
@@ -146,21 +178,45 @@ class ReportCenter extends Component
 
     public function render()
     {
-        $customerCount = Customer::query()->active()->count();
-        $inventoryUnits = Item::query()->active()->sum('on_hand');
-        $openAr = Invoice::query()->whereIn('status', ['open', 'partial'])->sum('balance_due');
-        $openAp = VendorBill::query()->whereIn('status', ['open', 'partial'])->sum('balance_due');
-        $salesThisMonth = Invoice::query()
-            ->whereBetween('invoice_date', [now()->startOfMonth(), now()->endOfMonth()])
-            ->whereNot('status', 'draft')
-            ->sum('total');
+        $categories = ErpReportsCatalog::sidebarCategories();
+        $active = ErpReportsCatalog::category($this->category) ?? ErpReportsCatalog::category('mfg-wholesale');
+
+        $groups = collect($active['groups'] ?? [])
+            ->map(function (array $group) {
+                $reports = collect($group['reports'] ?? [])
+                    ->filter(function (array $report) {
+                        if ($this->search === '') {
+                            return true;
+                        }
+
+                        return str_contains(
+                            mb_strtolower($report['label'] ?? ''),
+                            mb_strtolower($this->search)
+                        );
+                    })
+                    ->values()
+                    ->all();
+
+                return [
+                    'title' => $group['title'] ?? null,
+                    'reports' => $reports,
+                ];
+            })
+            ->filter(fn (array $group) => $group['reports'] !== [])
+            ->values()
+            ->all();
 
         return view('livewire.reports.report-center', [
-            'customerCount' => $customerCount,
-            'inventoryUnits' => $inventoryUnits,
-            'openAr' => $openAr,
-            'openAp' => $openAp,
-            'salesThisMonth' => $salesThisMonth,
+            'categories' => $categories,
+            'activeCategory' => $active,
+            'groups' => $groups,
+            'tabs' => [
+                'standard' => 'Standard',
+                'memorized' => 'Memorized',
+                'favorites' => 'Favorites',
+                'recent' => 'Recent',
+                'contributed' => 'Contributed',
+            ],
         ])->layoutData([
             'title' => 'Reports',
             'windowTitle' => 'Report Center',

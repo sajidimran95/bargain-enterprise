@@ -84,7 +84,12 @@
                     $menuBar = config('erp_menubar');
                 @endphp
                 @foreach ($menuBar as $menu => $items)
-                    <div class="be-menubar__group" @mouseenter="open = @js($menu)" @mouseleave="open = null">
+                    <div
+                        class="be-menubar__group"
+                        @mouseenter="open = @js($menu)"
+                        @mouseleave="open = null"
+                        :class="{ 'be-menubar__group--open': open === @js($menu) }"
+                    >
                         <button
                             type="button"
                             class="be-menubar__item"
@@ -94,23 +99,7 @@
                         >{{ $menu }}</button>
                         <div class="be-menubar__dropdown" x-show="open === @js($menu)" x-cloak role="menu">
                             @foreach ($items as $entry)
-                                @if (!empty($entry['separator']))
-                                    <div class="be-menubar__sep" role="separator"></div>
-                                @elseif (!empty($entry['action']))
-                                    <button
-                                        type="button"
-                                        class="be-menubar__link"
-                                        role="menuitem"
-                                        @click="handleMenuAction(@js($entry)); open = null"
-                                    >{{ $entry['label'] }}</button>
-                                @else
-                                    <a
-                                        href="{{ route('dashboard', ['open' => $entry['route']]) }}"
-                                        class="be-menubar__link"
-                                        role="menuitem"
-                                        @click.prevent="beOpenWorkspace(@js($entry['route'])); open = null"
-                                    >{{ $entry['label'] }}</a>
-                                @endif
+                                <x-erp.menubar-entry :entry="$entry" />
                             @endforeach
                         </div>
                     </div>

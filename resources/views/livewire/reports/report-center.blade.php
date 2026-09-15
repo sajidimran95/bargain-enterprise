@@ -1,75 +1,102 @@
-<div class="be-page">
-    <x-erp.list-toolbar heading="Report Center" :showFind="false" :showExcel="false" :showPrint="false" />
-
-    <div class="m-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        <div class="be-panel">
-            <div class="be-panel__header">
-                <h2 class="be-panel__title">MSA Customer List</h2>
-            </div>
-            <div class="be-panel__body">
-                <p class="text-2xl font-semibold">{{ number_format($customerCount) }}</p>
-                <p class="text-sm text-gray-500">Active customers</p>
-                <div class="mt-3 flex gap-2">
-                    <a href="{{ route('reports.customers') }}" class="be-btn be-btn--primary">Run Report</a>
-                    <x-erp.button type="button" wire:click="exportCustomers">Excel</x-erp.button>
-                </div>
-            </div>
-        </div>
-
-        <div class="be-panel">
-            <div class="be-panel__header">
-                <h2 class="be-panel__title">MSA Inventory</h2>
-            </div>
-            <div class="be-panel__body">
-                <p class="text-2xl font-semibold">{{ number_format((float) $inventoryUnits, 2) }}</p>
-                <p class="text-sm text-gray-500">Total units on hand</p>
-                <div class="mt-3 flex gap-2">
-                    <a href="{{ route('reports.inventory') }}" class="be-btn be-btn--primary">Run Report</a>
-                    <x-erp.button type="button" wire:click="exportInventory">Excel</x-erp.button>
-                </div>
-            </div>
-        </div>
-
-        <div class="be-panel">
-            <div class="be-panel__header">
-                <h2 class="be-panel__title">MSA Sales Report</h2>
-            </div>
-            <div class="be-panel__body">
-                <p class="text-2xl font-semibold">{{ number_format((float) $salesThisMonth, 2) }}</p>
-                <p class="text-sm text-gray-500">{{ now()->format('F Y') }} invoiced sales</p>
-                <div class="mt-3 flex gap-2">
-                    <a href="{{ route('reports.sales-by-item') }}" class="be-btn be-btn--primary">Run Report</a>
-                    <x-erp.button type="button" wire:click="exportSalesThisMonth">Excel</x-erp.button>
-                </div>
-            </div>
-        </div>
-
-        <div class="be-panel">
-            <div class="be-panel__header">
-                <h2 class="be-panel__title">Customer Open Balance</h2>
-            </div>
-            <div class="be-panel__body">
-                <p class="text-2xl font-semibold">{{ number_format((float) $openAr, 2) }}</p>
-                <p class="text-sm text-gray-500">Outstanding receivables</p>
-                <div class="mt-3 flex gap-2">
-                    <a href="{{ route('reports.open-balance') }}" class="be-btn be-btn--primary">Run Report</a>
-                    <x-erp.button type="button" wire:click="exportOpenAr">Excel</x-erp.button>
-                </div>
-            </div>
-        </div>
-
-        <div class="be-panel">
-            <div class="be-panel__header">
-                <h2 class="be-panel__title">Open AP</h2>
-            </div>
-            <div class="be-panel__body">
-                <p class="text-2xl font-semibold">{{ number_format((float) $openAp, 2) }}</p>
-                <p class="text-sm text-gray-500">Outstanding payables</p>
-                <div class="mt-3 flex gap-2">
-                    <a href="{{ route('vendor-bills.index') }}" class="be-btn">Open Bills</a>
-                    <x-erp.button type="button" wire:click="exportOpenAp">Excel</x-erp.button>
-                </div>
-            </div>
+<div class="be-page be-report-center">
+    <div class="be-report-center__header">
+        <h1 class="be-report-center__title">Report Center</h1>
+        <div class="be-report-center__search">
+            <input
+                type="search"
+                class="be-input"
+                placeholder="Search reports"
+                wire:model.live.debounce.250ms="search"
+                aria-label="Search reports"
+            >
         </div>
     </div>
+
+    <div class="be-report-center__tabs" role="tablist">
+        @foreach ($tabs as $key => $label)
+            <button
+                type="button"
+                role="tab"
+                class="be-report-center__tab {{ $tab === $key ? 'is-active' : '' }}"
+                wire:click="selectTab(@js($key))"
+                aria-selected="{{ $tab === $key ? 'true' : 'false' }}"
+            >{{ $label }}</button>
+        @endforeach
+    </div>
+
+    @if ($tab !== 'standard')
+        <div class="be-report-center__empty">
+            <p>{{ $tabs[$tab] }} reports will appear here. Use Standard for the full catalog.</p>
+        </div>
+    @else
+        <div class="be-report-center__body">
+            <aside class="be-report-center__nav" aria-label="Report categories">
+                @foreach ($categories as $cat)
+                    <button
+                        type="button"
+                        class="be-report-center__nav-item {{ $category === $cat['id'] ? 'is-active' : '' }}"
+                        wire:click="selectCategory(@js($cat['id']))"
+                    >
+                        <span>{{ $cat['short'] }}</span>
+                        @if ($category === $cat['id'])
+                            <span class="be-report-center__nav-arrow" aria-hidden="true">▸</span>
+                        @endif
+                    </button>
+                @endforeach
+            </aside>
+
+            <div class="be-report-center__content">
+                <h2 class="be-report-center__category-title">{{ $activeCategory['short'] ?? $activeCategory['label'] }}</h2>
+
+                @forelse ($groups as $group)
+                    @if (! empty($group['title']))
+                        <h3 class="be-report-center__group-title">{{ $group['title'] }}</h3>
+                    @endif
+
+                    <div class="be-report-center__grid">
+                        @foreach ($group['reports'] as $report)
+                            <article class="be-report-card">
+                                <h4 class="be-report-card__title">{{ $report['label'] }}</h4>
+                                <div class="be-report-card__preview" aria-hidden="true">
+                                    <span class="be-report-card__sample">SAMPLE</span>
+                                    <div class="be-report-card__preview-lines">
+                                        <span></span><span></span><span></span><span></span>
+                                    </div>
+                                </div>
+                                <div class="be-report-card__dates">
+                                    <label>
+                                        <span>Dates:</span>
+                                        <select class="be-input be-input--sm" disabled>
+                                            <option>This Fiscal Year-to-date</option>
+                                        </select>
+                                    </label>
+                                </div>
+                                <div class="be-report-card__actions">
+                                    @if (! empty($report['route']))
+                                        <x-erp.workspace-link
+                                            :route="$report['route']"
+                                            class="be-report-card__run"
+                                            title="Run Report"
+                                        >▶</x-erp.workspace-link>
+                                    @else
+                                        <button
+                                            type="button"
+                                            class="be-report-card__run"
+                                            title="Coming soon"
+                                            @click="window.dispatchEvent(new CustomEvent('be-toast', { detail: { message: @js(($report['label'] ?? 'Report').' — coming soon.') } }))"
+                                        >▶</button>
+                                    @endif
+                                    <span class="be-report-card__icon" title="Preview">🔍</span>
+                                    <span class="be-report-card__icon be-report-card__icon--fav" title="Favorite">♥</span>
+                                    <span class="be-report-card__icon be-report-card__icon--help" title="Help">?</span>
+                                </div>
+                            </article>
+                        @endforeach
+                    </div>
+                @empty
+                    <p class="be-report-center__empty-text">No reports match your search.</p>
+                @endforelse
+            </div>
+        </div>
+    @endif
 </div>

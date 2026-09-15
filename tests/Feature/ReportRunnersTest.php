@@ -34,7 +34,11 @@ class ReportRunnersTest extends TestCase
     {
         $this->actingAs($this->owner);
 
-        $this->get(route('reports.index'))->assertOk()->assertSee('Run Report');
+        $this->get(route('reports.index'))
+            ->assertOk()
+            ->assertSee('Report Center')
+            ->assertSee('Mfg & Wholesale')
+            ->assertSee('MSA Inventory');
         $this->get(route('reports.customers'))
             ->assertOk()
             ->assertSee('MSA Customer List')

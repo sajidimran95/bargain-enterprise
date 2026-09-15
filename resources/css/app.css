@@ -78,21 +78,239 @@
     }
 
     .be-menubar__item {
-        @apply rounded-sm px-2 py-0.5 text-[12px] text-gray-800 hover:bg-blue-100;
+        @apply rounded-sm px-2 py-0.5 text-[12px] text-gray-800;
+    }
+
+    .be-menubar__group:hover > .be-menubar__item,
+    .be-menubar__group--open > .be-menubar__item {
+        background: #5b8f22;
+        color: #fff;
     }
 
     .be-menubar__dropdown {
-        @apply absolute left-0 top-full z-50 min-w-[220px] border bg-white py-1 shadow-md;
+        @apply absolute left-0 top-full z-50 min-w-[260px] border bg-white py-1 shadow-md;
         border-color: var(--be-border);
     }
 
     .be-menubar__link {
-        @apply block w-full cursor-pointer border-0 bg-transparent px-3 py-1.5 text-left text-[12px] text-gray-800 no-underline hover:bg-blue-100;
+        @apply relative flex w-full cursor-pointer items-center justify-between gap-3 border-0 bg-transparent px-3 py-1 text-left text-[12px] text-gray-800 no-underline;
+        white-space: nowrap;
+    }
+
+    .be-menubar__link:hover,
+    .be-menubar__submenu:hover > .be-menubar__link {
+        background: #5b8f22;
+        color: #fff;
+    }
+
+    .be-menubar__link:hover .be-menubar__shortcut,
+    .be-menubar__link:hover .be-menubar__chevron,
+    .be-menubar__submenu:hover > .be-menubar__link .be-menubar__chevron {
+        color: #fff;
+    }
+
+    .be-menubar__link--disabled {
+        @apply cursor-default text-gray-400;
+    }
+
+    .be-menubar__link--disabled:hover {
+        background: transparent;
+        color: #9ca3af;
+    }
+
+    .be-menubar__link-label {
+        @apply min-w-0 flex-1;
+    }
+
+    .be-menubar__shortcut {
+        @apply shrink-0 text-[11px] text-gray-500;
+    }
+
+    .be-menubar__chevron {
+        @apply shrink-0 text-[10px] text-gray-600;
+    }
+
+    .be-menubar__submenu {
+        @apply relative;
+    }
+
+    .be-menubar__flyout {
+        @apply absolute top-0 left-full z-[60] hidden min-w-[240px] border bg-white py-1 shadow-md;
+        border-color: var(--be-border);
+        margin-left: -1px;
+    }
+
+    .be-menubar__submenu:hover > .be-menubar__flyout {
+        @apply block;
     }
 
     .be-menubar__sep {
         @apply my-1 border-t;
         border-color: #d0d0d0;
+    }
+
+    .be-report-center {
+        @apply flex min-h-0 flex-1 flex-col bg-[#ececec];
+    }
+
+    .be-report-center__header {
+        @apply flex items-center justify-between gap-3 border-b px-3 py-2;
+        border-color: var(--be-border);
+        background: var(--be-titlebar);
+        color: #fff;
+    }
+
+    .be-report-center__title {
+        @apply text-[14px] font-semibold;
+    }
+
+    .be-report-center__search .be-input {
+        @apply min-w-[200px] text-[12px];
+    }
+
+    .be-report-center__tabs {
+        @apply flex items-end gap-0 border-b bg-[#d8d8d8] px-2 pt-1;
+        border-color: var(--be-border);
+    }
+
+    .be-report-center__tab {
+        @apply border border-b-0 px-3 py-1 text-[12px] text-gray-700;
+        border-color: #b0b0b0;
+        background: #cfcfcf;
+        margin-right: 2px;
+        border-radius: 3px 3px 0 0;
+    }
+
+    .be-report-center__tab.is-active {
+        background: #f5f0e6;
+        color: #111;
+        font-weight: 600;
+    }
+
+    .be-report-center__body {
+        @apply flex min-h-0 flex-1;
+    }
+
+    .be-report-center__nav {
+        @apply w-[200px] shrink-0 overflow-y-auto border-r bg-[#f3f1eb] py-1;
+        border-color: var(--be-border);
+    }
+
+    .be-report-center__nav-item {
+        @apply flex w-full items-center justify-between gap-2 border-0 bg-transparent px-3 py-1.5 text-left text-[12px] text-gray-800;
+    }
+
+    .be-report-center__nav-item:hover {
+        background: #e4e0d6;
+    }
+
+    .be-report-center__nav-item.is-active {
+        background: #5b8f22;
+        color: #fff;
+    }
+
+    .be-report-center__nav-arrow {
+        @apply text-[10px];
+    }
+
+    .be-report-center__content {
+        @apply min-w-0 flex-1 overflow-y-auto p-4;
+        background: #f7f7f7;
+    }
+
+    .be-report-center__category-title {
+        @apply mb-3 text-[18px] font-semibold text-gray-900;
+    }
+
+    .be-report-center__group-title {
+        @apply mb-2 mt-4 text-[14px] font-semibold text-gray-800;
+    }
+
+    .be-report-center__grid {
+        @apply mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3;
+    }
+
+    .be-report-card {
+        @apply flex flex-col gap-2 bg-transparent;
+    }
+
+    .be-report-card__title {
+        @apply text-center text-[12px] font-semibold text-gray-900;
+    }
+
+    .be-report-card__preview {
+        @apply relative flex h-[120px] items-center justify-center overflow-hidden border bg-white;
+        border-color: #8a8a8a;
+    }
+
+    .be-report-card__sample {
+        @apply absolute inset-0 flex items-center justify-center text-[28px] font-bold tracking-wide text-gray-300;
+        transform: rotate(-28deg);
+        pointer-events: none;
+    }
+
+    .be-report-card__preview-lines {
+        @apply relative z-[1] flex w-[80%] flex-col gap-1.5;
+    }
+
+    .be-report-card__preview-lines span {
+        @apply block h-2 rounded-sm bg-gray-200;
+    }
+
+    .be-report-card__preview-lines span:nth-child(2) {
+        width: 90%;
+    }
+
+    .be-report-card__preview-lines span:nth-child(3) {
+        width: 70%;
+    }
+
+    .be-report-card__preview-lines span:nth-child(4) {
+        width: 85%;
+    }
+
+    .be-report-card__dates {
+        @apply text-[11px] text-gray-700;
+    }
+
+    .be-report-card__dates label {
+        @apply flex items-center gap-1;
+    }
+
+    .be-report-card__dates .be-input {
+        @apply max-w-[180px];
+    }
+
+    .be-report-card__actions {
+        @apply flex items-center gap-2;
+    }
+
+    .be-report-card__run {
+        @apply inline-flex h-6 w-6 items-center justify-center rounded-full border-0 bg-[#5b8f22] text-[10px] text-white no-underline;
+    }
+
+    .be-report-card__run:hover {
+        background: #4a761c;
+        color: #fff;
+    }
+
+    .be-report-card__icon {
+        @apply inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-[11px] text-gray-700;
+    }
+
+    .be-report-card__icon--fav {
+        color: #c62828;
+        background: #fde8e8;
+    }
+
+    .be-report-card__icon--help {
+        color: #1565c0;
+        background: #e3f2fd;
+    }
+
+    .be-report-center__empty,
+    .be-report-center__empty-text {
+        @apply p-6 text-[13px] text-gray-600;
     }
 
     .be-invoice-layout {
