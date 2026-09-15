@@ -5,10 +5,11 @@ return [
     |--------------------------------------------------------------------------
     | Product & Company
     |--------------------------------------------------------------------------
-    | UI follows QuickBooks Desktop POS style; brand shown to users is JapsPOS.
+    | product_name = app/developer brand (JapsPOS)
+    | company_name = client company file name (Bargain Enterprise)
     */
     'product_name' => env('PRODUCT_NAME', 'JapsPOS'),
-    'company_name' => env('COMPANY_NAME', 'JapsPOS Inc.'),
+    'company_name' => env('COMPANY_NAME', 'Bargain Enterprise Inc.'),
 
     /*
     |--------------------------------------------------------------------------

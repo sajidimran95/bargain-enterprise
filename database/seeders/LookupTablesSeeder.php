@@ -14,7 +14,7 @@ class LookupTablesSeeder extends Seeder
 {
     public function run(): void
     {
-        Setting::setValue('company.name', 'JapsPOS Inc.', 'string', 'company');
+        Setting::setValue('company.name', 'Bargain Enterprise Inc.', 'string', 'company');
         Setting::setValue('inventory.negative_policy', 'WARN', 'string', 'inventory');
         Setting::setValue('inventory.allow_manager_override', true, 'boolean', 'inventory');
 

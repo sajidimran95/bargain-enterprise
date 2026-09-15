@@ -289,6 +289,6 @@ return [
         ['label' => 'JapsPOS Help Topics', 'action' => 'toast', 'message' => 'Use Report Center and Home Page workflows — JapsPOS desktop POS menus.'],
         ['label' => 'App Center / Profile', 'route' => 'profile'],
         ['separator' => true],
-        ['label' => 'About JapsPOS', 'action' => 'toast', 'message' => 'JapsPOS — wholesale distribution POS/ERP.'],
+        ['label' => 'About JapsPOS', 'action' => 'toast', 'message' => 'JapsPOS — developed for Bargain Enterprise wholesale distribution.'],
     ],
 ];

@@ -4,6 +4,8 @@
     $isWorkspaceEmbed = request()->boolean('embed')
         || request()->header('X-Workspace-Embed') === '1'
         || request()->header('Sec-Fetch-Dest') === 'iframe';
+    $companyName = \App\Models\Setting::getValue('company.name', config('bargain.company_name'));
+    $productName = config('bargain.product_name');
 ?>
 <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($isWorkspaceEmbed): ?>
 <head>
@@ -12,10 +14,10 @@
     <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
     <title>
         <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(isset($title)): ?>
-            <?php echo e($title); ?> — <?php echo e(config('bargain.company_name')); ?>
+            <?php echo e($title); ?> — <?php echo e($companyName); ?>
 
         <?php else: ?>
-            <?php echo e(config('bargain.company_name')); ?>
+            <?php echo e($companyName); ?>
 
         <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
     </title>
@@ -58,10 +60,10 @@
     <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
     <title>
         <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(isset($title)): ?>
-            <?php echo e($title); ?> — <?php echo e(config('bargain.company_name')); ?>
+            <?php echo e($title); ?> — <?php echo e($companyName); ?>
 
         <?php else: ?>
-            <?php echo e(config('bargain.company_name')); ?> — <?php echo e(config('bargain.product_name')); ?>
+            <?php echo e($companyName); ?> — <?php echo e($productName); ?>
 
         <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
     </title>
@@ -78,9 +80,9 @@
         
         <header class="be-top">
             <div class="be-titlebar">
-                <span class="be-titlebar__company"><?php echo e(config('bargain.company_name')); ?></span>
+                <span class="be-titlebar__company"><?php echo e($companyName); ?></span>
                 <span class="be-titlebar__sep">—</span>
-                <span class="be-titlebar__product"><?php echo e(config('bargain.product_name')); ?></span>
+                <span class="be-titlebar__product"><?php echo e($productName); ?></span>
                 <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(isset($windowTitle)): ?>
                     <span class="be-titlebar__sep">—</span>
                     <span class="be-titlebar__window">[<?php echo e($windowTitle); ?>]</span>

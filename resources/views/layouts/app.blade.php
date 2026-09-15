@@ -4,6 +4,8 @@
     $isWorkspaceEmbed = request()->boolean('embed')
         || request()->header('X-Workspace-Embed') === '1'
         || request()->header('Sec-Fetch-Dest') === 'iframe';
+    $companyName = \App\Models\Setting::getValue('company.name', config('bargain.company_name'));
+    $productName = config('bargain.product_name');
 @endphp
 @if ($isWorkspaceEmbed)
 <head>
@@ -12,9 +14,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>
         @isset($title)
-            {{ $title }} — {{ config('bargain.company_name') }}
+            {{ $title }} — {{ $companyName }}
         @else
-            {{ config('bargain.company_name') }}
+            {{ $companyName }}
         @endisset
     </title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -53,9 +55,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>
         @isset($title)
-            {{ $title }} — {{ config('bargain.company_name') }}
+            {{ $title }} — {{ $companyName }}
         @else
-            {{ config('bargain.company_name') }} — {{ config('bargain.product_name') }}
+            {{ $companyName }} — {{ $productName }}
         @endisset
     </title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -70,9 +72,9 @@
         {{-- Title / menu / search strip --}}
         <header class="be-top">
             <div class="be-titlebar">
-                <span class="be-titlebar__company">{{ config('bargain.company_name') }}</span>
+                <span class="be-titlebar__company">{{ $companyName }}</span>
                 <span class="be-titlebar__sep">—</span>
-                <span class="be-titlebar__product">{{ config('bargain.product_name') }}</span>
+                <span class="be-titlebar__product">{{ $productName }}</span>
                 @isset($windowTitle)
                     <span class="be-titlebar__sep">—</span>
                     <span class="be-titlebar__window">[{{ $windowTitle }}]</span>
