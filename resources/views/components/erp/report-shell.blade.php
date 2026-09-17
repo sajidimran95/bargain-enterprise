@@ -9,19 +9,14 @@
     'showExtraFilters' => false,
     'sortBy' => 'default',
     'showEmailModal' => false,
-    'datePresetOptions' => [
-        'today' => 'Today',
-        'this_week' => 'This Week',
-        'last_week' => 'Last Week',
-        'this_month' => 'This Month',
-        'last_month' => 'Last Month',
-        'this_year' => 'This Year',
-        'last_year' => 'Last Year',
-        'this_fiscal_year' => 'This Fiscal Year',
-        'last_fiscal_year' => 'Last Fiscal Year',
-        'all' => 'All Dates',
-        'custom' => 'Custom',
-    ],
+    'showCommentModal' => false,
+    'showShareModal' => false,
+    'showMemorizeModal' => false,
+    'reportComment' => '',
+    'shareUrl' => '',
+    'memorizeName' => '',
+    'emailSubject' => '',
+    'datePresetOptions' => null,
     'sortByOptions' => [
         'default' => 'Default',
         'date' => 'Date',
@@ -32,6 +27,9 @@
 
 @php
     $showFilterBar = $showFilterBar ?? ($showDates || $showBasis || isset($filters));
+    $datePresetOptions = $datePresetOptions ?? \App\Support\QbDatePresets::options();
+    $companyName = \App\Models\Setting::getValue('company.name', config('bargain.company_name'));
+    $showAnyPopup = $showCommentModal || $showShareModal || $showMemorizeModal || $showEmailModal;
 @endphp
 
 <div class="be-page be-report">
@@ -41,11 +39,23 @@
         <x-erp.button type="button" wire:click="shareReportTemplate">Share Template</x-erp.button>
         <x-erp.button type="button" wire:click="memorizeReport">Memorize</x-erp.button>
         <span class="be-report__toolbar-sep" aria-hidden="true"></span>
-        <x-erp.button type="button" onclick="window.print()">Print ▾</x-erp.button>
+
+        <div class="be-report__split" x-data="{ open: false }" @click.outside="open = false">
+            <x-erp.button type="button" @click="open = !open">Print ▾</x-erp.button>
+            <div class="be-report__menu" x-show="open" x-cloak style="display: none;" @click="open = false">
+                <button type="button" class="be-report__menu-item" wire:click="printReport">Print</button>
+                <button type="button" class="be-report__menu-item" wire:click="exportPdf">Save as PDF</button>
+            </div>
+        </div>
+
         <x-erp.button type="button" wire:click="openEmailModal">E-mail ▾</x-erp.button>
+
         @if (isset($excel))
             {{ $excel }}
+        @else
+            <x-erp.button type="button" wire:click="exportExcel">Excel ▾</x-erp.button>
         @endif
+
         <span class="be-report__toolbar-sep" aria-hidden="true"></span>
         <x-erp.button type="button" wire:click="toggleHideHeader">{{ $hideHeader ? 'Show Header' : 'Hide Header' }}</x-erp.button>
         <x-erp.button type="button" wire:click="refreshReport">Refresh</x-erp.button>
@@ -54,7 +64,7 @@
                 <label class="be-field__label">View</label>
                 <x-erp.select wire:model.live="sortBy" :options="$sortByOptions" />
             </div>
-            <a href="{{ route('reports.index') }}" class="be-btn">Report Center</a>
+            <x-erp.workspace-link route="reports.index" class="be-btn" title="Report Center">Report Center</x-erp.workspace-link>
         </div>
     </div>
 
@@ -106,6 +116,9 @@
             @if ($showExtraFilters)
                 <div class="be-report__filters-extra">
                     {{ $filters ?? 'No additional filters for this report.' }}
+                    @if (filled($reportComment))
+                        <p class="be-report__saved-comment"><strong>Comment:</strong> {{ $reportComment }}</p>
+                    @endif
                 </div>
             @endif
         </div>
@@ -122,7 +135,7 @@
                     @endif
                 </div>
                 <div class="be-report__titles">
-                    <div class="be-report__company">{{ config('bargain.company_name', config('app.name')) }}</div>
+                    <div class="be-report__company">{{ $companyName }}</div>
                     <h1 class="be-report__title">{{ $title }}</h1>
                     @if ($subtitle)
                         <div class="be-report__subtitle">{{ $subtitle }}</div>
@@ -136,5 +149,60 @@
         </div>
     </div>
 
-    <x-erp.email-modal :show="$showEmailModal" />
+    @if ($showAnyPopup)
+        <div class="be-report-popup" role="dialog" aria-modal="true">
+            <div
+                class="be-report-popup__backdrop"
+                @if ($showCommentModal) wire:click="closeCommentModal"
+                @elseif ($showShareModal) wire:click="closeShareModal"
+                @elseif ($showMemorizeModal) wire:click="closeMemorizeModal"
+                @elseif ($showEmailModal) wire:click="closeEmailModal"
+                @endif
+            ></div>
+
+            <div class="be-report-popup__panel {{ ($showShareModal || $showEmailModal) ? 'be-report-popup__panel--wide' : '' }}">
+                @if ($showCommentModal)
+                    <div class="be-report-popup__title">Comment on Report</div>
+                    <textarea class="be-input be-report-popup__input" rows="4" wire:model="reportComment" placeholder="Add a note…" autofocus></textarea>
+                    @error('reportComment') <p class="be-report-popup__error">{{ $message }}</p> @enderror
+                    <div class="be-report-popup__actions">
+                        <x-erp.button type="button" wire:click="closeCommentModal">Cancel</x-erp.button>
+                        <x-erp.button type="button" variant="primary" wire:click="saveReportComment">OK</x-erp.button>
+                    </div>
+                @elseif ($showShareModal)
+                    <div class="be-report-popup__title">Share Template</div>
+                    <p class="be-report-popup__hint">{{ $title }}@if($subtitle) — {{ $subtitle }}@endif</p>
+                    <label class="be-field__label">Link (current filters)</label>
+                    <input class="be-input be-report-popup__input" type="text" readonly value="{{ $shareUrl }}" onclick="this.select()">
+                    <div class="be-report-popup__actions">
+                        <x-erp.button type="button" wire:click="closeShareModal">Close</x-erp.button>
+                        <x-erp.button type="button" variant="primary" wire:click="copyShareUrl">Copy Link</x-erp.button>
+                    </div>
+                @elseif ($showMemorizeModal)
+                    <div class="be-report-popup__title">Memorize Report</div>
+                    <label class="be-field__label">Name</label>
+                    <input class="be-input be-report-popup__input" type="text" wire:model="memorizeName" autofocus>
+                    @error('memorizeName') <p class="be-report-popup__error">{{ $message }}</p> @enderror
+                    <p class="be-report-popup__hint">Saves dates, sort, and basis. Appears under Report Center → Memorized.</p>
+                    <div class="be-report-popup__actions">
+                        <x-erp.button type="button" wire:click="closeMemorizeModal">Cancel</x-erp.button>
+                        <x-erp.button type="button" variant="primary" wire:click="saveMemorizedReport">OK</x-erp.button>
+                    </div>
+                @elseif ($showEmailModal)
+                    <div class="be-report-popup__title">E-mail Report</div>
+                    <label class="be-field__label">To</label>
+                    <input class="be-input be-report-popup__input" type="email" wire:model="emailTo" placeholder="name@example.com" autofocus>
+                    @error('emailTo') <p class="be-report-popup__error">{{ $message }}</p> @enderror
+                    <label class="be-field__label">Subject</label>
+                    <input class="be-input be-report-popup__input" type="text" wire:model="emailSubject">
+                    @error('emailSubject') <p class="be-report-popup__error">{{ $message }}</p> @enderror
+                    <p class="be-report-popup__hint">PDF of {{ $title }} with current filters will be attached.</p>
+                    <div class="be-report-popup__actions">
+                        <x-erp.button type="button" wire:click="closeEmailModal">Cancel</x-erp.button>
+                        <x-erp.button type="button" variant="primary" wire:click="sendReportEmail">Send</x-erp.button>
+                    </div>
+                @endif
+            </div>
+        </div>
+    @endif
 </div>

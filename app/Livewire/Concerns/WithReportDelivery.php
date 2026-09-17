@@ -13,6 +13,8 @@ trait WithReportDelivery
 
     public string $emailTo = '';
 
+    public string $emailSubject = '';
+
     abstract protected function reportPdfTitle(): string;
 
     abstract protected function reportPdfSubtitle(): ?string;
@@ -23,8 +25,16 @@ trait WithReportDelivery
 
     public function openEmailModal(): void
     {
+        foreach (['showCommentModal', 'showShareModal', 'showMemorizeModal'] as $popup) {
+            if (property_exists($this, $popup)) {
+                $this->{$popup} = false;
+            }
+        }
+
         $this->showEmailModal = true;
         $this->emailTo = auth()->user()?->email ?? '';
+        $subtitle = $this->reportPdfSubtitle();
+        $this->emailSubject = $this->reportPdfTitle().($subtitle ? ' — '.$subtitle : '');
     }
 
     public function closeEmailModal(): void
@@ -53,6 +63,7 @@ trait WithReportDelivery
 
         $this->validate([
             'emailTo' => ['required', 'email'],
+            'emailSubject' => ['required', 'string', 'max:200'],
         ]);
 
         $content = app(DocumentPdfService::class)->output('pdf.report', [
@@ -62,7 +73,7 @@ trait WithReportDelivery
         ]);
 
         Mail::to($this->emailTo)->send(new DocumentMail(
-            headline: $this->reportPdfTitle(),
+            headline: $this->emailSubject !== '' ? $this->emailSubject : $this->reportPdfTitle(),
             intro: 'Please find the attached report: '.$this->reportPdfTitle().'.',
             pdf: [
                 'filename' => $this->reportPdfFilename(),

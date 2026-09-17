@@ -13,7 +13,7 @@
     <div class="flex min-h-screen flex-col items-center justify-center px-4" style="background:#e8e8e8">
         <div class="mb-4 text-center">
             <div class="text-[11px] font-semibold uppercase tracking-wide text-white px-3 py-1" style="background:#1e3a5f">
-                <?php echo e(config('bargain.company_name')); ?>
+                <?php echo e(\App\Models\Setting::getValue('company.name', config('bargain.company_name'))); ?>
 
             </div>
             <p class="mt-2 text-[13px] font-semibold text-gray-800"><?php echo e(config('bargain.product_name')); ?></p>

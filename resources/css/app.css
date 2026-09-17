@@ -2296,7 +2296,7 @@
     }
 
     .be-report__toolbar {
-        @apply flex shrink-0 flex-wrap items-center gap-1 border-b px-2 py-1.5;
+        @apply relative z-20 flex shrink-0 flex-wrap items-center gap-1 overflow-visible border-b px-2 py-1.5;
         border-color: var(--be-border);
         background: #e8e8e8;
     }
@@ -2323,6 +2323,62 @@
 
     .be-report__toolbar-sep {
         @apply mx-1 inline-block h-5 w-px bg-[#b0b0b0];
+    }
+
+    .be-report__split {
+        @apply relative inline-flex;
+    }
+
+    .be-report__menu {
+        @apply absolute left-0 top-full z-40 mt-0.5 min-w-[10rem] border bg-white py-0.5 shadow;
+        border-color: var(--be-border-dark);
+    }
+
+    .be-report__menu-item {
+        @apply block w-full px-3 py-1.5 text-left text-[11px] text-gray-800 hover:bg-[#e8f0fe];
+    }
+
+    .be-report-popup {
+        @apply fixed inset-0 z-[200] flex items-start justify-center p-6 pt-16;
+    }
+
+    .be-report-popup__backdrop {
+        @apply absolute inset-0 bg-black/35;
+    }
+
+    .be-report-popup__panel {
+        @apply relative z-10 w-full max-w-[20rem] border bg-[#f7f7f7] p-3 shadow-lg;
+        border-color: var(--be-border-dark);
+    }
+
+    .be-report-popup__panel--wide {
+        @apply max-w-[26rem];
+    }
+
+    .be-report-popup__title {
+        @apply mb-2 border-b pb-1.5 text-[13px] font-semibold text-gray-900;
+        border-color: var(--be-border);
+    }
+
+    .be-report-popup__hint {
+        @apply mb-2 text-[11px] leading-snug text-gray-600;
+    }
+
+    .be-report-popup__input {
+        @apply mb-2 w-full text-[12px];
+    }
+
+    .be-report-popup__error {
+        @apply mb-1 text-[11px] text-red-600;
+    }
+
+    .be-report-popup__actions {
+        @apply mt-2 flex justify-end gap-1 border-t pt-2;
+        border-color: var(--be-border);
+    }
+
+    .be-report__saved-comment {
+        @apply mt-2 text-[12px] text-gray-700;
     }
 
     .be-report__toolbar-link {

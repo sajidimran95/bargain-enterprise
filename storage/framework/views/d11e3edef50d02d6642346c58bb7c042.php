@@ -1,0 +1,2 @@
+﻿<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M1 7h13v10H1zM14 10h5l3 3v4h-8"/><circle cx="5.5" cy="18.5" r="1.5"/><circle cx="17.5" cy="18.5" r="1.5"/></svg>
+<?php /**PATH F:\laragon\www\bargain-enterprise\resources\views\components\erp\icons\truck.blade.php ENDPATH**/ ?>

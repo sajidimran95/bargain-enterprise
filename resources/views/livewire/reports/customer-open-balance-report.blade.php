@@ -9,6 +9,13 @@
     :date-preset-options="$datePresetOptions"
     :sort-by-options="$sortByOptions"
     :show-email-modal="$showEmailModal"
+    :show-comment-modal="$showCommentModal"
+    :show-share-modal="$showShareModal"
+    :show-memorize-modal="$showMemorizeModal"
+    :report-comment="$reportComment"
+    :share-url="$shareUrl"
+    :memorize-name="$memorizeName"
+    :email-subject="$emailSubject"
 >
     <x-slot:excel>
         <x-erp.button type="button" wire:click="exportExcel">Excel ▾</x-erp.button>
