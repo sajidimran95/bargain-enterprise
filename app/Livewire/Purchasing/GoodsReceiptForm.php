@@ -6,8 +6,10 @@ use App\Actions\Purchasing\ReceiveGoodsAction;
 use App\Livewire\Concerns\WithLineItems;
 use App\Models\GoodsReceipt;
 use App\Models\Item;
+use App\Models\PurchaseOrder;
 use App\Models\Vendor;
 use App\Support\DocumentNumbers;
+use App\Support\ItemCatalog;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -22,6 +24,8 @@ class GoodsReceiptForm extends Component
 
     public string $vendor_id = '';
 
+    public string $purchase_order_id = '';
+
     public string $receipt_date = '';
 
     public string $memo = '';
@@ -34,9 +38,129 @@ class GoodsReceiptForm extends Component
         $this->addLine();
     }
 
+    public function updatedVendorId(): void
+    {
+        $this->purchase_order_id = '';
+        $this->lines = [];
+        $this->addLine();
+        $this->itemSearchResults = [];
+        $this->scanCode = '';
+    }
+
+    public function updatedPurchaseOrderId(?string $value = null): void
+    {
+        if ($this->purchase_order_id === '') {
+            $this->lines = [];
+            $this->addLine();
+
+            return;
+        }
+
+        $this->loadPurchaseOrderLines();
+    }
+
+    public function loadPurchaseOrderLines(): void
+    {
+        if ($this->vendor_id === '') {
+            $this->addError('vendor_id', 'Select a vendor first.');
+            $this->dispatch('be-toast', message: 'Select a vendor first.');
+            $this->purchase_order_id = '';
+
+            return;
+        }
+
+        if ($this->purchase_order_id === '') {
+            $this->addError('purchase_order_id', 'Select a purchase order.');
+            $this->dispatch('be-toast', message: 'Select a purchase order.');
+
+            return;
+        }
+
+        $po = PurchaseOrder::query()
+            ->with('lines.item')
+            ->whereKey($this->purchase_order_id)
+            ->where('vendor_id', $this->vendor_id)
+            ->whereIn('status', ['open', 'partial', 'ordered', 'sent'])
+            ->first();
+
+        if (! $po) {
+            $this->dispatch('be-toast', message: 'Purchase order not found for this vendor.');
+            $this->purchase_order_id = '';
+            $this->lines = [];
+            $this->addLine();
+
+            return;
+        }
+
+        $this->lines = [];
+
+        foreach ($po->lines as $line) {
+            $remaining = bcsub((string) $line->quantity, (string) $line->qty_received, 4);
+            if (bccomp($remaining, '0', 4) <= 0) {
+                continue;
+            }
+
+            $rate = number_format((float) $line->rate, 2, '.', '');
+            $item = $line->item;
+
+            $this->lines[] = [
+                'item_id' => (string) ($line->item_id ?? ''),
+                'item_code' => $item?->barcode ?: $item?->sku ?: '',
+                'description' => $line->description ?? ($item?->purchase_description ?: $item?->name ?: ''),
+                'quantity' => number_format((float) $remaining, 2, '.', ''),
+                'ordered_qty' => number_format((float) $line->quantity, 2, '.', ''),
+                'previously_received' => number_format((float) $line->qty_received, 2, '.', ''),
+                'rate' => $rate,
+                'amount' => number_format((float) bcmul($remaining, $rate, 4), 2, '.', ''),
+                'taxable' => false,
+                'class' => '',
+                'purchase_order_line_id' => (string) $line->id,
+            ];
+        }
+
+        if ($this->lines === []) {
+            $this->addLine();
+            $this->dispatch('be-toast', message: 'PO '.$po->number.' has nothing left to receive.');
+
+            return;
+        }
+
+        $this->dispatch('be-toast', message: 'Loaded '.count($this->lines).' open line(s) from PO '.$po->number.'. Adjust qty then Save.');
+    }
+
     protected function lineRateForItem(Item $item): float|string
     {
         return $item->purchase_cost ?: $item->average_cost ?: $item->sales_price;
+    }
+
+    protected function itemSearchUsesPurchaseCatalog(): bool
+    {
+        return true;
+    }
+
+    protected function lineDescriptionForItem(Item $item): string
+    {
+        return (string) ($item->purchase_description ?: $item->name);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function emptyLine(): array
+    {
+        return [
+            'item_id' => '',
+            'item_code' => '',
+            'description' => '',
+            'quantity' => '1.00',
+            'ordered_qty' => '',
+            'previously_received' => '',
+            'rate' => '0.00',
+            'amount' => '0.00',
+            'taxable' => false,
+            'class' => '',
+            'purchase_order_line_id' => '',
+        ];
     }
 
     public function save(ReceiveGoodsAction $action): mixed
@@ -46,51 +170,91 @@ class GoodsReceiptForm extends Component
         $this->validate([
             'number' => ['required', 'string', 'max:50', 'unique:goods_receipts,number'],
             'vendor_id' => ['required', 'exists:vendors,id'],
+            'purchase_order_id' => ['required', 'exists:purchase_orders,id'],
             'receipt_date' => ['required', 'date'],
             'memo' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $lines = $this->validatedLinePayload();
+        $po = PurchaseOrder::query()
+            ->whereKey($this->purchase_order_id)
+            ->where('vendor_id', $this->vendor_id)
+            ->first();
+
+        if (! $po) {
+            $this->addError('purchase_order_id', 'Selected PO does not belong to this vendor.');
+            $this->dispatch('be-toast', message: 'Selected PO does not belong to this vendor.');
+
+            return null;
+        }
+
+        $filled = array_values(array_filter(
+            $this->lines,
+            fn (array $line) => filled($line['item_id'] ?? null)
+                && filled($line['purchase_order_line_id'] ?? null)
+                && (float) ($line['quantity'] ?? 0) > 0
+        ));
+
+        if ($filled === []) {
+            $this->addError('lines', 'Add at least one PO line with receive qty.');
+            $this->dispatch('be-toast', message: 'Add at least one PO line with receive qty.');
+
+            return null;
+        }
+
+        $payload = array_map(fn (array $line) => [
+            'item_id' => (int) $line['item_id'],
+            'purchase_order_line_id' => (int) $line['purchase_order_line_id'],
+            'quantity' => $line['quantity'],
+            'unit_cost' => $line['rate'],
+        ], $filled);
 
         try {
             $receipt = $action->handle([
                 'number' => $this->number,
                 'vendor_id' => (int) $this->vendor_id,
+                'purchase_order_id' => (int) $this->purchase_order_id,
                 'receipt_date' => $this->receipt_date,
                 'memo' => $this->memo ?: null,
                 'created_by' => auth()->id(),
-            ], array_map(fn (array $line) => [
-                'item_id' => $line['item_id'],
-                'quantity' => $line['quantity'],
-                'unit_cost' => $line['rate'],
-            ], $lines));
+            ], $payload);
         } catch (\Throwable $e) {
             $this->dispatch('be-toast', message: $e->getMessage());
 
             return null;
         }
 
-        $this->dispatch('be-toast', message: 'Receipt '.$receipt->number.' posted.');
+        $this->dispatch('be-toast', message: 'Receipt '.$receipt->number.' posted against PO '.$po->number.'.');
 
         return $this->redirect(route('goods-receipts.index'), navigate: true);
     }
 
     public function render()
     {
-        return view('livewire.sales.document-form', [
-            'pageTitle' => 'Receive Inventory',
-            'cancelRoute' => 'goods-receipts.index',
-            'partyLabel' => 'Vendor',
-            'partyOptions' => Vendor::query()->active()->orderBy('display_name')->pluck('display_name', 'id')->all(),
-            'partyField' => 'vendor_id',
-            'dateField' => 'receipt_date',
-            'dateLabel' => 'Receipt Date',
-            'numberField' => 'number',
-            'numberLabel' => 'Receipt #',
-            'rateLabel' => 'Unit Cost',
-            'itemOptions' => Item::query()->active()->orderBy('sku')->get()
-                ->mapWithKeys(fn (Item $i) => [$i->id => $i->sku.' — '.($i->purchase_description ?: $i->name)])
-                ->all(),
+        $poOptions = ['' => $this->vendor_id === '' ? 'Select vendor first…' : 'Select PO to receive…'];
+
+        if ($this->vendor_id !== '') {
+            $pos = PurchaseOrder::query()
+                ->where('vendor_id', $this->vendor_id)
+                ->whereIn('status', ['open', 'partial', 'ordered', 'sent'])
+                ->whereHas('lines', function ($q) {
+                    $q->whereColumn('qty_received', '<', 'quantity');
+                })
+                ->orderByDesc('order_date')
+                ->orderByDesc('id')
+                ->get();
+
+            $poOptions += $pos->mapWithKeys(
+                fn (PurchaseOrder $po) => [
+                    $po->id => $po->number.' — '.number_format((float) $po->total, 2).' ('.$po->status.')',
+                ]
+            )->all();
+        }
+
+        return view('livewire.purchasing.goods-receipt-form', [
+            'vendors' => Vendor::query()->active()->orderBy('display_name')->pluck('display_name', 'id')->all(),
+            'poOptions' => $poOptions,
+            'itemOptions' => ItemCatalog::selectOptions(purchase: true),
+            'subtotal' => $this->linesSubtotal(),
         ])->layoutData([
             'title' => 'Receive Inventory',
             'windowTitle' => 'Receive Inventory',

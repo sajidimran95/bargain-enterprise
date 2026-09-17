@@ -172,18 +172,26 @@ unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendB
                     </div>
                 </div>
 
-                <div class="be-scan-bar be-scan-bar--compact">
-                    <label class="be-field__label be-field__label--caps mb-0">Item / Scan</label>
-                    <input
-                        x-ref="scanInput"
-                        type="text"
-                        class="be-input be-scan-input"
-                        wire:model="scanCode"
-                        wire:keydown.enter.prevent="scanItem"
-                        placeholder="Barcode / SKU / UPC — Enter"
-                    >
-                    <button type="button" class="be-btn be-btn--primary" wire:click="scanItem">Add</button>
-                </div>
+                <?php if (isset($component)) { $__componentOriginalaea448eefd550171c3b0f9c5e0a89e4b = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalaea448eefd550171c3b0f9c5e0a89e4b = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.item-search-bar','data' => []] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('erp.item-search-bar'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes([]); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalaea448eefd550171c3b0f9c5e0a89e4b)): ?>
+<?php $attributes = $__attributesOriginalaea448eefd550171c3b0f9c5e0a89e4b; ?>
+<?php unset($__attributesOriginalaea448eefd550171c3b0f9c5e0a89e4b); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalaea448eefd550171c3b0f9c5e0a89e4b)): ?>
+<?php $component = $__componentOriginalaea448eefd550171c3b0f9c5e0a89e4b; ?>
+<?php unset($__componentOriginalaea448eefd550171c3b0f9c5e0a89e4b); ?>
+<?php endif; ?>
                 <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__errorArgs = ['lines'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -211,38 +219,38 @@ unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendB
                             <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__currentLoopData = $lines; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $line): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                 <tr wire:key="inv-line-<?php echo e($index); ?>" class="<?php echo e($index % 2 ? 'be-row-alt' : ''); ?>">
                                     <td>
-                                        <?php if (isset($component)) { $__componentOriginal5ffc033813591e85e4508e27a2ee1612 = $component; } ?>
-<?php if (isset($attributes)) { $__attributesOriginal5ffc033813591e85e4508e27a2ee1612 = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.input','data' => ['wire:model.blur' => 'lines.'.e($index).'.item_code','class' => 'be-input--bare font-mono']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
-<?php $component->withName('erp.input'); ?>
+                                        <?php if (isset($component)) { $__componentOriginalc9e3310ebf61f49f9ecce963291c8b46 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalc9e3310ebf61f49f9ecce963291c8b46 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.item-code-input','data' => ['wire:model.blur' => 'lines.'.e($index).'.item_code','placeholder' => 'Code…']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('erp.item-code-input'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['wire:model.blur' => 'lines.'.e($index).'.item_code','class' => 'be-input--bare font-mono']); ?>
+<?php $component->withAttributes(['wire:model.blur' => 'lines.'.e($index).'.item_code','placeholder' => 'Code…']); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
-<?php if (isset($__attributesOriginal5ffc033813591e85e4508e27a2ee1612)): ?>
-<?php $attributes = $__attributesOriginal5ffc033813591e85e4508e27a2ee1612; ?>
-<?php unset($__attributesOriginal5ffc033813591e85e4508e27a2ee1612); ?>
+<?php if (isset($__attributesOriginalc9e3310ebf61f49f9ecce963291c8b46)): ?>
+<?php $attributes = $__attributesOriginalc9e3310ebf61f49f9ecce963291c8b46; ?>
+<?php unset($__attributesOriginalc9e3310ebf61f49f9ecce963291c8b46); ?>
 <?php endif; ?>
-<?php if (isset($__componentOriginal5ffc033813591e85e4508e27a2ee1612)): ?>
-<?php $component = $__componentOriginal5ffc033813591e85e4508e27a2ee1612; ?>
-<?php unset($__componentOriginal5ffc033813591e85e4508e27a2ee1612); ?>
+<?php if (isset($__componentOriginalc9e3310ebf61f49f9ecce963291c8b46)): ?>
+<?php $component = $__componentOriginalc9e3310ebf61f49f9ecce963291c8b46; ?>
+<?php unset($__componentOriginalc9e3310ebf61f49f9ecce963291c8b46); ?>
 <?php endif; ?>
                                     </td>
                                     <td>
                                         <?php if (isset($component)) { $__componentOriginal5ffc033813591e85e4508e27a2ee1612 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal5ffc033813591e85e4508e27a2ee1612 = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.input','data' => ['type' => 'number','step' => '0.0001','min' => '0','class' => 'text-right be-input--bare','wire:model.live' => 'lines.'.e($index).'.quantity']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.input','data' => ['type' => 'number','step' => '0.01','min' => '0','class' => 'text-right be-input--bare','wire:model.live' => 'lines.'.e($index).'.quantity']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('erp.input'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['type' => 'number','step' => '0.0001','min' => '0','class' => 'text-right be-input--bare','wire:model.live' => 'lines.'.e($index).'.quantity']); ?>
+<?php $component->withAttributes(['type' => 'number','step' => '0.01','min' => '0','class' => 'text-right be-input--bare','wire:model.live' => 'lines.'.e($index).'.quantity']); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal5ffc033813591e85e4508e27a2ee1612)): ?>

@@ -398,7 +398,7 @@ unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendB
                     <div class="be-item-dialog__stock">
                         <div class="be-item-dialog__stock-item">
                             <span class="be-item-dialog__stock-label">On Hand</span>
-                            <span class="be-item-dialog__stock-value"><?php echo e($item ? number_format((float) $item->on_hand, 0) : '0'); ?></span>
+                            <span class="be-item-dialog__stock-value"><?php echo e($item ? number_format((float) $item->on_hand, 2) : '0.00'); ?></span>
                         </div>
                         <div class="be-item-dialog__stock-item">
                             <span class="be-item-dialog__stock-label">Average Cost</span>
@@ -406,13 +406,23 @@ unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendB
                         </div>
                         <div class="be-item-dialog__stock-item">
                             <span class="be-item-dialog__stock-label">On P.O.</span>
-                            <span class="be-item-dialog__stock-value"><?php echo e($item ? number_format((float) $item->on_po_qty, 0) : '0'); ?></span>
+                            <span class="be-item-dialog__stock-value"><?php echo e($item ? number_format((float) $item->on_po_qty, 2) : '0.00'); ?></span>
                         </div>
                         <div class="be-item-dialog__stock-item">
                             <span class="be-item-dialog__stock-label">On Sales Order</span>
-                            <span class="be-item-dialog__stock-value"><?php echo e($item ? number_format((float) $item->on_so_qty, 0) : '0'); ?></span>
+                            <span class="be-item-dialog__stock-value"><?php echo e($item ? number_format((float) $item->on_so_qty, 2) : '0.00'); ?></span>
                         </div>
                     </div>
+
+                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($pendingCostAlert): ?>
+                        <div class="be-item-cost-alert mt-2 border px-2 py-1.5 text-[12px]" style="border-color:#c9a227;background:#fff8dc;">
+                            Purchase cost changed to <?php echo e(number_format((float) $pendingCostAlert->new_value, 2)); ?>
+
+                            (was <?php echo e(number_format((float) $pendingCostAlert->old_value, 2)); ?>).
+                            Suggested sales price: <strong><?php echo e(number_format((float) $pendingCostAlert->suggested_sales_price, 2)); ?></strong>
+                            <button type="button" class="be-link-btn ml-2" wire:click="applySuggestedSalesPrice(<?php echo e($pendingCostAlert->id); ?>)">Apply</button>
+                        </div>
+                    <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                 </section>
             <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
         </div>
@@ -455,6 +465,28 @@ unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendB
 <?php if (isset($__componentOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
 <?php $component = $__componentOriginal5abd15ccddcad372df58dab78ed00d60; ?>
 <?php unset($__componentOriginal5abd15ccddcad372df58dab78ed00d60); ?>
+<?php endif; ?>
+            <?php if (isset($component)) { $__componentOriginal1533802996c09e398453c7a7b321bf25 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal1533802996c09e398453c7a7b321bf25 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.button','data' => ['type' => 'button','wire:click' => 'openHistory','class' => 'be-item-dialog__side-btn']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('erp.button'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['type' => 'button','wire:click' => 'openHistory','class' => 'be-item-dialog__side-btn']); ?>
+                History<?php echo e($histories->count() ? ' ('.$histories->count().')' : ''); ?>
+
+             <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal1533802996c09e398453c7a7b321bf25)): ?>
+<?php $attributes = $__attributesOriginal1533802996c09e398453c7a7b321bf25; ?>
+<?php unset($__attributesOriginal1533802996c09e398453c7a7b321bf25); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal1533802996c09e398453c7a7b321bf25)): ?>
+<?php $component = $__componentOriginal1533802996c09e398453c7a7b321bf25; ?>
+<?php unset($__componentOriginal1533802996c09e398453c7a7b321bf25); ?>
 <?php endif; ?>
             <?php if (isset($component)) { $__componentOriginal1533802996c09e398453c7a7b321bf25 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal1533802996c09e398453c7a7b321bf25 = $attributes; } ?>
@@ -523,6 +555,84 @@ unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendB
             </label>
         </aside>
     </div>
+
+    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($showHistory): ?>
+        <div class="be-modal" role="dialog" aria-modal="true" aria-labelledby="item-history-title">
+            <div class="be-modal__backdrop" wire:click="closeHistory"></div>
+            <div class="be-modal__panel be-modal__panel--lg" @click.stop>
+                <div class="be-modal__header">
+                    <h2 id="item-history-title" class="be-modal__title">Item History — Stock &amp; Cost</h2>
+                    <button type="button" class="be-modal__close" wire:click="closeHistory" aria-label="Close">&times;</button>
+                </div>
+                <div class="be-modal__body">
+                    <div class="be-invoice-grid-wrap" style="max-height: min(480px, 60vh);">
+                        <table class="be-table be-invoice-grid">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Event</th>
+                                    <th class="text-right">In</th>
+                                    <th class="text-right">Out</th>
+                                    <th class="text-right">Balance</th>
+                                    <th class="text-right">Old</th>
+                                    <th class="text-right">New</th>
+                                    <th>Memo</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__empty_1 = true; $__currentLoopData = $histories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                                    <tr wire:key="item-hist-<?php echo e($row->id); ?>" class="<?php echo e($loop->iteration % 2 ? 'be-row-alt' : ''); ?>">
+                                        <td class="px-1 text-[11px] whitespace-nowrap"><?php echo e($row->occurred_at?->format('m/d/y g:i A')); ?></td>
+                                        <td class="px-1 text-[11px]"><?php echo e($row->label()); ?></td>
+                                        <td class="num px-1"><?php echo e(bccomp((string) $row->qty_in, '0', 4) > 0 ? number_format((float) $row->qty_in, 2) : ''); ?></td>
+                                        <td class="num px-1"><?php echo e(bccomp((string) $row->qty_out, '0', 4) > 0 ? number_format((float) $row->qty_out, 2) : ''); ?></td>
+                                        <td class="num px-1"><?php echo e($row->balance_after !== null ? number_format((float) $row->balance_after, 2) : ''); ?></td>
+                                        <td class="num px-1"><?php echo e($row->old_value !== null ? number_format((float) $row->old_value, 2) : ''); ?></td>
+                                        <td class="num px-1"><?php echo e($row->new_value !== null ? number_format((float) $row->new_value, 2) : ''); ?></td>
+                                        <td class="px-1 text-[11px]"><?php echo e($row->memo); ?></td>
+                                        <td class="px-1 text-center">
+                                            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($row->suggested_sales_price): ?>
+                                                <button type="button" class="be-link-btn" wire:click="applySuggestedSalesPrice(<?php echo e($row->id); ?>)">
+                                                    Sales <?php echo e(number_format((float) $row->suggested_sales_price, 2)); ?>
+
+                                                </button>
+                                            <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                                    <tr>
+                                        <td colspan="9" class="px-2 py-3 text-[12px] text-gray-500">No history yet.</td>
+                                    </tr>
+                                <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="be-modal__footer">
+                    <?php if (isset($component)) { $__componentOriginal1533802996c09e398453c7a7b321bf25 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal1533802996c09e398453c7a7b321bf25 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.button','data' => ['type' => 'button','wire:click' => 'closeHistory']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('erp.button'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['type' => 'button','wire:click' => 'closeHistory']); ?>Close <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal1533802996c09e398453c7a7b321bf25)): ?>
+<?php $attributes = $__attributesOriginal1533802996c09e398453c7a7b321bf25; ?>
+<?php unset($__attributesOriginal1533802996c09e398453c7a7b321bf25); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal1533802996c09e398453c7a7b321bf25)): ?>
+<?php $component = $__componentOriginal1533802996c09e398453c7a7b321bf25; ?>
+<?php unset($__componentOriginal1533802996c09e398453c7a7b321bf25); ?>
+<?php endif; ?>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
 
     <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($showNotes): ?>
         <div class="be-modal" role="dialog" aria-modal="true" aria-labelledby="item-notes-title">

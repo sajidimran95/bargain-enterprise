@@ -7,9 +7,9 @@ use App\Livewire\Concerns\WithDocumentRibbon;
 use App\Livewire\Concerns\WithLineItems;
 use App\Models\Customer;
 use App\Models\Invoice;
-use App\Models\Item;
 use App\Models\TaxCode;
 use App\Support\DocumentNumbers;
+use App\Support\ItemCatalog;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
@@ -313,7 +313,7 @@ class InvoiceForm extends Component
                 'item_id' => (string) $line->item_id,
                 'item_code' => $line->item?->barcode ?: $line->item?->sku ?: '',
                 'description' => (string) $line->description,
-                'quantity' => number_format((float) $line->quantity, 4, '.', ''),
+                'quantity' => number_format((float) $line->quantity, 2, '.', ''),
                 'rate' => number_format((float) $line->rate, 2, '.', ''),
                 'amount' => number_format((float) $line->amount, 2, '.', ''),
                 'taxable' => (bool) $line->taxable,
@@ -349,9 +349,7 @@ class InvoiceForm extends Component
         return view('livewire.sales.invoice-form', [
             'customers' => Customer::query()->active()->orderBy('display_name')->get(),
             'taxCodes' => TaxCode::query()->where('is_active', true)->orderBy('code')->pluck('name', 'id')->all(),
-            'itemOptions' => Item::query()->active()->orderBy('sku')->limit(500)->get()
-                ->mapWithKeys(fn (Item $i) => [$i->id => ($i->barcode ?: $i->sku).' — '.($i->sales_description ?: $i->name)])
-                ->all(),
+            'itemOptions' => ItemCatalog::selectOptions(500),
             'selectedCustomer' => $customer,
             'subtotal' => $subtotal,
             'taxRate' => $taxRate,

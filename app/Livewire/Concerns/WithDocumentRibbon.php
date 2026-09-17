@@ -215,7 +215,7 @@ trait WithDocumentRibbon
             'item_id' => (string) $item->id,
             'item_code' => $item->barcode ?: $item->sku,
             'description' => $this->timeCostDescription,
-            'quantity' => number_format($qty, 4, '.', ''),
+            'quantity' => number_format($qty, 2, '.', ''),
             'rate' => number_format($rate, 2, '.', ''),
             'amount' => number_format($qty * $rate, 2, '.', ''),
             'taxable' => false,

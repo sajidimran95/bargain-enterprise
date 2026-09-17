@@ -56,7 +56,7 @@
                 </label>
             </div>
 
-            <div class="be-datatable-wrap" style="max-height: calc(100vh - 300px);">
+            <div class="be-datatable-wrap" style="max-height: calc(100vh - 420px);">
                 <table class="be-table be-table--line-select be-table--blue-select">
                     <thead>
                         <tr>
@@ -87,7 +87,7 @@
                                 <td>{{ $item->type ?: 'Inventory Part' }}</td>
                                 <td>{{ $item->itemType?->label ?? '—' }}</td>
                                 <td class="num {{ (float) $item->on_hand < 0 ? 'text-red-700' : '' }}">
-                                    {{ number_format((float) $item->on_hand, 0) }}
+                                    {{ number_format((float) $item->on_hand, 2) }}
                                 </td>
                                 <td class="num">{{ number_format((float) $item->sales_price, 2) }}</td>
                                 <td class="num">{{ number_format((float) $item->purchase_cost, 2) }}</td>
@@ -105,6 +105,68 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+
+            <div class="be-item-activity mt-2 border" style="border-color: var(--be-border);">
+                <div class="flex items-center justify-between border-b px-2 py-1" style="border-color: var(--be-border); background: #ececec;">
+                    <div class="text-[11px] font-semibold uppercase tracking-wide text-gray-700">
+                        Activity
+                        @if ($selected)
+                            — {{ $selected->sku }}
+                        @endif
+                    </div>
+                    <div class="flex items-center gap-2">
+                        @if ($selected)
+                            <x-erp.workspace-link route="items.edit" :params="['item' => $selected->id]" class="be-link-btn text-[11px]">Open item</x-erp.workspace-link>
+                        @endif
+                        <button type="button" class="be-link-btn text-[11px]" wire:click="toggleActivity">
+                            {{ $showActivity ? 'Hide' : 'Show' }}
+                        </button>
+                    </div>
+                </div>
+
+                @if ($showActivity)
+                    <div class="be-datatable-wrap" style="max-height: 180px;">
+                        <table class="be-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Event</th>
+                                    <th class="text-right">In</th>
+                                    <th class="text-right">Out</th>
+                                    <th class="text-right">Balance</th>
+                                    <th class="text-right">Old</th>
+                                    <th class="text-right">New</th>
+                                    <th>Memo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($activity as $row)
+                                    <tr wire:key="list-hist-{{ $row->id }}">
+                                        <td class="whitespace-nowrap text-[11px]">{{ $row->occurred_at?->format('m/d/y g:i A') }}</td>
+                                        <td class="text-[11px]">{{ $row->label() }}</td>
+                                        <td class="num">{{ bccomp((string) $row->qty_in, '0', 4) > 0 ? number_format((float) $row->qty_in, 2) : '' }}</td>
+                                        <td class="num">{{ bccomp((string) $row->qty_out, '0', 4) > 0 ? number_format((float) $row->qty_out, 2) : '' }}</td>
+                                        <td class="num">{{ $row->balance_after !== null ? number_format((float) $row->balance_after, 2) : '' }}</td>
+                                        <td class="num">{{ $row->old_value !== null ? number_format((float) $row->old_value, 2) : '' }}</td>
+                                        <td class="num">{{ $row->new_value !== null ? number_format((float) $row->new_value, 2) : '' }}</td>
+                                        <td class="text-[11px]">{{ $row->memo }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="8" class="px-2 py-2 text-[12px] text-gray-500">
+                                            @if ($selected)
+                                                No activity yet for this item.
+                                            @else
+                                                Select an item to view stock &amp; cost history.
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
             </div>
 
             <div class="be-list-footer">
@@ -130,6 +192,7 @@
                 <div class="relative" x-data="{ open: false }">
                     <button type="button" class="be-btn" @click="open = !open">Activities ▾</button>
                     <div x-show="open" @click.outside="open = false" x-cloak class="absolute bottom-full left-0 z-20 mb-1 min-w-[180px] border bg-white shadow" style="border-color: var(--be-border-dark);">
+                        <button type="button" class="block w-full px-3 py-1.5 text-left text-[12px] hover:bg-sky-50" wire:click="openActivityHistory" @click="open = false">Item History</button>
                         <a href="{{ route('inventory.adjustments') }}" class="block px-3 py-1.5 text-[12px] hover:bg-sky-50">Adjust Quantity</a>
                         <a href="{{ route('inventory.index') }}" class="block px-3 py-1.5 text-[12px] hover:bg-sky-50">Inventory Center</a>
                     </div>

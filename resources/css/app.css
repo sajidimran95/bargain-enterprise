@@ -526,6 +526,22 @@
         @apply min-h-[28px] flex-1;
     }
 
+    .be-field--amount-due {
+        @apply flex-nowrap whitespace-nowrap;
+    }
+
+    .be-field--amount-due .be-field__label {
+        @apply w-[88px] whitespace-nowrap;
+    }
+
+    .be-field--amount-due .be-input--amount-due {
+        @apply min-w-[7rem] flex-1 whitespace-nowrap text-right;
+    }
+
+    .be-bill-header-grid__right .be-field--inline .be-field__label {
+        @apply w-[88px];
+    }
+
     .be-scan-bar {
         @apply mb-1.5 flex flex-wrap items-center gap-2 border px-2 py-1;
         border-color: #b0c4d8;
@@ -538,6 +554,56 @@
 
     .be-scan-input {
         @apply max-w-md flex-1 font-mono text-[12px];
+    }
+
+    .be-item-search {
+        @apply relative mb-1.5;
+    }
+
+    .be-item-search .be-scan-bar {
+        @apply mb-0;
+    }
+
+    .be-item-search__results {
+        @apply absolute left-0 right-0 z-30 m-0 list-none overflow-y-auto border border-t-0 bg-white p-0 shadow-md;
+        border-color: #8aa3bc;
+        max-width: 36rem;
+        max-height: 9.5rem; /* ~5 rows visible */
+        scrollbar-width: thin;
+        scrollbar-color: #8aa3bc #eef3f8;
+    }
+
+    .be-item-search__results::-webkit-scrollbar {
+        width: 10px;
+    }
+
+    .be-item-search__results::-webkit-scrollbar-track {
+        background: #eef3f8;
+    }
+
+    .be-item-search__results::-webkit-scrollbar-thumb {
+        background: #8aa3bc;
+        border: 2px solid #eef3f8;
+        border-radius: 6px;
+    }
+
+    .be-item-search__result {
+        @apply flex w-full cursor-pointer items-center gap-2 border-0 border-b bg-white px-2 py-1.5 text-left text-[12px];
+        border-color: #d7e2ec;
+    }
+
+    .be-item-search__result:hover,
+    .be-item-search__result:focus {
+        background: #e8f1fa;
+    }
+
+    .be-item-search__code {
+        @apply shrink-0 font-mono text-[11px] font-semibold text-gray-800;
+        min-width: 5.5rem;
+    }
+
+    .be-item-search__label {
+        @apply truncate text-gray-600;
     }
 
     .be-invoice-error {
@@ -1714,6 +1780,10 @@
     .be-bill-radio,
     .be-bill-received {
         @apply inline-flex items-center gap-1.5 text-[12px] font-semibold text-gray-800;
+    }
+
+    .be-bill-radio--active {
+        @apply text-[#1a3a6b];
     }
 
     .be-bill-header-grid {

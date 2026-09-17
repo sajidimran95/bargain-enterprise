@@ -4,10 +4,10 @@ namespace App\Livewire\Sales;
 
 use App\Livewire\Concerns\WithLineItems;
 use App\Models\Customer;
-use App\Models\Item;
 use App\Models\Quote;
 use App\Models\QuoteLine;
 use App\Support\DocumentNumbers;
+use App\Support\ItemCatalog;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -101,9 +101,7 @@ class QuoteForm extends Component
             'numberLabel' => 'Quote #',
             'showExpiry' => true,
 
-            'itemOptions' => Item::query()->active()->orderBy('sku')->get()
-                ->mapWithKeys(fn (Item $i) => [$i->id => $i->sku.' — '.($i->sales_description ?: $i->name)])
-                ->all(),
+            'itemOptions' => ItemCatalog::selectOptions(),
         ])->layoutData([
             'title' => 'Create Quote',
             'windowTitle' => 'Create Quote',

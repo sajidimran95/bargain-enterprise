@@ -4,10 +4,10 @@ namespace App\Livewire\Sales;
 
 use App\Livewire\Concerns\WithLineItems;
 use App\Models\Customer;
-use App\Models\Item;
 use App\Models\SalesOrder;
 use App\Models\SalesOrderLine;
 use App\Support\DocumentNumbers;
+use App\Support\ItemCatalog;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -95,9 +95,7 @@ class SalesOrderForm extends Component
             'numberField' => 'number',
             'numberLabel' => 'SO #',
 
-            'itemOptions' => Item::query()->active()->orderBy('sku')->get()
-                ->mapWithKeys(fn (Item $i) => [$i->id => $i->sku.' — '.($i->sales_description ?: $i->name)])
-                ->all(),
+            'itemOptions' => ItemCatalog::selectOptions(),
         ])->layoutData([
             'title' => 'Create Sales Order',
             'windowTitle' => 'Create Sales Order',

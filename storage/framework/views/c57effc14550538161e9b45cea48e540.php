@@ -20,6 +20,29 @@
 <?php unset($__componentOriginal509c24698bcbab74c89817eaea4789e6); ?>
 <?php endif; ?>
 
+    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(session('item_cost_alerts')): ?>
+        <div class="be-panel mb-2 border px-3 py-2" style="border-color:#c9a227;background:#fff8dc;">
+            <div class="mb-1 text-[12px] font-semibold">PO cost changed — update sales price?</div>
+            <ul class="m-0 list-disc pl-4 text-[12px]">
+                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__currentLoopData = session('item_cost_alerts'); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $alert): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <li>
+                        <?php echo e($alert['sku']); ?>: cost <?php echo e($alert['direction']); ?>
+
+                        <?php echo e($alert['old_cost']); ?> → <?php echo e($alert['new_cost']); ?>
+
+                        (sales <?php echo e($alert['sales_price']); ?>
+
+                        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($alert['suggested_sales_price']): ?>
+                            → suggest <?php echo e($alert['suggested_sales_price']); ?>
+
+                        <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>)
+                        <a class="be-link-btn" href="<?php echo e(route('items.edit', $alert['item_id'])); ?>">Open item</a>
+                    </li>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+            </ul>
+        </div>
+    <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+
     <div class="be-panel be-list-panel">
         <div class="be-panel__body">
             <?php if (isset($component)) { $__componentOriginal4068b7ac54131b49d25f3c3cff69db88 = $component; } ?>

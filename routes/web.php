@@ -127,6 +127,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('vendor-bills', VendorBillIndex::class)->name('vendor-bills.index');
         Route::get('vendor-bills/create', VendorBillForm::class)->name('vendor-bills.create');
+        Route::get('vendor-returns/create', VendorBillForm::class)->name('vendor-returns.create');
 
         Route::get('vendor-payments', VendorPaymentIndex::class)->name('vendor-payments.index');
         Route::get('vendor-payments/create', VendorPaymentForm::class)->name('vendor-payments.create');

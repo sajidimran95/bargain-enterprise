@@ -50,6 +50,7 @@ class ErpMenubarCoverageTest extends TestCase
         $this->assertTrue($customers->contains(fn ($i) => ($i['route'] ?? null) === 'customers.statements'));
         $this->assertTrue($customers->contains(fn ($i) => ($i['route'] ?? null) === 'credit-memos.apply'));
         $this->assertTrue($vendors->contains(fn ($i) => ($i['route'] ?? null) === 'vendor-payments.create'));
+        $this->assertTrue($vendors->contains(fn ($i) => ($i['route'] ?? null) === 'vendor-returns.create'));
         $this->assertTrue($banking->contains(fn ($i) => ($i['route'] ?? null) === 'reconciliation.index'));
         $this->assertTrue($employees->contains(fn ($i) => ($i['route'] ?? null) === 'employees.time'));
         $this->assertTrue($employees->contains(fn ($i) => ($i['route'] ?? null) === 'employees.payroll'));

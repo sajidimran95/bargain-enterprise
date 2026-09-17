@@ -3,6 +3,7 @@
 namespace App\Livewire\Concerns;
 
 use App\Models\Item;
+use App\Support\ItemCatalog;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
@@ -12,6 +13,9 @@ trait WithLineItems
     public array $lines = [];
 
     public string $scanCode = '';
+
+    /** @var list<array{id: int, code: string, label: string}> */
+    public array $itemSearchResults = [];
 
     public function addLine(): void
     {
@@ -28,6 +32,53 @@ trait WithLineItems
         }
     }
 
+    public function updatedScanCode(string $value): void
+    {
+        $code = trim($value);
+        if ($code === '') {
+            $this->itemSearchResults = [];
+
+            return;
+        }
+
+        // Exact code match (scanner or full typed code) → auto-add.
+        $item = $this->findItemByScanCode($code, exact: true);
+        if ($item) {
+            $this->applyScannedItem($item);
+            $this->scanCode = '';
+            $this->itemSearchResults = [];
+            $this->dispatch('be-toast', message: 'Added '.$this->itemDisplayCode($item));
+
+            return;
+        }
+
+        $this->itemSearchResults = ItemCatalog::search(
+            $code,
+            25,
+            $this->itemSearchUsesPurchaseCatalog()
+        );
+    }
+
+    public function selectItemSearchResult(int $itemId): void
+    {
+        $item = Item::query()->active()->find($itemId);
+        if (! $item) {
+            $this->dispatch('be-toast', message: 'Item not found.');
+
+            return;
+        }
+
+        $this->applyScannedItem($item);
+        $this->scanCode = '';
+        $this->itemSearchResults = [];
+        $this->dispatch('be-toast', message: 'Added '.$this->itemDisplayCode($item));
+    }
+
+    public function clearItemSearch(): void
+    {
+        $this->itemSearchResults = [];
+    }
+
     public function scanItem(): void
     {
         $code = trim($this->scanCode);
@@ -39,13 +90,15 @@ trait WithLineItems
         if (! $item) {
             $this->dispatch('be-toast', message: 'No item found for code: '.$code);
             $this->scanCode = '';
+            $this->itemSearchResults = [];
 
             return;
         }
 
         $this->applyScannedItem($item);
         $this->scanCode = '';
-        $this->dispatch('be-toast', message: 'Scanned '.$item->sku);
+        $this->itemSearchResults = [];
+        $this->dispatch('be-toast', message: 'Scanned '.$this->itemDisplayCode($item));
     }
 
     public function updatedLines(mixed $value, ?string $key = null): void
@@ -97,7 +150,7 @@ trait WithLineItems
         foreach ($this->lines as $index => $line) {
             if ((int) ($line['item_id'] ?? 0) === $item->id) {
                 $qty = (float) ($line['quantity'] ?? 0) + 1;
-                $this->lines[$index]['quantity'] = number_format($qty, 4, '.', '');
+                $this->lines[$index]['quantity'] = number_format($qty, 2, '.', '');
                 $rate = (float) ($this->lines[$index]['rate'] ?? 0);
                 $this->lines[$index]['amount'] = number_format($qty * $rate, 2, '.', '');
 
@@ -125,28 +178,83 @@ trait WithLineItems
             $qty = 1;
         }
 
-        $this->lines[$index] = [
+        $preserved = $this->lines[$index] ?? [];
+
+        $this->lines[$index] = array_merge($preserved, [
             'item_id' => (string) $item->id,
-            'item_code' => $item->barcode ?: $item->sku,
-            'description' => $item->sales_description ?: $item->name,
-            'quantity' => number_format($qty, 4, '.', ''),
+            'item_code' => $this->itemDisplayCode($item),
+            'description' => $this->lineDescriptionForItem($item),
+            'quantity' => number_format($qty, 2, '.', ''),
             'rate' => $rate,
             'amount' => number_format($qty * (float) $rate, 2, '.', ''),
-            'taxable' => true,
-            'class' => $this->lines[$index]['class'] ?? '',
-        ];
+            'taxable' => $preserved['taxable'] ?? true,
+            'class' => $preserved['class'] ?? '',
+        ]);
     }
 
-    protected function findItemByScanCode(string $code): ?Item
+    protected function findItemByScanCode(string $code, bool $exact = false): ?Item
     {
-        return Item::query()
+        $code = trim($code);
+        if ($code === '') {
+            return null;
+        }
+
+        $exactMatch = Item::query()
             ->active()
             ->where(function ($q) use ($code) {
                 $q->where('barcode', $code)
                     ->orWhere('sku', $code)
                     ->orWhere('manufacturer_part_number', $code);
             })
+            ->orderByRaw("LOWER(COALESCE(NULLIF(barcode, ''), sku)) asc")
             ->first();
+
+        if ($exactMatch || $exact) {
+            return $exactMatch;
+        }
+
+        // Case-insensitive exact, then unique prefix match for typed codes.
+        $ciExact = Item::query()
+            ->active()
+            ->where(function ($q) use ($code) {
+                $q->whereRaw('LOWER(barcode) = ?', [mb_strtolower($code)])
+                    ->orWhereRaw('LOWER(sku) = ?', [mb_strtolower($code)])
+                    ->orWhereRaw('LOWER(manufacturer_part_number) = ?', [mb_strtolower($code)]);
+            })
+            ->orderByRaw("LOWER(COALESCE(NULLIF(barcode, ''), sku)) asc")
+            ->first();
+
+        if ($ciExact) {
+            return $ciExact;
+        }
+
+        $prefix = Item::query()
+            ->active()
+            ->where(function ($q) use ($code) {
+                $like = mb_strtolower($code).'%';
+                $q->whereRaw('LOWER(barcode) like ?', [$like])
+                    ->orWhereRaw('LOWER(sku) like ?', [$like]);
+            })
+            ->orderByRaw("LOWER(COALESCE(NULLIF(barcode, ''), sku)) asc")
+            ->limit(2)
+            ->get();
+
+        return $prefix->count() === 1 ? $prefix->first() : null;
+    }
+
+    protected function itemDisplayCode(Item $item): string
+    {
+        return (string) ($item->barcode ?: $item->sku);
+    }
+
+    protected function itemSearchUsesPurchaseCatalog(): bool
+    {
+        return false;
+    }
+
+    protected function lineDescriptionForItem(Item $item): string
+    {
+        return (string) ($item->sales_description ?: $item->name);
     }
 
     /**
@@ -158,7 +266,7 @@ trait WithLineItems
             'item_id' => '',
             'item_code' => '',
             'description' => '',
-            'quantity' => '1',
+            'quantity' => '1.00',
             'rate' => '0.00',
             'amount' => '0.00',
             'taxable' => true,

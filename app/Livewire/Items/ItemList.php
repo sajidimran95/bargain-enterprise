@@ -38,6 +38,8 @@ class ItemList extends Component
 
     public string $priorSearch = '';
 
+    public bool $showActivity = true;
+
     public function focusSearch(): void
     {
         $this->dispatch('be-focus-list-search');
@@ -59,6 +61,23 @@ class ItemList extends Component
     public function selectItem(int $id): void
     {
         $this->selectedId = $id;
+        $this->showActivity = true;
+    }
+
+    public function openActivityHistory(): void
+    {
+        if (! $this->selectedId) {
+            $this->dispatch('be-toast', message: 'Select an item first.');
+
+            return;
+        }
+
+        $this->showActivity = true;
+    }
+
+    public function toggleActivity(): void
+    {
+        $this->showActivity = ! $this->showActivity;
     }
 
     public function search(): void
@@ -170,9 +189,14 @@ class ItemList extends Component
             ? Item::query()->find($this->selectedId)
             : null;
 
+        $activity = $selected && $this->showActivity
+            ? $selected->histories()->with('createdBy')->latest('occurred_at')->latest('id')->limit(40)->get()
+            : collect();
+
         return view('livewire.items.item-list', [
             'items' => $items,
             'selected' => $selected,
+            'activity' => $activity,
         ])->layoutData([
             'title' => 'Item List',
             'windowTitle' => 'Item List',

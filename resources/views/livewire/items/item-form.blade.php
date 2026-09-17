@@ -177,7 +177,7 @@
                     <div class="be-item-dialog__stock">
                         <div class="be-item-dialog__stock-item">
                             <span class="be-item-dialog__stock-label">On Hand</span>
-                            <span class="be-item-dialog__stock-value">{{ $item ? number_format((float) $item->on_hand, 0) : '0' }}</span>
+                            <span class="be-item-dialog__stock-value">{{ $item ? number_format((float) $item->on_hand, 2) : '0.00' }}</span>
                         </div>
                         <div class="be-item-dialog__stock-item">
                             <span class="be-item-dialog__stock-label">Average Cost</span>
@@ -185,13 +185,22 @@
                         </div>
                         <div class="be-item-dialog__stock-item">
                             <span class="be-item-dialog__stock-label">On P.O.</span>
-                            <span class="be-item-dialog__stock-value">{{ $item ? number_format((float) $item->on_po_qty, 0) : '0' }}</span>
+                            <span class="be-item-dialog__stock-value">{{ $item ? number_format((float) $item->on_po_qty, 2) : '0.00' }}</span>
                         </div>
                         <div class="be-item-dialog__stock-item">
                             <span class="be-item-dialog__stock-label">On Sales Order</span>
-                            <span class="be-item-dialog__stock-value">{{ $item ? number_format((float) $item->on_so_qty, 0) : '0' }}</span>
+                            <span class="be-item-dialog__stock-value">{{ $item ? number_format((float) $item->on_so_qty, 2) : '0.00' }}</span>
                         </div>
                     </div>
+
+                    @if ($pendingCostAlert)
+                        <div class="be-item-cost-alert mt-2 border px-2 py-1.5 text-[12px]" style="border-color:#c9a227;background:#fff8dc;">
+                            Purchase cost changed to {{ number_format((float) $pendingCostAlert->new_value, 2) }}
+                            (was {{ number_format((float) $pendingCostAlert->old_value, 2) }}).
+                            Suggested sales price: <strong>{{ number_format((float) $pendingCostAlert->suggested_sales_price, 2) }}</strong>
+                            <button type="button" class="be-link-btn ml-2" wire:click="applySuggestedSalesPrice({{ $pendingCostAlert->id }})">Apply</button>
+                        </div>
+                    @endif
                 </section>
             @endif
         </div>
@@ -199,6 +208,9 @@
         <aside class="be-item-dialog__actions">
             <x-erp.button variant="primary" type="button" wire:click="save" class="be-item-dialog__ok">OK</x-erp.button>
             <x-erp.workspace-link route="items.index" class="be-btn be-item-dialog__side-btn">Cancel</x-erp.workspace-link>
+            <x-erp.button type="button" wire:click="openHistory" class="be-item-dialog__side-btn">
+                History{{ $histories->count() ? ' ('.$histories->count().')' : '' }}
+            </x-erp.button>
             <x-erp.button type="button" wire:click="openNotes" class="be-item-dialog__side-btn">
                 {{ $noteCount > 0 ? 'Notes ('.$noteCount.')' : 'New Note' }}
             </x-erp.button>
@@ -211,6 +223,65 @@
             </label>
         </aside>
     </div>
+
+    @if ($showHistory)
+        <div class="be-modal" role="dialog" aria-modal="true" aria-labelledby="item-history-title">
+            <div class="be-modal__backdrop" wire:click="closeHistory"></div>
+            <div class="be-modal__panel be-modal__panel--lg" @click.stop>
+                <div class="be-modal__header">
+                    <h2 id="item-history-title" class="be-modal__title">Item History — Stock &amp; Cost</h2>
+                    <button type="button" class="be-modal__close" wire:click="closeHistory" aria-label="Close">&times;</button>
+                </div>
+                <div class="be-modal__body">
+                    <div class="be-invoice-grid-wrap" style="max-height: min(480px, 60vh);">
+                        <table class="be-table be-invoice-grid">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Event</th>
+                                    <th class="text-right">In</th>
+                                    <th class="text-right">Out</th>
+                                    <th class="text-right">Balance</th>
+                                    <th class="text-right">Old</th>
+                                    <th class="text-right">New</th>
+                                    <th>Memo</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($histories as $row)
+                                    <tr wire:key="item-hist-{{ $row->id }}" class="{{ $loop->iteration % 2 ? 'be-row-alt' : '' }}">
+                                        <td class="px-1 text-[11px] whitespace-nowrap">{{ $row->occurred_at?->format('m/d/y g:i A') }}</td>
+                                        <td class="px-1 text-[11px]">{{ $row->label() }}</td>
+                                        <td class="num px-1">{{ bccomp((string) $row->qty_in, '0', 4) > 0 ? number_format((float) $row->qty_in, 2) : '' }}</td>
+                                        <td class="num px-1">{{ bccomp((string) $row->qty_out, '0', 4) > 0 ? number_format((float) $row->qty_out, 2) : '' }}</td>
+                                        <td class="num px-1">{{ $row->balance_after !== null ? number_format((float) $row->balance_after, 2) : '' }}</td>
+                                        <td class="num px-1">{{ $row->old_value !== null ? number_format((float) $row->old_value, 2) : '' }}</td>
+                                        <td class="num px-1">{{ $row->new_value !== null ? number_format((float) $row->new_value, 2) : '' }}</td>
+                                        <td class="px-1 text-[11px]">{{ $row->memo }}</td>
+                                        <td class="px-1 text-center">
+                                            @if ($row->suggested_sales_price)
+                                                <button type="button" class="be-link-btn" wire:click="applySuggestedSalesPrice({{ $row->id }})">
+                                                    Sales {{ number_format((float) $row->suggested_sales_price, 2) }}
+                                                </button>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="9" class="px-2 py-3 text-[12px] text-gray-500">No history yet.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="be-modal__footer">
+                    <x-erp.button type="button" wire:click="closeHistory">Close</x-erp.button>
+                </div>
+            </div>
+        </div>
+    @endif
 
     @if ($showNotes)
         <div class="be-modal" role="dialog" aria-modal="true" aria-labelledby="item-notes-title">

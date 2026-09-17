@@ -10,6 +10,8 @@ use RuntimeException;
 
 class InventoryService
 {
+    public function __construct(protected ItemHistoryService $history) {}
+
     /**
      * @param  array{type: string, qty_in?: float|string, qty_out?: float|string, unit_cost?: float|string, reference_type?: ?string, reference_id?: ?int, memo?: ?string, occurred_at?: mixed, created_by?: ?int, allow_negative?: bool}  $data
      */
@@ -39,7 +41,7 @@ class InventoryService
             $locked->on_hand = $newBalance;
             $locked->save();
 
-            return InventoryTransaction::query()->create([
+            $tx = InventoryTransaction::query()->create([
                 'item_id' => $locked->id,
                 'type' => $data['type'],
                 'reference_type' => $data['reference_type'] ?? null,
@@ -52,6 +54,10 @@ class InventoryService
                 'memo' => $data['memo'] ?? null,
                 'occurred_at' => $data['occurred_at'] ?? now(),
             ]);
+
+            $this->history->recordFromInventoryTransaction($locked->fresh(), $tx);
+
+            return $tx;
         });
     }
 

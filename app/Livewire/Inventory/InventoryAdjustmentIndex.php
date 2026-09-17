@@ -6,6 +6,7 @@ use App\Livewire\Concerns\WithErpListActions;
 use App\Models\InventoryTransaction;
 use App\Models\Item;
 use App\Services\InventoryService;
+use App\Support\ItemCatalog;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -161,12 +162,9 @@ class InventoryAdjustmentIndex extends Component
             ->latest('id')
             ->paginate(30);
 
-        $itemOptions = Item::query()
-            ->active()
-            ->orderBy('sku')
-            ->get()
+        $itemOptions = ItemCatalog::activeItems()
             ->mapWithKeys(fn (Item $item) => [
-                $item->id => $item->sku.' — '.($item->sales_description ?: $item->name).' (OH: '.$item->on_hand.')',
+                $item->id => ($item->barcode ?: $item->sku).' — '.($item->sales_description ?: $item->name).' (OH: '.$item->on_hand.')',
             ])
             ->all();
 

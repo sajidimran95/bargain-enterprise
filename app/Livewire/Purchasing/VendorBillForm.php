@@ -7,11 +7,14 @@ use App\Livewire\Concerns\WithLineItems;
 use App\Mail\DocumentMail;
 use App\Models\Item;
 use App\Models\PurchaseOrder;
+use App\Models\PurchaseOrderLine;
 use App\Models\Vendor;
 use App\Models\VendorBill;
 use App\Models\VendorBillLine;
 use App\Services\DocumentPdfService;
+use App\Services\InventoryService;
 use App\Support\DocumentNumbers;
+use App\Support\ItemCatalog;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -58,6 +61,8 @@ class VendorBillForm extends Component
 
     public bool $is_pending = false;
 
+    public bool $isRtv = false;
+
     public string $ribbonTab = 'main';
 
     public string $inspectorTab = 'name';
@@ -72,12 +77,28 @@ class VendorBillForm extends Component
     public function mount(): void
     {
         abort_unless(auth()->user()?->hasPermission('purchase.create'), 403);
-        $this->bill_number = DocumentNumbers::next(VendorBill::class, 'bill_number', 'BILL-');
+
+        $this->isRtv = request()->routeIs('vendor-returns.create')
+            || request()->boolean('rtv')
+            || request('type') === 'rtv';
+
+        if ($this->isRtv) {
+            $this->docType = 'credit';
+            $this->bill_number = DocumentNumbers::next(VendorBill::class, 'bill_number', 'RTV-');
+        } else {
+            $this->bill_number = DocumentNumbers::next(VendorBill::class, 'bill_number', 'BILL-');
+        }
+
         $this->bill_date = now()->toDateString();
         $this->due_date = now()->addDays(30)->toDateString();
         $this->ensureLineCapacity(8);
         $this->addExpenseLine();
         $this->restoreMemorizedIfEmpty();
+
+        if ($this->isRtv) {
+            $this->docType = 'credit';
+            $this->lineTab = 'items';
+        }
     }
 
     public function toggleInspector(): void
@@ -118,6 +139,21 @@ class VendorBillForm extends Component
             $this->inspectorOpen = true;
             $this->inspectorTab = 'name';
         }
+
+        if ($this->isRtv || $this->docType === 'credit') {
+            $this->lines = [];
+            $this->ensureLineCapacity(1);
+            $this->lineTab = 'items';
+        }
+    }
+
+    public function updatedPurchaseOrderId(?string $value = null): void
+    {
+        if ($this->purchase_order_id === '') {
+            return;
+        }
+
+        $this->selectPurchaseOrder();
     }
 
     public function selectPurchaseOrder(): void
@@ -129,35 +165,68 @@ class VendorBillForm extends Component
             return;
         }
 
+        $poId = $this->purchase_order_id;
+
         $po = PurchaseOrder::query()
             ->with('lines.item')
-            ->whereKey($this->purchase_order_id)
+            ->whereKey($poId)
             ->when($this->vendor_id !== '', fn ($q) => $q->where('vendor_id', $this->vendor_id))
             ->firstOrFail();
 
         $this->vendor_id = (string) $po->vendor_id;
-        $this->updatedVendorId();
+        $vendor = Vendor::query()->find($this->vendor_id);
+        $this->address = $vendor ? implode("\n", $vendor->billFromLines()) : '';
+        if ($vendor?->terms) {
+            $this->terms = (string) $vendor->terms;
+        }
+        $this->purchase_order_id = $poId;
+        $this->inspectorOpen = true;
+        $this->inspectorTab = 'name';
         $this->lines = [];
         $this->lineTab = 'items';
 
         foreach ($po->lines as $line) {
-            $qty = number_format((float) $line->quantity, 4, '.', '');
+            $ordered = (string) $line->quantity;
+            $received = (string) $line->qty_received;
+            // Credit/RTV: load received qty. Bill: load remaining to receive.
+            $qty = ($this->isRtv || $this->docType === 'credit')
+                ? $received
+                : bcsub($ordered, $received, 4);
+
+            if (bccomp($qty, '0', 4) <= 0) {
+                continue;
+            }
+
             $rate = number_format((float) $line->rate, 2, '.', '');
             $this->lines[] = [
                 'item_id' => (string) ($line->item_id ?? ''),
                 'item_code' => $line->item?->sku ?? '',
                 'description' => $line->description ?? ($line->item?->purchase_description ?: $line->item?->name),
-                'quantity' => $qty,
+                'quantity' => number_format((float) $qty, 2, '.', ''),
                 'rate' => $rate,
                 'amount' => number_format((float) bcmul($qty, $rate, 4), 2, '.', ''),
                 'customer_job' => '',
                 'billable' => false,
                 'class' => '',
+                'purchase_order_line_id' => (string) $line->id,
             ];
         }
 
-        $this->ensureLineCapacity(8);
-        $this->dispatch('be-toast', message: 'Loaded lines from PO '.$po->number);
+        if ($this->isRtv || $this->docType === 'credit') {
+            if ($this->lines === []) {
+                $this->ensureLineCapacity(1);
+                $this->dispatch('be-toast', message: 'PO '.$po->number.' has no received qty to return.');
+
+                return;
+            }
+        } else {
+            $this->ensureLineCapacity(8);
+        }
+
+        $hint = ($this->isRtv || $this->docType === 'credit')
+            ? 'Loaded '.count($this->lines).' received item(s) from PO '.$po->number.'. Adjust qty or remove lines, then save RTV.'
+            : 'Loaded open qty from PO '.$po->number;
+        $this->dispatch('be-toast', message: $hint);
     }
 
     public function receiveAll(): void
@@ -189,6 +258,16 @@ class VendorBillForm extends Component
         return $item->purchase_cost ?: $item->sales_price;
     }
 
+    protected function itemSearchUsesPurchaseCatalog(): bool
+    {
+        return true;
+    }
+
+    protected function lineDescriptionForItem(Item $item): string
+    {
+        return (string) ($item->purchase_description ?: $item->name);
+    }
+
     protected function fillLineFromItem(int $index, Item $item): void
     {
         $rate = number_format((float) $this->lineRateForItem($item), 2, '.', '');
@@ -201,7 +280,7 @@ class VendorBillForm extends Component
             'item_id' => (string) $item->id,
             'item_code' => $item->barcode ?: $item->sku,
             'description' => $item->purchase_description ?: $item->name,
-            'quantity' => number_format($qty, 4, '.', ''),
+            'quantity' => number_format($qty, 2, '.', ''),
             'rate' => $rate,
             'amount' => number_format($qty * (float) $rate, 2, '.', ''),
             'customer_job' => $this->lines[$index]['customer_job'] ?? '',
@@ -219,7 +298,7 @@ class VendorBillForm extends Component
             'item_id' => '',
             'item_code' => '',
             'description' => '',
-            'quantity' => '1',
+            'quantity' => '1.00',
             'rate' => '0.00',
             'amount' => '0.00',
             'customer_job' => '',
@@ -400,7 +479,7 @@ class VendorBillForm extends Component
             }
             $expensePayload[] = [
                 'description' => trim(($line['account'] ?? '').' '.($line['description'] ?? '')),
-                'quantity' => '1.0000',
+                'quantity' => '1.00',
                 'rate' => $amount,
                 'amount' => $amount,
             ];
@@ -454,6 +533,49 @@ class VendorBillForm extends Component
                     'rate' => $line['rate'],
                     'amount' => number_format((float) $line['quantity'] * (float) $line['rate'], 2, '.', ''),
                 ]);
+
+                // Vendor credit = return to vendor → stock out.
+                // Bill Received on a bill → stock in (when items arrive with the bill).
+                if ($this->is_pending) {
+                    continue;
+                }
+
+                $item = Item::query()->find($line['item_id']);
+                if (! $item?->tracksInventory()) {
+                    continue;
+                }
+
+                $inventory = app(InventoryService::class);
+
+                if ($isCredit) {
+                    $inventory->post($item, [
+                        'type' => 'vendor_credit',
+                        'qty_out' => $line['quantity'],
+                        'unit_cost' => $line['rate'] ?: $item->average_cost,
+                        'reference_type' => VendorBill::class,
+                        'reference_id' => $bill->id,
+                        'occurred_at' => $this->bill_date,
+                        'created_by' => auth()->id(),
+                        'memo' => 'Vendor return '.$bill->bill_number,
+                    ]);
+
+                    $this->reversePurchaseOrderReceive(
+                        (int) ($line['purchase_order_line_id'] ?? 0),
+                        (int) $line['item_id'],
+                        (string) $line['quantity']
+                    );
+                } elseif ($this->bill_received) {
+                    $inventory->post($item, [
+                        'type' => 'purchase',
+                        'qty_in' => $line['quantity'],
+                        'unit_cost' => $line['rate'] ?: $item->average_cost ?: $item->purchase_cost,
+                        'reference_type' => VendorBill::class,
+                        'reference_id' => $bill->id,
+                        'occurred_at' => $this->bill_date,
+                        'created_by' => auth()->id(),
+                        'memo' => 'Bill received '.$bill->bill_number,
+                    ]);
+                }
             }
 
             foreach ($expensePayload as $line) {
@@ -474,15 +596,74 @@ class VendorBillForm extends Component
                     : bcadd((string) $vendor->balance, $subtotal, 2);
                 $vendor->save();
             }
+
+            if ($isCredit && ! $this->is_pending && $this->purchase_order_id !== '') {
+                $this->refreshPurchaseOrderStatus((int) $this->purchase_order_id);
+            }
         });
 
         $this->navigatorId = (int) $bill->id;
         $stored = $this->storePendingAttachmentsFor('attachments/vendor-bills/'.$bill->bill_number);
-        $label = $isCredit ? 'Vendor credit' : 'Bill';
+        $label = $isCredit ? ($this->isRtv ? 'RTV' : 'Vendor credit') : 'Bill';
         $this->dispatch('be-toast', message: $label.' '.$this->bill_number.' saved.'
             .($stored ? ' '.$stored.' attachment(s) stored.' : ''));
 
         return $bill;
+    }
+
+    protected function reversePurchaseOrderReceive(int $poLineId, int $itemId, string $qty): void
+    {
+        if (bccomp($qty, '0', 4) <= 0) {
+            return;
+        }
+
+        $poLine = null;
+        if ($poLineId > 0) {
+            $poLine = PurchaseOrderLine::query()->lockForUpdate()->find($poLineId);
+        } elseif ($this->purchase_order_id !== '' && $itemId > 0) {
+            $poLine = PurchaseOrderLine::query()
+                ->where('purchase_order_id', (int) $this->purchase_order_id)
+                ->where('item_id', $itemId)
+                ->where('qty_received', '>', 0)
+                ->lockForUpdate()
+                ->orderByDesc('qty_received')
+                ->first();
+        }
+
+        if (! $poLine) {
+            return;
+        }
+
+        $reverse = $qty;
+        if (bccomp((string) $poLine->qty_received, $reverse, 4) < 0) {
+            $reverse = (string) $poLine->qty_received;
+        }
+
+        if (bccomp($reverse, '0', 4) <= 0) {
+            return;
+        }
+
+        $poLine->qty_received = bcsub((string) $poLine->qty_received, $reverse, 4);
+        $poLine->save();
+
+        $item = Item::query()->lockForUpdate()->find($itemId ?: $poLine->item_id);
+        if ($item?->tracksInventory()) {
+            $item->on_po_qty = bcadd((string) $item->on_po_qty, $reverse, 4);
+            $item->save();
+        }
+    }
+
+    protected function refreshPurchaseOrderStatus(int $purchaseOrderId): void
+    {
+        $po = PurchaseOrder::query()->with('lines')->find($purchaseOrderId);
+        if (! $po) {
+            return;
+        }
+
+        $allReceived = $po->lines->every(fn ($l) => bccomp((string) $l->qty_received, (string) $l->quantity, 4) >= 0);
+        $anyReceived = $po->lines->contains(fn ($l) => bccomp((string) $l->qty_received, '0', 4) > 0);
+        $po->status = $allReceived ? 'received' : ($anyReceived ? 'partial' : 'open');
+        $po->save();
     }
 
     /**
@@ -498,8 +679,9 @@ class VendorBillForm extends Component
             $payload[] = [
                 'item_id' => (int) $line['item_id'],
                 'description' => $line['description'] ?? null,
-                'quantity' => number_format((float) ($line['quantity'] ?? 0), 4, '.', ''),
+                'quantity' => number_format((float) ($line['quantity'] ?? 0), 2, '.', ''),
                 'rate' => number_format((float) ($line['rate'] ?? 0), 2, '.', ''),
+                'purchase_order_line_id' => (int) ($line['purchase_order_line_id'] ?? 0),
             ];
         }
 
@@ -619,7 +801,7 @@ class VendorBillForm extends Component
                     'item_id' => (string) $line->item_id,
                     'item_code' => $line->item?->barcode ?: $line->item?->sku ?: '',
                     'description' => (string) $line->description,
-                    'quantity' => number_format((float) $line->quantity, 4, '.', ''),
+                    'quantity' => number_format((float) $line->quantity, 2, '.', ''),
                     'rate' => number_format((float) $line->rate, 2, '.', ''),
                     'amount' => number_format((float) $line->amount, 2, '.', ''),
                     'customer_job' => '',
@@ -648,17 +830,28 @@ class VendorBillForm extends Component
 
     public function render()
     {
+        $isReturn = $this->isRtv || $this->docType === 'credit';
+        $poStatuses = $isReturn
+            ? ['open', 'partial', 'ordered', 'sent', 'received']
+            : ['open', 'partial', 'ordered', 'sent'];
+
+        $poQuery = PurchaseOrder::query()
+            ->whereIn('status', $poStatuses)
+            ->when($this->vendor_id !== '', fn ($q) => $q->where('vendor_id', $this->vendor_id))
+            ->when($isReturn, fn ($q) => $q->whereHas(
+                'lines',
+                fn ($line) => $line->where('qty_received', '>', 0)
+            ))
+            ->orderByDesc('order_date');
+
         $openPos = $this->vendor_id !== ''
-            ? PurchaseOrder::query()
-                ->where('vendor_id', $this->vendor_id)
-                ->whereIn('status', ['open', 'partial', 'ordered', 'sent'])
-                ->orderByDesc('order_date')
-                ->get()
-            : PurchaseOrder::query()
-                ->whereIn('status', ['open', 'partial', 'ordered', 'sent'])
-                ->orderByDesc('order_date')
-                ->limit(25)
-                ->get();
+            ? $poQuery->get()
+            : $poQuery->limit(25)->get();
+
+        $poPlaceholder = $isReturn ? 'Select received PO…' : 'Select PO…';
+        $pageTitle = $this->isRtv || $this->docType === 'credit'
+            ? ($this->isRtv ? 'Return to Vendor (RTV)' : 'Vendor Credit')
+            : 'Enter Bills';
 
         $vendor = $this->vendor_id !== ''
             ? Vendor::query()
@@ -668,18 +861,17 @@ class VendorBillForm extends Component
 
         return view('livewire.purchasing.vendor-bill-form', [
             'vendors' => Vendor::query()->active()->orderBy('display_name')->pluck('display_name', 'id')->all(),
-            'itemOptions' => Item::query()->active()->orderBy('sku')->limit(500)->get()
-                ->mapWithKeys(fn (Item $i) => [$i->id => ($i->barcode ?: $i->sku).' — '.($i->purchase_description ?: $i->name)])
-                ->all(),
-            'poOptions' => ['' => 'Select PO…'] + $openPos->mapWithKeys(
-                fn (PurchaseOrder $po) => [$po->id => $po->number.' — '.number_format((float) $po->total, 2)]
+            'itemOptions' => ItemCatalog::selectOptions(500, purchase: true),
+            'poOptions' => ['' => $poPlaceholder] + $openPos->mapWithKeys(
+                fn (PurchaseOrder $po) => [$po->id => $po->number.' — '.number_format((float) $po->total, 2).($po->status === 'received' ? ' (received)' : ' ('.$po->status.')')]
             )->all(),
             'amountDue' => $this->amountDue(),
             'selectedVendor' => $vendor,
             'recentBills' => $vendor?->vendorBills ?? collect(),
+            'pageTitle' => $pageTitle,
         ])->layoutData([
-            'title' => 'Enter Bills',
-            'windowTitle' => 'Enter Bills',
+            'title' => $pageTitle,
+            'windowTitle' => $pageTitle,
         ]);
     }
 }

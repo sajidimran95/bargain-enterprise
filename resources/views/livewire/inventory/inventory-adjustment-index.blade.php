@@ -26,7 +26,7 @@
                     </div>
                     <div>
                         <label class="be-label">Quantity</label>
-                        <x-erp.input type="number" step="0.0001" min="0.0001" wire:model="form.qty" />
+                        <x-erp.input type="number" step="0.01" min="0.01" wire:model="form.qty" />
                         @error('form.qty') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
                     <div>

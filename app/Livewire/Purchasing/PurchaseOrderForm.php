@@ -7,7 +7,9 @@ use App\Models\Item;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderLine;
 use App\Models\Vendor;
+use App\Services\ItemHistoryService;
 use App\Support\DocumentNumbers;
+use App\Support\ItemCatalog;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -45,6 +47,16 @@ class PurchaseOrderForm extends Component
         return $item->purchase_cost ?: $item->sales_price;
     }
 
+    protected function itemSearchUsesPurchaseCatalog(): bool
+    {
+        return true;
+    }
+
+    protected function lineDescriptionForItem(Item $item): string
+    {
+        return (string) ($item->purchase_description ?: $item->name);
+    }
+
     public function save(): mixed
     {
         abort_unless(auth()->user()?->hasPermission('purchase.create'), 403);
@@ -59,8 +71,9 @@ class PurchaseOrderForm extends Component
 
         $lines = $this->validatedLinePayload();
         $subtotal = $this->linesSubtotal();
+        $costAlerts = [];
 
-        DB::transaction(function () use ($lines, $subtotal) {
+        DB::transaction(function () use ($lines, $subtotal, &$costAlerts) {
             $po = PurchaseOrder::query()->create([
                 'number' => $this->number,
                 'vendor_id' => (int) $this->vendor_id,
@@ -72,6 +85,8 @@ class PurchaseOrderForm extends Component
                 'memo' => $this->memo ?: null,
             ]);
 
+            $history = app(ItemHistoryService::class);
+
             foreach ($lines as $line) {
                 PurchaseOrderLine::query()->create([
                     'purchase_order_id' => $po->id,
@@ -82,10 +97,49 @@ class PurchaseOrderForm extends Component
                     'rate' => $line['rate'],
                     'amount' => number_format((float) $line['quantity'] * (float) $line['rate'], 2, '.', ''),
                 ]);
+
+                $item = Item::query()->lockForUpdate()->find($line['item_id']);
+                if (! $item) {
+                    continue;
+                }
+
+                if ($item->tracksInventory()) {
+                    $item->on_po_qty = bcadd((string) $item->on_po_qty, (string) $line['quantity'], 4);
+                    $item->save();
+                }
+
+                $result = $history->syncPurchaseCostFromPo(
+                    $item,
+                    (string) $line['rate'],
+                    $po,
+                    (string) $line['quantity']
+                );
+
+                if ($result && $result['changed']) {
+                    $costAlerts[] = [
+                        'item_id' => $item->id,
+                        'sku' => $item->sku,
+                        'name' => $item->name,
+                        'direction' => $result['direction'],
+                        'old_cost' => $result['old_cost'],
+                        'new_cost' => $result['new_cost'],
+                        'sales_price' => number_format((float) $item->sales_price, 2, '.', ''),
+                        'suggested_sales_price' => $result['suggested_sales_price'],
+                    ];
+                }
             }
         });
 
-        $this->dispatch('be-toast', message: 'Purchase order '.$this->number.' saved.');
+        if ($costAlerts !== []) {
+            session()->flash('item_cost_alerts', $costAlerts);
+            $summary = collect($costAlerts)
+                ->map(fn (array $a) => $a['sku'].' cost '.$a['direction'].' '.$a['old_cost'].'→'.$a['new_cost']
+                    .($a['suggested_sales_price'] ? ' (suggest sales '.$a['suggested_sales_price'].')' : ''))
+                ->implode('; ');
+            $this->dispatch('be-toast', message: 'PO saved. Cost alert: '.$summary);
+        } else {
+            $this->dispatch('be-toast', message: 'Purchase order '.$this->number.' saved.');
+        }
 
         return $this->redirect(route('purchase-orders.index'), navigate: true);
     }
@@ -105,9 +159,7 @@ class PurchaseOrderForm extends Component
             'showExpected' => true,
 
             'rateLabel' => 'Cost',
-            'itemOptions' => Item::query()->active()->orderBy('sku')->get()
-                ->mapWithKeys(fn (Item $i) => [$i->id => $i->sku.' — '.($i->purchase_description ?: $i->name)])
-                ->all(),
+            'itemOptions' => ItemCatalog::selectOptions(purchase: true),
         ])->layoutData([
             'title' => 'Create Purchase Order',
             'windowTitle' => 'Create Purchase Order',

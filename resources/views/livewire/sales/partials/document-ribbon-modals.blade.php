@@ -70,7 +70,7 @@
                 <div class="be-form-grid">
                     <div class="be-field">
                         <label class="be-field__label">Qty</label>
-                        <x-erp.input type="number" step="0.0001" min="0" wire:model="timeCostQty" />
+                        <x-erp.input type="number" step="0.01" min="0" wire:model="timeCostQty" />
                     </div>
                     <div class="be-field">
                         <label class="be-field__label">Amount / Rate</label>

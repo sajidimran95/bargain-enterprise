@@ -5,9 +5,9 @@ namespace App\Livewire\Sales;
 use App\Actions\Sales\CreateSalesReceiptAction;
 use App\Livewire\Concerns\WithLineItems;
 use App\Models\Customer;
-use App\Models\Item;
 use App\Models\SalesReceipt;
 use App\Support\DocumentNumbers;
+use App\Support\ItemCatalog;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -90,9 +90,7 @@ class SalesReceiptForm extends Component
             'numberField' => 'number',
             'numberLabel' => 'Receipt #',
             'showPaymentMethod' => true,
-            'itemOptions' => Item::query()->active()->orderBy('sku')->get()
-                ->mapWithKeys(fn (Item $i) => [$i->id => $i->sku.' — '.($i->sales_description ?: $i->name)])
-                ->all(),
+            'itemOptions' => ItemCatalog::selectOptions(),
         ])->layoutData([
             'title' => 'Create Sales Receipt',
             'windowTitle' => 'Create Sales Receipt',

@@ -6,6 +6,7 @@ use App\Actions\Items\CreateItemAction;
 use App\Actions\Items\UpdateItemAction;
 use App\Models\Item;
 use App\Models\ItemCategory;
+use App\Models\ItemHistory;
 use App\Models\ItemNote;
 use App\Models\ItemType;
 use App\Models\TaxCode;
@@ -81,6 +82,8 @@ class ItemForm extends Component
     public bool $showNotes = false;
 
     public bool $showSpelling = false;
+
+    public bool $showHistory = false;
 
     public string $noteBody = '';
 
@@ -299,6 +302,40 @@ class ItemForm extends Component
         }
     }
 
+    public function openHistory(): void
+    {
+        if (! $this->item?->exists) {
+            $this->dispatch('be-toast', message: 'Save the item first to view history.');
+
+            return;
+        }
+
+        $this->showHistory = true;
+    }
+
+    public function closeHistory(): void
+    {
+        $this->showHistory = false;
+    }
+
+    public function applySuggestedSalesPrice(int $historyId): void
+    {
+        if (! $this->item?->exists) {
+            return;
+        }
+
+        $history = $this->item->histories()->whereKey($historyId)->first();
+        if (! $history?->suggested_sales_price) {
+            $this->dispatch('be-toast', message: 'No suggested sales price on this history row.');
+
+            return;
+        }
+
+        $this->sales_price = number_format((float) $history->suggested_sales_price, 2, '.', '');
+        $this->dispatch('be-toast', message: 'Sales price set to '.$this->sales_price.'. Click OK to save.');
+        $this->showHistory = false;
+    }
+
     public function save(CreateItemAction $create, UpdateItemAction $update): mixed
     {
         if (! $this->persistItem($create, $update)) {
@@ -323,6 +360,15 @@ class ItemForm extends Component
             ? $this->item->notes()->with('user')->latest()->get()
             : collect();
 
+        $histories = $this->item
+            ? $this->item->histories()->with('createdBy')->latest('occurred_at')->latest('id')->limit(100)->get()
+            : collect();
+
+        $pendingCostAlert = $histories
+            ->first(fn ($h) => $h->event === ItemHistory::EVENT_PURCHASE_COST
+                && filled($h->suggested_sales_price)
+                && bccomp((string) $h->suggested_sales_price, (string) $this->sales_price, 2) !== 0);
+
         return view('livewire.items.item-form', [
             'units' => UnitOfMeasure::query()->where('is_active', true)->orderBy('name')->get(),
             'vendors' => Vendor::query()->active()->orderBy('display_name')->get(),
@@ -333,6 +379,8 @@ class ItemForm extends Component
             'typeHelp' => $typeHelp,
             'notes' => $notes,
             'noteCount' => $notes instanceof Collection ? $notes->count() : 0,
+            'histories' => $histories,
+            'pendingCostAlert' => $pendingCostAlert,
         ])->layoutData([
             'title' => $title,
             'windowTitle' => $title,

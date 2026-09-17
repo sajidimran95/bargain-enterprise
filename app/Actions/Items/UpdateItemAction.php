@@ -4,6 +4,7 @@ namespace App\Actions\Items;
 
 use App\Models\Item;
 use App\Services\AuditLogger;
+use App\Services\ItemHistoryService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -11,7 +12,10 @@ use Illuminate\Validation\ValidationException;
 
 class UpdateItemAction
 {
-    public function __construct(protected AuditLogger $audit) {}
+    public function __construct(
+        protected AuditLogger $audit,
+        protected ItemHistoryService $history,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $data
@@ -22,8 +26,27 @@ class UpdateItemAction
 
         return DB::transaction(function () use ($item, $validated) {
             $old = $this->audit->snapshot($item);
+            $oldPurchaseCost = (string) $item->purchase_cost;
+            $oldSalesPrice = (string) $item->sales_price;
+
             $item->update($validated);
             $item->refresh();
+
+            if (array_key_exists('purchase_cost', $validated)) {
+                $this->history->recordPurchaseCostManualChange(
+                    $item,
+                    $oldPurchaseCost,
+                    (string) $item->purchase_cost
+                );
+            }
+
+            if (array_key_exists('sales_price', $validated)) {
+                $this->history->recordSalesPriceChange(
+                    $item,
+                    $oldSalesPrice,
+                    (string) $item->sales_price
+                );
+            }
 
             $new = $this->audit->snapshot($item);
             $changedOld = [];

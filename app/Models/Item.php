@@ -101,6 +101,11 @@ class Item extends Model
         return $this->hasMany(InventoryTransaction::class);
     }
 
+    public function histories(): HasMany
+    {
+        return $this->hasMany(ItemHistory::class);
+    }
+
     public function prices(): HasMany
     {
         return $this->hasMany(ItemPrice::class);

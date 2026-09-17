@@ -80,25 +80,15 @@
                     </div>
                 </div>
 
-                <div class="be-scan-bar be-scan-bar--compact">
-                    <label class="be-field__label be-field__label--caps mb-0">Item / Scan</label>
-                    <input
-                        x-ref="scanInput"
-                        type="text"
-                        class="be-input be-scan-input"
-                        wire:model="scanCode"
-                        wire:keydown.enter.prevent="scanItem"
-                        placeholder="Barcode / SKU / UPC — Enter"
-                    >
-                    <button type="button" class="be-btn be-btn--primary" wire:click="scanItem">Add</button>
-                </div>
+                <x-erp.item-search-bar />
                 @error('lines') <p class="be-invoice-error">{{ $message }}</p> @enderror
 
                 <div class="be-invoice-grid-wrap">
                     <table class="be-table be-invoice-grid">
                         <thead>
                             <tr>
-                                <th style="width:22%">ITEM</th>
+                                <th style="width:13%">ITEM CODE</th>
+                                <th style="width:18%">ITEM</th>
                                 <th>DESCRIPTION</th>
                                 <th style="width:5%" class="text-center">TAX</th>
                                 <th style="width:9%" class="text-right">QTY</th>
@@ -110,6 +100,12 @@
                         <tbody>
                             @foreach ($lines as $index => $line)
                                 <tr wire:key="cm-line-{{ $index }}" class="{{ $index % 2 ? 'be-row-alt' : '' }}">
+                                    <td>
+                                        <x-erp.item-code-input
+                                            wire:model.blur="lines.{{ $index }}.item_code"
+                                            placeholder="Code…"
+                                        />
+                                    </td>
                                     <td>
                                         <x-erp.select
                                             wire:model.live="lines.{{ $index }}.item_id"
@@ -124,7 +120,7 @@
                                         <input type="checkbox" wire:model.live="lines.{{ $index }}.taxable" class="be-invoice-tax">
                                     </td>
                                     <td>
-                                        <x-erp.input type="number" step="0.0001" min="0" class="text-right be-input--bare" wire:model.live="lines.{{ $index }}.quantity" />
+                                        <x-erp.input type="number" step="0.01" min="0" class="text-right be-input--bare" wire:model.live="lines.{{ $index }}.quantity" />
                                     </td>
                                     <td>
                                         <x-erp.input type="number" step="0.01" min="0" class="text-right be-input--bare" wire:model.live="lines.{{ $index }}.rate" />

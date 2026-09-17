@@ -156,6 +156,13 @@ return [
             'permission' => 'purchase.create',
             'match' => 'vendor-bills.create',
         ],
+        'return_to_vendor' => [
+            'label' => 'Return to Vendor (RTV)',
+            'route' => 'vendor-returns.create',
+            'icon' => 'layers',
+            'permission' => 'purchase.create',
+            'match' => 'vendor-returns.*',
+        ],
         'banking' => [
             'label' => 'Bank Feeds',
             'route' => 'banking.index',

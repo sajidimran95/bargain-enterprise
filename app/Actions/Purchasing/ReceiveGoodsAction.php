@@ -72,6 +72,16 @@ class ReceiveGoodsAction
                     if ($poLine) {
                         $poLine->qty_received = bcadd((string) $poLine->qty_received, $qty, 4);
                         $poLine->save();
+
+                        if ($item->tracksInventory()) {
+                            $lockedItem = Item::query()->lockForUpdate()->findOrFail($item->id);
+                            $reducePo = $qty;
+                            if (bccomp((string) $lockedItem->on_po_qty, $reducePo, 4) < 0) {
+                                $reducePo = (string) $lockedItem->on_po_qty;
+                            }
+                            $lockedItem->on_po_qty = bcsub((string) $lockedItem->on_po_qty, $reducePo, 4);
+                            $lockedItem->save();
+                        }
                     }
                 }
             }

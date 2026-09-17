@@ -50,6 +50,7 @@ class WorkspaceCatalog
             'goods-receipts.create' => ['type' => 'goods-receipt-form', 'title' => 'Receive Inventory', 'closable' => true],
             'vendor-bills.index' => ['type' => 'vendor-bills', 'title' => 'Enter Bills', 'closable' => true],
             'vendor-bills.create' => ['type' => 'vendor-bill-form', 'title' => 'Enter Bills', 'closable' => true],
+            'vendor-returns.create' => ['type' => 'vendor-rtv-form', 'title' => 'Return to Vendor (RTV)', 'closable' => true],
             'vendor-payments.index' => ['type' => 'vendor-payments', 'title' => 'Pay Bills', 'closable' => true],
             'vendor-payments.create' => ['type' => 'vendor-payment-form', 'title' => 'Pay Bills', 'closable' => true],
             'banking.index' => ['type' => 'banking', 'title' => 'Bank Accounts', 'closable' => true],

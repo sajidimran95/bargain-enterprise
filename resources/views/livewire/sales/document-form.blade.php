@@ -81,19 +81,7 @@
                     </div>
                 </div>
 
-                <div class="be-scan-bar be-scan-bar--compact">
-                    <label class="be-field__label be-field__label--caps mb-0">Item / Scan</label>
-                    <input
-                        x-ref="scanInput"
-                        type="text"
-                        class="be-input be-scan-input"
-                        wire:model="scanCode"
-                        wire:keydown.enter.prevent="scanItem"
-                        placeholder="Barcode / SKU / UPC — Enter"
-                    >
-                    <button type="button" class="be-btn be-btn--primary" wire:click="scanItem">Add</button>
-                    <button type="button" class="be-btn" wire:click="addLine">Add Line</button>
-                </div>
+                <x-erp.item-search-bar :show-add-line="true" />
                 @error('lines') <p class="be-invoice-error">{{ $message }}</p> @enderror
 
                 <div class="be-invoice-grid-wrap">
@@ -113,10 +101,13 @@
                             @foreach ($lines as $index => $line)
                                 <tr wire:key="line-{{ $index }}">
                                     <td>
-                                        <x-erp.input wire:model.blur="lines.{{ $index }}.item_code" placeholder="SKU" class="font-mono be-input--grid" />
+                                        <x-erp.item-code-input
+                                            wire:model.blur="lines.{{ $index }}.item_code"
+                                            placeholder="Code…"
+                                        />
                                     </td>
                                     <td>
-                                        <x-erp.input type="number" step="0.0001" min="0" class="text-right be-input--grid" wire:model.live="lines.{{ $index }}.quantity" />
+                                        <x-erp.input type="number" step="0.01" min="0" class="text-right be-input--grid" wire:model.live="lines.{{ $index }}.quantity" />
                                     </td>
                                     <td>
                                         <x-erp.input wire:model="lines.{{ $index }}.description" class="be-input--grid" />
