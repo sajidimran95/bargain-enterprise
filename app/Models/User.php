@@ -48,7 +48,7 @@ class User extends Authenticatable
 
     public function hasPermission(string $permission): bool
     {
-        if ($this->hasRole('owner')) {
+        if ($this->hasRole(['owner', 'admin'])) {
             return true;
         }
 
@@ -57,6 +57,12 @@ class User extends Authenticatable
         return $this->roles
             ->flatMap(fn (Role $role) => $role->permissions)
             ->contains('name', $permission);
+    }
+
+    public function syncRoles(array $roleNames): void
+    {
+        $ids = Role::query()->whereIn('name', $roleNames)->pluck('id');
+        $this->roles()->sync($ids);
     }
 
     public function primaryRoleLabel(): ?string

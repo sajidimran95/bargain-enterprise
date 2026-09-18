@@ -212,5 +212,19 @@ return [
             'permission' => 'settings.manage',
             'match' => 'settings.*',
         ],
+        'users' => [
+            'label' => 'Users',
+            'route' => 'users.index',
+            'icon' => 'users',
+            'permission' => 'users.manage',
+            'match' => 'users.*',
+        ],
+        'roles' => [
+            'label' => 'Roles',
+            'route' => 'roles.index',
+            'icon' => 'gear',
+            'permission' => 'roles.manage',
+            'match' => 'roles.*',
+        ],
     ],
 ];

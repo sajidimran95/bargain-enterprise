@@ -45,7 +45,7 @@ class AppServiceProvider extends ServiceProvider
                 return null;
             }
 
-            if (method_exists($user, 'hasRole') && $user->hasRole('owner')) {
+            if (method_exists($user, 'hasRole') && $user->hasRole(['owner', 'admin'])) {
                 return true;
             }
 

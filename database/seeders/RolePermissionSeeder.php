@@ -4,72 +4,40 @@ namespace Database\Seeders;
 
 use App\Models\Permission;
 use App\Models\Role;
+use App\Support\SystemPermissionCatalog;
 use Illuminate\Database\Seeder;
 
 class RolePermissionSeeder extends Seeder
 {
     public function run(): void
     {
-        $permissions = [
-            // Invoices
-            ['name' => 'invoice.view', 'label' => 'View Invoices', 'group' => 'invoices'],
-            ['name' => 'invoice.create', 'label' => 'Create Invoices', 'group' => 'invoices'],
-            ['name' => 'invoice.edit', 'label' => 'Edit Invoices', 'group' => 'invoices'],
-            ['name' => 'invoice.delete', 'label' => 'Delete Invoices', 'group' => 'invoices'],
-            ['name' => 'invoice.void', 'label' => 'Void Invoices', 'group' => 'invoices'],
-
-            // Payments
-            ['name' => 'payment.view', 'label' => 'View Payments', 'group' => 'payments'],
-            ['name' => 'payment.create', 'label' => 'Create Payments', 'group' => 'payments'],
-
-            // Customers / Vendors / Items
-            ['name' => 'customer.view', 'label' => 'View Customers', 'group' => 'customers'],
-            ['name' => 'customer.manage', 'label' => 'Manage Customers', 'group' => 'customers'],
-            ['name' => 'vendor.view', 'label' => 'View Vendors', 'group' => 'vendors'],
-            ['name' => 'vendor.manage', 'label' => 'Manage Vendors', 'group' => 'vendors'],
-            ['name' => 'item.view', 'label' => 'View Items', 'group' => 'items'],
-            ['name' => 'item.manage', 'label' => 'Manage Items', 'group' => 'items'],
-
-            // Inventory
-            ['name' => 'inventory.view', 'label' => 'View Inventory', 'group' => 'inventory'],
-            ['name' => 'inventory.adjust', 'label' => 'Adjust Inventory', 'group' => 'inventory'],
-            ['name' => 'inventory.override', 'label' => 'Override Inventory Policy', 'group' => 'inventory'],
-
-            // Purchasing
-            ['name' => 'purchase.view', 'label' => 'View Purchasing', 'group' => 'purchasing'],
-            ['name' => 'purchase.create', 'label' => 'Create Purchasing Docs', 'group' => 'purchasing'],
-
-            // Accounting / Banking
-            ['name' => 'accounting.view', 'label' => 'View Accounting', 'group' => 'accounting'],
-            ['name' => 'accounting.manage', 'label' => 'Manage Accounting', 'group' => 'accounting'],
-            ['name' => 'banking.view', 'label' => 'View Banking', 'group' => 'banking'],
-            ['name' => 'banking.manage', 'label' => 'Manage Banking', 'group' => 'banking'],
-
-            // Reports / Settings
-            ['name' => 'report.view', 'label' => 'View Reports', 'group' => 'reports'],
-            ['name' => 'report.export', 'label' => 'Export Reports', 'group' => 'reports'],
-            ['name' => 'audit.view', 'label' => 'View Audit Log', 'group' => 'audit'],
-            ['name' => 'settings.manage', 'label' => 'Manage Settings', 'group' => 'settings'],
-            ['name' => 'import.manage', 'label' => 'Manage QB Import', 'group' => 'import'],
-            ['name' => 'dashboard.view', 'label' => 'View Dashboard', 'group' => 'dashboard'],
-        ];
-
-        foreach ($permissions as $permission) {
+        foreach (SystemPermissionCatalog::definitions() as $permission) {
             Permission::query()->updateOrCreate(
                 ['name' => $permission['name']],
-                $permission
+                [
+                    'label' => $permission['label'],
+                    'group' => $permission['group'],
+                    'menu' => $permission['menu'],
+                    'submenu' => $permission['submenu'],
+                    'sort_order' => $permission['sort_order'],
+                ]
             );
         }
 
         $roles = [
+            'admin' => [
+                'label' => 'Admin',
+                'description' => 'Full system access — all menus and permissions',
+                'permissions' => '*',
+            ],
             'owner' => [
                 'label' => 'Owner',
-                'description' => 'Full system access',
+                'description' => 'Full system access (legacy admin alias)',
                 'permissions' => '*',
             ],
             'manager' => [
                 'label' => 'Manager',
-                'description' => 'Operations management without destructive settings-only limits',
+                'description' => 'Operations management across sales, purchasing, and inventory',
                 'permissions' => [
                     'dashboard.view',
                     'invoice.view', 'invoice.create', 'invoice.edit', 'invoice.void',
@@ -83,6 +51,21 @@ class RolePermissionSeeder extends Seeder
                     'banking.view', 'banking.manage',
                     'report.view', 'report.export',
                     'audit.view',
+                    'employees.view',
+                    'users.manage',
+                ],
+            ],
+            'sales_representative' => [
+                'label' => 'Sales Representative',
+                'description' => 'Customer sales, invoices, payments, and item lookup',
+                'permissions' => [
+                    'dashboard.view',
+                    'invoice.view', 'invoice.create', 'invoice.edit',
+                    'payment.view', 'payment.create',
+                    'customer.view', 'customer.manage',
+                    'item.view',
+                    'inventory.view',
+                    'report.view',
                 ],
             ],
             'sales' => [
