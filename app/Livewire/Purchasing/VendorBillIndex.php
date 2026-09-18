@@ -34,6 +34,25 @@ class VendorBillIndex extends Component
         $this->resetPage();
     }
 
+    public function openEdit(int $id): void
+    {
+        abort_unless(auth()->user()?->hasPermission('purchase.view'), 403);
+
+        $bill = VendorBill::query()->findOrFail($id);
+        $this->selectedLineId = $id;
+
+        $isRtv = str_starts_with((string) $bill->bill_number, 'RTV-')
+            || str_contains((string) ($bill->memo ?? ''), 'CREDIT');
+
+        if ($isRtv) {
+            $this->openWorkspaceEdit('vendor-returns.edit', ['vendorBill' => $bill->id], 'RTV: '.$bill->bill_number);
+
+            return;
+        }
+
+        $this->openWorkspaceEdit('vendor-bills.edit', ['vendorBill' => $bill->id], 'Bill: '.$bill->bill_number);
+    }
+
     public function createDraft(): void
     {
         abort_unless(auth()->user()?->hasPermission('purchase.create'), 403);

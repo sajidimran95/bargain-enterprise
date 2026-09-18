@@ -18,6 +18,7 @@ use App\Support\ItemCatalog;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -74,13 +75,26 @@ class VendorBillForm extends Component
     /** @var array<int, array{account: string, description: string, amount: string, customer_job: string, billable: bool, class: string}> */
     public array $expenseLines = [];
 
-    public function mount(): void
+    public function mount(?VendorBill $vendorBill = null): void
     {
         abort_unless(auth()->user()?->hasPermission('purchase.create'), 403);
 
         $this->isRtv = request()->routeIs('vendor-returns.create')
+            || request()->routeIs('vendor-returns.edit')
             || request()->boolean('rtv')
             || request('type') === 'rtv';
+
+        if ($vendorBill?->exists) {
+            $this->loadDocumentIntoForm($vendorBill);
+            $this->navigatorId = (int) $vendorBill->id;
+            $memo = (string) ($vendorBill->memo ?? '');
+            $this->isRtv = $this->isRtv || str_starts_with((string) $vendorBill->bill_number, 'RTV-') || str_contains($memo, 'CREDIT');
+            if ($this->isRtv) {
+                $this->docType = 'credit';
+            }
+
+            return;
+        }
 
         if ($this->isRtv) {
             $this->docType = 'credit';
@@ -461,7 +475,12 @@ class VendorBillForm extends Component
         abort_unless(auth()->user()?->hasPermission('purchase.create'), 403);
 
         $this->validate([
-            'bill_number' => ['required', 'string', 'max:50', 'unique:vendor_bills,bill_number'],
+            'bill_number' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('vendor_bills', 'bill_number')->ignore($this->navigatorId),
+            ],
             'vendor_id' => ['required', 'exists:vendors,id'],
             'bill_date' => ['required', 'date'],
             'due_date' => ['nullable', 'date'],
@@ -495,112 +514,69 @@ class VendorBillForm extends Component
         $isCredit = $this->docType === 'credit';
         $bill = null;
 
-        DB::transaction(function () use ($itemLines, $expensePayload, $subtotal, $isCredit, &$bill) {
-            $memoParts = [];
-            if ($isCredit) {
-                $memoParts[] = 'CREDIT';
-            }
-            if ($this->bill_received) {
-                $memoParts[] = 'BILL RECEIVED';
-            }
-            if ($this->is_pending) {
-                $memoParts[] = 'PENDING';
-            }
-            if ($this->memo) {
-                $memoParts[] = $this->memo;
-            }
-
-            $bill = VendorBill::query()->create([
-                'bill_number' => $this->bill_number,
-                'ref_no' => $this->ref_no ?: null,
-                'vendor_id' => (int) $this->vendor_id,
-                'bill_date' => $this->bill_date,
-                'due_date' => $this->due_date ?: null,
-                'status' => $this->is_pending ? 'pending' : 'open',
-                'subtotal' => $subtotal,
-                'total' => $subtotal,
-                'amount_paid' => 0,
-                'balance_due' => $subtotal,
-                'memo' => $memoParts !== [] ? implode(' · ', $memoParts) : null,
-            ]);
-
-            foreach ($itemLines as $line) {
-                VendorBillLine::query()->create([
-                    'vendor_bill_id' => $bill->id,
-                    'item_id' => $line['item_id'],
-                    'description' => $line['description'] ?? null,
-                    'quantity' => $line['quantity'],
-                    'rate' => $line['rate'],
-                    'amount' => number_format((float) $line['quantity'] * (float) $line['rate'], 2, '.', ''),
-                ]);
-
-                // Vendor credit = return to vendor → stock out.
-                // Bill Received on a bill → stock in (when items arrive with the bill).
-                if ($this->is_pending) {
-                    continue;
-                }
-
-                $item = Item::query()->find($line['item_id']);
-                if (! $item?->tracksInventory()) {
-                    continue;
-                }
-
-                $inventory = app(InventoryService::class);
-
+        try {
+            DB::transaction(function () use ($itemLines, $expensePayload, $subtotal, $isCredit, &$bill) {
+                $memoParts = [];
                 if ($isCredit) {
-                    $inventory->post($item, [
-                        'type' => 'vendor_credit',
-                        'qty_out' => $line['quantity'],
-                        'unit_cost' => $line['rate'] ?: $item->average_cost,
-                        'reference_type' => VendorBill::class,
-                        'reference_id' => $bill->id,
-                        'occurred_at' => $this->bill_date,
-                        'created_by' => auth()->id(),
-                        'memo' => 'Vendor return '.$bill->bill_number,
-                    ]);
-
-                    $this->reversePurchaseOrderReceive(
-                        (int) ($line['purchase_order_line_id'] ?? 0),
-                        (int) $line['item_id'],
-                        (string) $line['quantity']
-                    );
-                } elseif ($this->bill_received) {
-                    $inventory->post($item, [
-                        'type' => 'purchase',
-                        'qty_in' => $line['quantity'],
-                        'unit_cost' => $line['rate'] ?: $item->average_cost ?: $item->purchase_cost,
-                        'reference_type' => VendorBill::class,
-                        'reference_id' => $bill->id,
-                        'occurred_at' => $this->bill_date,
-                        'created_by' => auth()->id(),
-                        'memo' => 'Bill received '.$bill->bill_number,
-                    ]);
+                    $memoParts[] = 'CREDIT';
                 }
-            }
+                if ($this->bill_received) {
+                    $memoParts[] = 'BILL RECEIVED';
+                }
+                if ($this->is_pending) {
+                    $memoParts[] = 'PENDING';
+                }
+                if ($this->memo) {
+                    $memoParts[] = $this->memo;
+                }
+                $memoValue = $memoParts !== [] ? implode(' · ', $memoParts) : null;
 
-            foreach ($expensePayload as $line) {
-                VendorBillLine::query()->create([
-                    'vendor_bill_id' => $bill->id,
-                    'item_id' => null,
-                    'description' => $line['description'] ?: 'Expense',
-                    'quantity' => $line['quantity'],
-                    'rate' => $line['rate'],
-                    'amount' => $line['amount'],
+                if ($this->navigatorId) {
+                    $bill = $this->updateExistingBill(
+                        (int) $this->navigatorId,
+                        $itemLines,
+                        $expensePayload,
+                        $subtotal,
+                        $isCredit,
+                        $memoValue
+                    );
+
+                    return;
+                }
+
+                $bill = VendorBill::query()->create([
+                    'bill_number' => $this->bill_number,
+                    'ref_no' => $this->ref_no ?: null,
+                    'vendor_id' => (int) $this->vendor_id,
+                    'bill_date' => $this->bill_date,
+                    'due_date' => $this->due_date ?: null,
+                    'status' => $this->is_pending ? 'pending' : 'open',
+                    'subtotal' => $subtotal,
+                    'total' => $subtotal,
+                    'amount_paid' => 0,
+                    'balance_due' => $subtotal,
+                    'memo' => $memoValue,
                 ]);
-            }
 
-            if (! $this->is_pending) {
-                $vendor = Vendor::query()->lockForUpdate()->findOrFail($bill->vendor_id);
-                $vendor->balance = $isCredit
-                    ? bcsub((string) $vendor->balance, $subtotal, 2)
-                    : bcadd((string) $vendor->balance, $subtotal, 2);
-                $vendor->save();
-            }
+                $this->writeBillLinesAndStock($bill, $itemLines, $expensePayload, $isCredit, wasPosted: ! $this->is_pending);
 
-            if ($isCredit && ! $this->is_pending && $this->purchase_order_id !== '') {
-                $this->refreshPurchaseOrderStatus((int) $this->purchase_order_id);
-            }
-        });
+                if (! $this->is_pending) {
+                    $vendor = Vendor::query()->lockForUpdate()->findOrFail($bill->vendor_id);
+                    $vendor->balance = $isCredit
+                        ? bcsub((string) $vendor->balance, $subtotal, 2)
+                        : bcadd((string) $vendor->balance, $subtotal, 2);
+                    $vendor->save();
+                }
+
+                if ($isCredit && ! $this->is_pending && $this->purchase_order_id !== '') {
+                    $this->refreshPurchaseOrderStatus((int) $this->purchase_order_id);
+                }
+            });
+        } catch (\Throwable $e) {
+            $this->dispatch('be-toast', message: $e->getMessage());
+
+            return null;
+        }
 
         $this->navigatorId = (int) $bill->id;
         $stored = $this->storePendingAttachmentsFor('attachments/vendor-bills/'.$bill->bill_number);
@@ -609,6 +585,185 @@ class VendorBillForm extends Component
             .($stored ? ' '.$stored.' attachment(s) stored.' : ''));
 
         return $bill;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $itemLines
+     * @param  array<int, array<string, mixed>>  $expensePayload
+     */
+    protected function updateExistingBill(
+        int $billId,
+        array $itemLines,
+        array $expensePayload,
+        string $subtotal,
+        bool $isCredit,
+        ?string $memoValue,
+    ): VendorBill {
+        $bill = VendorBill::query()->whereKey($billId)->lockForUpdate()->with('lines.item')->firstOrFail();
+        $wasPending = $bill->status === 'pending' || str_contains((string) $bill->memo, 'PENDING');
+        $wasCredit = str_contains((string) $bill->memo, 'CREDIT');
+        $wasReceived = str_contains((string) $bill->memo, 'BILL RECEIVED');
+        $oldBalanceDue = (string) $bill->balance_due;
+        $amountPaid = (string) $bill->amount_paid;
+
+        if (! $wasPending) {
+            $this->reverseBillStock($bill, $wasCredit, $wasReceived);
+        }
+
+        $bill->lines()->delete();
+
+        $balanceDue = $this->is_pending ? '0.00' : bcsub($subtotal, $amountPaid, 2);
+        if (bccomp($balanceDue, '0', 2) < 0) {
+            $amountPaid = $subtotal;
+            $balanceDue = '0.00';
+        }
+        $status = $this->is_pending
+            ? 'pending'
+            : (bccomp($balanceDue, '0', 2) === 0
+                ? 'paid'
+                : (bccomp($amountPaid, '0', 2) > 0 ? 'partial' : 'open'));
+
+        $bill->update([
+            'bill_number' => $this->bill_number,
+            'ref_no' => $this->ref_no ?: null,
+            'vendor_id' => (int) $this->vendor_id,
+            'bill_date' => $this->bill_date,
+            'due_date' => $this->due_date ?: null,
+            'status' => $status,
+            'subtotal' => $subtotal,
+            'total' => $subtotal,
+            'amount_paid' => $amountPaid,
+            'balance_due' => $balanceDue,
+            'memo' => $memoValue,
+        ]);
+
+        $this->writeBillLinesAndStock($bill, $itemLines, $expensePayload, $isCredit, wasPosted: ! $this->is_pending);
+
+        $arDelta = bcsub($balanceDue, $wasPending ? '0.00' : $oldBalanceDue, 2);
+        if (bccomp($arDelta, '0', 2) !== 0) {
+            $vendor = Vendor::query()->lockForUpdate()->findOrFail($bill->vendor_id);
+            $vendor->balance = $isCredit || $wasCredit
+                ? bcsub((string) $vendor->balance, $arDelta, 2)
+                : bcadd((string) $vendor->balance, $arDelta, 2);
+            $vendor->save();
+        }
+
+        if ($isCredit && ! $this->is_pending && $this->purchase_order_id !== '') {
+            $this->refreshPurchaseOrderStatus((int) $this->purchase_order_id);
+        }
+
+        return $bill->fresh('lines');
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $itemLines
+     * @param  array<int, array<string, mixed>>  $expensePayload
+     */
+    protected function writeBillLinesAndStock(
+        VendorBill $bill,
+        array $itemLines,
+        array $expensePayload,
+        bool $isCredit,
+        bool $wasPosted,
+    ): void {
+        foreach ($itemLines as $line) {
+            VendorBillLine::query()->create([
+                'vendor_bill_id' => $bill->id,
+                'item_id' => $line['item_id'],
+                'description' => $line['description'] ?? null,
+                'quantity' => $line['quantity'],
+                'rate' => $line['rate'],
+                'amount' => number_format((float) $line['quantity'] * (float) $line['rate'], 2, '.', ''),
+            ]);
+
+            if (! $wasPosted || $this->is_pending) {
+                continue;
+            }
+
+            $item = Item::query()->find($line['item_id']);
+            if (! $item?->tracksInventory()) {
+                continue;
+            }
+
+            $inventory = app(InventoryService::class);
+
+            if ($isCredit) {
+                $inventory->post($item, [
+                    'type' => 'vendor_credit',
+                    'qty_out' => $line['quantity'],
+                    'unit_cost' => $line['rate'] ?: $item->average_cost,
+                    'reference_type' => VendorBill::class,
+                    'reference_id' => $bill->id,
+                    'occurred_at' => $this->bill_date,
+                    'created_by' => auth()->id(),
+                    'memo' => 'Vendor return '.$bill->bill_number,
+                ]);
+
+                $this->reversePurchaseOrderReceive(
+                    (int) ($line['purchase_order_line_id'] ?? 0),
+                    (int) $line['item_id'],
+                    (string) $line['quantity']
+                );
+            } elseif ($this->bill_received) {
+                $inventory->post($item, [
+                    'type' => 'purchase',
+                    'qty_in' => $line['quantity'],
+                    'unit_cost' => $line['rate'] ?: $item->average_cost ?: $item->purchase_cost,
+                    'reference_type' => VendorBill::class,
+                    'reference_id' => $bill->id,
+                    'occurred_at' => $this->bill_date,
+                    'created_by' => auth()->id(),
+                    'memo' => 'Bill received '.$bill->bill_number,
+                ]);
+            }
+        }
+
+        foreach ($expensePayload as $line) {
+            VendorBillLine::query()->create([
+                'vendor_bill_id' => $bill->id,
+                'item_id' => null,
+                'description' => $line['description'] ?: 'Expense',
+                'quantity' => $line['quantity'],
+                'rate' => $line['rate'],
+                'amount' => $line['amount'],
+            ]);
+        }
+    }
+
+    protected function reverseBillStock(VendorBill $bill, bool $wasCredit, bool $wasReceived): void
+    {
+        $inventory = app(InventoryService::class);
+
+        foreach ($bill->lines as $line) {
+            if (! $line->item_id || ! $line->item?->tracksInventory()) {
+                continue;
+            }
+
+            if ($wasCredit) {
+                $inventory->post($line->item, [
+                    'type' => 'vendor_credit_edit',
+                    'qty_in' => $line->quantity,
+                    'unit_cost' => $line->rate ?: $line->item->average_cost,
+                    'reference_type' => VendorBill::class,
+                    'reference_id' => $bill->id,
+                    'occurred_at' => $this->bill_date,
+                    'created_by' => auth()->id(),
+                    'memo' => 'Reverse RTV/credit '.$bill->bill_number,
+                ]);
+            } elseif ($wasReceived) {
+                $inventory->post($line->item, [
+                    'type' => 'bill_edit',
+                    'qty_out' => $line->quantity,
+                    'unit_cost' => $line->rate ?: $line->item->average_cost,
+                    'reference_type' => VendorBill::class,
+                    'reference_id' => $bill->id,
+                    'occurred_at' => $this->bill_date,
+                    'created_by' => auth()->id(),
+                    'allow_negative' => true,
+                    'memo' => 'Reverse bill received '.$bill->bill_number,
+                ]);
+            }
+        }
     }
 
     protected function reversePurchaseOrderReceive(int $poLineId, int $itemId, string $qty): void
@@ -791,7 +946,7 @@ class VendorBillForm extends Component
         $this->bill_received = str_contains($memo, 'BILL RECEIVED');
         $this->is_pending = $document->status === 'pending' || str_contains($memo, 'PENDING');
         $this->memo = trim(str_replace(['CREDIT · ', 'BILL RECEIVED · ', 'PENDING · ', 'CREDIT', 'BILL RECEIVED', 'PENDING'], '', $memo));
-        $this->bill_number = DocumentNumbers::next(VendorBill::class, 'bill_number', 'BILL-');
+        $this->bill_number = (string) $document->bill_number;
 
         $this->lines = [];
         $this->expenseLines = [];
@@ -853,6 +1008,9 @@ class VendorBillForm extends Component
             ? ($this->isRtv ? 'Return to Vendor (RTV)' : 'Vendor Credit')
             : 'Enter Bills';
 
+        if ($this->navigatorId) {
+            $pageTitle = 'Edit '.$pageTitle;
+        }
         $vendor = $this->vendor_id !== ''
             ? Vendor::query()
                 ->with(['vendorBills' => fn ($q) => $q->latest('bill_date')->limit(5)])

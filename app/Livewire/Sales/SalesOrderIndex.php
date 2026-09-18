@@ -34,6 +34,19 @@ class SalesOrderIndex extends Component
         $this->resetPage();
     }
 
+    public function openEdit(int $id): void
+    {
+        abort_unless(auth()->user()?->hasPermission('invoice.view'), 403);
+        $order = SalesOrder::query()->findOrFail($id);
+        if ($order->status === 'invoiced') {
+            $this->dispatch('be-toast', message: 'Invoiced sales orders cannot be edited.');
+
+            return;
+        }
+        $this->selectedLineId = $id;
+        $this->openWorkspaceEdit('sales-orders.edit', ['salesOrder' => $order->id], 'SO: '.$order->number);
+    }
+
     public function createDraft(): void
     {
         abort_unless(auth()->user()?->hasPermission('invoice.create'), 403);

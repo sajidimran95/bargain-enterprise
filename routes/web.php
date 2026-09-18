@@ -106,10 +106,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('sales-orders', SalesOrderIndex::class)->name('sales-orders.index');
         Route::get('sales-orders/fulfillment', SalesOrderFulfillmentWorksheet::class)->name('sales-orders.fulfillment');
         Route::get('sales-orders/create', SalesOrderForm::class)->name('sales-orders.create');
+        Route::get('sales-orders/{salesOrder}/edit', SalesOrderForm::class)->name('sales-orders.edit');
 
         Route::get('invoices', InvoiceIndex::class)->name('invoices.index');
         Route::get('invoices/batch', InvoiceBatch::class)->name('invoices.batch');
         Route::get('invoices/create', InvoiceForm::class)->name('invoices.create');
+        Route::get('invoices/{invoice}/edit', InvoiceForm::class)->name('invoices.edit');
 
         Route::get('sales-receipts', SalesReceiptIndex::class)->name('sales-receipts.index');
         Route::get('sales-receipts/create', SalesReceiptForm::class)->name('sales-receipts.create');
@@ -123,13 +125,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('purchase-orders', PurchaseOrderIndex::class)->name('purchase-orders.index');
         Route::get('purchase-orders/create', PurchaseOrderForm::class)->name('purchase-orders.create');
+        Route::get('purchase-orders/{purchaseOrder}/edit', PurchaseOrderForm::class)->name('purchase-orders.edit');
 
         Route::get('goods-receipts', GoodsReceiptIndex::class)->name('goods-receipts.index');
         Route::get('goods-receipts/create', GoodsReceiptForm::class)->name('goods-receipts.create');
+        Route::get('goods-receipts/{goodsReceipt}/edit', GoodsReceiptForm::class)->name('goods-receipts.edit');
 
         Route::get('vendor-bills', VendorBillIndex::class)->name('vendor-bills.index');
         Route::get('vendor-bills/create', VendorBillForm::class)->name('vendor-bills.create');
+        Route::get('vendor-bills/{vendorBill}/edit', VendorBillForm::class)->name('vendor-bills.edit');
         Route::get('vendor-returns/create', VendorBillForm::class)->name('vendor-returns.create');
+        Route::get('vendor-returns/{vendorBill}/edit', VendorBillForm::class)->name('vendor-returns.edit');
 
         Route::get('vendor-payments', VendorPaymentIndex::class)->name('vendor-payments.index');
         Route::get('vendor-payments/create', VendorPaymentForm::class)->name('vendor-payments.create');

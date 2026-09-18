@@ -77,6 +77,18 @@ class ItemManagementTest extends TestCase
             ->assertSee('INACTIVE001');
     }
 
+    public function test_double_click_open_edit_selects_item(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('manager');
+        $item = Item::factory()->create(['sku' => 'DBLCLICK001', 'is_active' => true]);
+
+        Livewire::actingAs($user)
+            ->test(ItemList::class)
+            ->call('openEdit', $item->id)
+            ->assertSet('selectedId', $item->id);
+    }
+
     public function test_edit_item_matches_quickbooks_layout(): void
     {
         $user = User::factory()->create();

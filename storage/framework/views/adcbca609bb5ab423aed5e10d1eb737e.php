@@ -86,14 +86,22 @@
                         <th class="text-right">Lines</th>
                         <th class="text-right">Total</th>
                         <th class="text-right">Balance</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__empty_1 = true; $__currentLoopData = $bills; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $bill): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                        <?php
+                            $isRtv = str_starts_with((string) $bill->bill_number, 'RTV-')
+                                || str_contains((string) ($bill->memo ?? ''), 'CREDIT');
+                            $editRoute = $isRtv ? 'vendor-returns.edit' : 'vendor-bills.edit';
+                            $editTitle = ($isRtv ? 'RTV: ' : 'Bill: ').$bill->bill_number;
+                        ?>
                         <tr
                             wire:key="vb-<?php echo e($bill->id); ?>"
                             wire:click="selectLine(<?php echo e($bill->id); ?>)"
-                            class="<?php echo e($selectedLineId === $bill->id ? 'is-selected' : ''); ?>"
+                            wire:dblclick="openEdit(<?php echo e($bill->id); ?>)"
+                            class="<?php echo e($selectedLineId === $bill->id ? 'is-selected' : ''); ?> cursor-pointer"
                         >
                             <td><?php echo e($bill->bill_date?->format('m/d/Y')); ?></td>
                             <td><?php echo e($bill->bill_number); ?></td>
@@ -102,9 +110,30 @@
                             <td class="num"><?php echo e($bill->lines_count); ?></td>
                             <td class="num"><?php echo e(number_format((float) $bill->total, 2)); ?></td>
                             <td class="num"><?php echo e(number_format((float) $bill->balance_due, 2)); ?></td>
+                            <td class="whitespace-nowrap">
+                                <?php if (isset($component)) { $__componentOriginal5abd15ccddcad372df58dab78ed00d60 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal5abd15ccddcad372df58dab78ed00d60 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.workspace-link','data' => ['route' => $editRoute,'params' => ['vendorBill' => $bill->id],'title' => $editTitle,'class' => 'be-link-btn','@click.stop' => true]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('erp.workspace-link'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['route' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($editRoute),'params' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(['vendorBill' => $bill->id]),'title' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($editTitle),'class' => 'be-link-btn','@click.stop' => true]); ?>Edit <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
+<?php $attributes = $__attributesOriginal5abd15ccddcad372df58dab78ed00d60; ?>
+<?php unset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
+<?php $component = $__componentOriginal5abd15ccddcad372df58dab78ed00d60; ?>
+<?php unset($__componentOriginal5abd15ccddcad372df58dab78ed00d60); ?>
+<?php endif; ?>
+                            </td>
                         </tr>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                        <tr><td colspan="7"><?php if (isset($component)) { $__componentOriginal93f05f5416e760f97131cc8c9b752903 = $component; } ?>
+                        <tr><td colspan="8"><?php if (isset($component)) { $__componentOriginal93f05f5416e760f97131cc8c9b752903 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal93f05f5416e760f97131cc8c9b752903 = $attributes; } ?>
 <?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.empty-state','data' => ['title' => 'No vendor bills']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('erp.empty-state'); ?>

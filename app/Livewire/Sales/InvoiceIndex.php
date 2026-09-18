@@ -35,6 +35,14 @@ class InvoiceIndex extends Component
         $this->resetPage();
     }
 
+    public function openEdit(int $id): void
+    {
+        abort_unless(auth()->user()?->hasPermission('invoice.view'), 403);
+        $invoice = Invoice::query()->findOrFail($id);
+        $this->selectedLineId = $id;
+        $this->openWorkspaceEdit('invoices.edit', ['invoice' => $invoice->id], 'Invoice: '.$invoice->invoice_number);
+    }
+
     public function exportExcel(): StreamedResponse
     {
         abort_unless(auth()->user()?->hasPermission('invoice.view'), 403);

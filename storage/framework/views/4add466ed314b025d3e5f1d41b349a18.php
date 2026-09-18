@@ -330,8 +330,8 @@
                             <tr
                                 wire:key="item-<?php echo e($item->id); ?>"
                                 wire:click="selectItem(<?php echo e($item->id); ?>)"
+                                wire:dblclick="openEdit(<?php echo e($item->id); ?>)"
                                 class="cursor-pointer <?php echo e($selectedId === $item->id ? 'is-selected' : ''); ?>"
-                                @dblclick="window.location.assign(<?php echo \Illuminate\Support\Js::from(route('items.edit', $item))->toHtml() ?>)"
                             >
                                 <td>
                                     <?php echo e($item->sku); ?>

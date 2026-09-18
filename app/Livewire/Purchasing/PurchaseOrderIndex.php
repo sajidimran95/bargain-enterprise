@@ -34,6 +34,21 @@ class PurchaseOrderIndex extends Component
         $this->resetPage();
     }
 
+    public function openEdit(int $id): void
+    {
+        abort_unless(auth()->user()?->hasPermission('purchase.view'), 403);
+
+        $order = PurchaseOrder::query()->findOrFail($id);
+        if (in_array($order->status, ['partial', 'received', 'cancelled'], true)) {
+            $this->dispatch('be-toast', message: 'Partially received, fully received, or cancelled purchase orders cannot be edited.');
+
+            return;
+        }
+
+        $this->selectedLineId = $id;
+        $this->openWorkspaceEdit('purchase-orders.edit', ['purchaseOrder' => $order->id], 'PO: '.$order->number);
+    }
+
     public function createDraft(): void
     {
         abort_unless(auth()->user()?->hasPermission('purchase.create'), 403);

@@ -40,7 +40,8 @@
                         <tr
                             wire:key="inv-{{ $invoice->id }}"
                             wire:click="selectLine({{ $invoice->id }})"
-                            class="{{ $selectedLineId === $invoice->id ? 'is-selected' : '' }}"
+                            wire:dblclick="openEdit({{ $invoice->id }})"
+                            class="{{ $selectedLineId === $invoice->id ? 'is-selected' : '' }} cursor-pointer"
                         >
                             <td>{{ $invoice->invoice_date?->format('m/d/Y') }}</td>
                             <td>{{ $invoice->invoice_number }}</td>
@@ -49,6 +50,7 @@
                             <td class="num">{{ number_format((float) $invoice->total, 2) }}</td>
                             <td class="num">{{ number_format((float) $invoice->balance_due, 2) }}</td>
                             <td class="whitespace-nowrap">
+                                <x-erp.workspace-link route="invoices.edit" :params="['invoice' => $invoice->id]" :title="'Invoice: '.$invoice->invoice_number" class="be-link-btn" @click.stop>Edit</x-erp.workspace-link>
                                 <a href="{{ route('invoices.pdf', $invoice) }}" class="be-link-btn" target="_blank" @click.stop>PDF</a>
                                 <button type="button" class="be-link-btn" wire:click="openInvoiceEmail({{ $invoice->id }})" @click.stop>Email</button>
                             </td>

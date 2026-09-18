@@ -5,6 +5,7 @@ namespace App\Livewire\Sales;
 use App\Actions\Sales\CreateInvoiceAction;
 use App\Models\Invoice;
 use App\Models\SalesOrder;
+use App\Services\InventoryService;
 use App\Support\DocumentNumbers;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
@@ -52,7 +53,7 @@ class SalesOrderFulfillmentWorksheet extends Component
         $this->selectedOrders = [];
     }
 
-    public function createInvoices(CreateInvoiceAction $createInvoice): void
+    public function createInvoices(CreateInvoiceAction $createInvoice, InventoryService $inventory): void
     {
         abort_unless(auth()->user()?->hasPermission('invoice.create'), 403);
 
@@ -79,7 +80,7 @@ class SalesOrderFulfillmentWorksheet extends Component
             ])->all();
 
             try {
-                DB::transaction(function () use ($createInvoice, $order, $lines, &$created) {
+                DB::transaction(function () use ($createInvoice, $inventory, $order, $lines, &$created) {
                     $createInvoice->handle([
                         'customer_id' => $order->customer_id,
                         'invoice_number' => DocumentNumbers::next(Invoice::class, 'invoice_number', 'INV-'),
@@ -89,6 +90,12 @@ class SalesOrderFulfillmentWorksheet extends Component
                         'memo' => 'Fulfilled from '.$order->number,
                         'created_by' => auth()->id(),
                     ], $lines);
+
+                    $soLines = $order->lines->map(fn ($line) => [
+                        'item' => $line->item,
+                        'quantity' => $line->quantity,
+                    ])->all();
+                    $inventory->syncOnSoQty($soLines, []);
 
                     $order->update(['status' => 'invoiced']);
                     $created++;

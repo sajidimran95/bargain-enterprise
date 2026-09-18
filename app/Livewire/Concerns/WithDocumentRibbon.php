@@ -69,7 +69,7 @@ trait WithDocumentRibbon
 
         $this->loadDocumentIntoForm($doc);
         $this->navigatorId = (int) $doc->getKey();
-        $this->dispatch('be-toast', message: 'Loaded '.$this->documentLabel($doc).'. Change anything and Save to post a new copy.');
+        $this->dispatch('be-toast', message: 'Loaded '.$this->documentLabel($doc).'. Save updates this document (stock and balance adjust).');
     }
 
     public function findNextDocument(): void
@@ -83,7 +83,7 @@ trait WithDocumentRibbon
 
         $this->loadDocumentIntoForm($doc);
         $this->navigatorId = (int) $doc->getKey();
-        $this->dispatch('be-toast', message: 'Loaded '.$this->documentLabel($doc).'. Change anything and Save to post a new copy.');
+        $this->dispatch('be-toast', message: 'Loaded '.$this->documentLabel($doc).'. Save updates this document (stock and balance adjust).');
     }
 
     public function printDocument(): void

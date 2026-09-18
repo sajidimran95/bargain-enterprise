@@ -3,6 +3,7 @@
 namespace App\Livewire\Purchasing;
 
 use App\Actions\Purchasing\ReceiveGoodsAction;
+use App\Actions\Purchasing\UpdateGoodsReceiptAction;
 use App\Livewire\Concerns\WithLineItems;
 use App\Models\GoodsReceipt;
 use App\Models\Item;
@@ -10,6 +11,7 @@ use App\Models\PurchaseOrder;
 use App\Models\Vendor;
 use App\Support\DocumentNumbers;
 use App\Support\ItemCatalog;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -19,6 +21,8 @@ use Livewire\Component;
 class GoodsReceiptForm extends Component
 {
     use WithLineItems;
+
+    public ?int $editingId = null;
 
     public string $number = '';
 
@@ -30,12 +34,49 @@ class GoodsReceiptForm extends Component
 
     public string $memo = '';
 
-    public function mount(): void
+    public function mount(?GoodsReceipt $goodsReceipt = null): void
     {
         abort_unless(auth()->user()?->hasPermission('purchase.create'), 403);
+
+        if ($goodsReceipt?->exists) {
+            $this->loadReceipt($goodsReceipt);
+
+            return;
+        }
+
         $this->number = DocumentNumbers::next(GoodsReceipt::class, 'number', 'GR-');
         $this->receipt_date = now()->toDateString();
         $this->addLine();
+    }
+
+    public function loadReceipt(GoodsReceipt $receipt): void
+    {
+        $receipt->loadMissing('lines.item');
+        $this->editingId = (int) $receipt->id;
+        $this->number = (string) $receipt->number;
+        $this->vendor_id = (string) $receipt->vendor_id;
+        $this->purchase_order_id = (string) ($receipt->purchase_order_id ?? '');
+        $this->receipt_date = $receipt->receipt_date?->toDateString() ?: now()->toDateString();
+        $this->memo = (string) ($receipt->memo ?? '');
+        $this->lines = [];
+        foreach ($receipt->lines as $line) {
+            $this->lines[] = [
+                'item_id' => (string) $line->item_id,
+                'item_code' => $line->item?->barcode ?: $line->item?->sku ?: '',
+                'description' => $line->item?->purchase_description ?: $line->item?->name ?: '',
+                'quantity' => number_format((float) $line->quantity, 2, '.', ''),
+                'ordered_qty' => '',
+                'previously_received' => '',
+                'rate' => number_format((float) $line->unit_cost, 2, '.', ''),
+                'amount' => number_format((float) $line->quantity * (float) $line->unit_cost, 2, '.', ''),
+                'taxable' => false,
+                'class' => '',
+                'purchase_order_line_id' => (string) ($line->purchase_order_line_id ?? ''),
+            ];
+        }
+        if ($this->lines === []) {
+            $this->addLine();
+        }
     }
 
     public function updatedVendorId(): void
@@ -163,12 +204,17 @@ class GoodsReceiptForm extends Component
         ];
     }
 
-    public function save(ReceiveGoodsAction $action): mixed
+    public function save(ReceiveGoodsAction $create, UpdateGoodsReceiptAction $update): mixed
     {
         abort_unless(auth()->user()?->hasPermission('purchase.create'), 403);
 
         $this->validate([
-            'number' => ['required', 'string', 'max:50', 'unique:goods_receipts,number'],
+            'number' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('goods_receipts', 'number')->ignore($this->editingId),
+            ],
             'vendor_id' => ['required', 'exists:vendors,id'],
             'purchase_order_id' => ['required', 'exists:purchase_orders,id'],
             'receipt_date' => ['required', 'date'],
@@ -209,21 +255,36 @@ class GoodsReceiptForm extends Component
         ], $filled);
 
         try {
-            $receipt = $action->handle([
-                'number' => $this->number,
-                'vendor_id' => (int) $this->vendor_id,
-                'purchase_order_id' => (int) $this->purchase_order_id,
-                'receipt_date' => $this->receipt_date,
-                'memo' => $this->memo ?: null,
-                'created_by' => auth()->id(),
-            ], $payload);
+            if ($this->editingId) {
+                $receipt = $update->handle(
+                    GoodsReceipt::query()->findOrFail($this->editingId),
+                    [
+                        'number' => $this->number,
+                        'vendor_id' => (int) $this->vendor_id,
+                        'purchase_order_id' => (int) $this->purchase_order_id,
+                        'receipt_date' => $this->receipt_date,
+                        'memo' => $this->memo ?: null,
+                        'updated_by' => auth()->id(),
+                    ],
+                    $payload
+                );
+            } else {
+                $receipt = $create->handle([
+                    'number' => $this->number,
+                    'vendor_id' => (int) $this->vendor_id,
+                    'purchase_order_id' => (int) $this->purchase_order_id,
+                    'receipt_date' => $this->receipt_date,
+                    'memo' => $this->memo ?: null,
+                    'created_by' => auth()->id(),
+                ], $payload);
+            }
         } catch (\Throwable $e) {
             $this->dispatch('be-toast', message: $e->getMessage());
 
             return null;
         }
 
-        $this->dispatch('be-toast', message: 'Receipt '.$receipt->number.' posted against PO '.$po->number.'.');
+        $this->dispatch('be-toast', message: 'Receipt '.$receipt->number.' saved against PO '.$po->number.'.');
 
         return $this->redirect(route('goods-receipts.index'), navigate: true);
     }
@@ -235,9 +296,16 @@ class GoodsReceiptForm extends Component
         if ($this->vendor_id !== '') {
             $pos = PurchaseOrder::query()
                 ->where('vendor_id', $this->vendor_id)
-                ->whereIn('status', ['open', 'partial', 'ordered', 'sent'])
-                ->whereHas('lines', function ($q) {
-                    $q->whereColumn('qty_received', '<', 'quantity');
+                ->when($this->editingId, function ($q) {
+                    $q->where(function ($inner) {
+                        $inner->whereIn('status', ['open', 'partial', 'ordered', 'sent', 'received'])
+                            ->orWhere('id', $this->purchase_order_id);
+                    });
+                }, function ($q) {
+                    $q->whereIn('status', ['open', 'partial', 'ordered', 'sent'])
+                        ->whereHas('lines', function ($lq) {
+                            $lq->whereColumn('qty_received', '<', 'quantity');
+                        });
                 })
                 ->orderByDesc('order_date')
                 ->orderByDesc('id')
@@ -256,8 +324,8 @@ class GoodsReceiptForm extends Component
             'itemOptions' => ItemCatalog::selectOptions(purchase: true),
             'subtotal' => $this->linesSubtotal(),
         ])->layoutData([
-            'title' => 'Receive Inventory',
-            'windowTitle' => 'Receive Inventory',
+            'title' => $this->editingId ? 'Edit Receive Inventory' : 'Receive Inventory',
+            'windowTitle' => $this->editingId ? 'Edit Receive Inventory' : 'Receive Inventory',
         ]);
     }
 }

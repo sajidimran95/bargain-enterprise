@@ -179,25 +179,53 @@
                             <span>Total</span>
                             <strong>{{ number_format((float) $total, 2) }}</strong>
                         </div>
-                        <div class="be-invoice-totals__row">
-                            <span>Payments Applied</span>
-                            <strong>{{ $receive_payment_now && ! $is_pending ? number_format((float) ($payment_amount !== '' ? $payment_amount : $total), 2) : '0.00' }}</strong>
-                        </div>
-                        <div class="be-invoice-totals__row be-invoice-totals__row--balance">
-                            <span>Balance Due</span>
-                            <strong>
-                                @php
-                                    $appliedPreview = ($receive_payment_now && ! $is_pending)
-                                        ? (float) ($payment_amount !== '' ? $payment_amount : $total)
-                                        : 0;
-                                    $balancePreview = max(0, (float) $total - $appliedPreview);
-                                @endphp
-                                {{ number_format($balancePreview, 2) }}
-                            </strong>
-                        </div>
+                        @if ($savedInvoice)
+                            @php
+                                $paidSoFar = (float) $savedInvoice->amount_paid;
+                                $editBalance = max(0, (float) $total - $paidSoFar);
+                                $editOverpay = max(0, $paidSoFar - (float) $total);
+                            @endphp
+                            <div class="be-invoice-totals__row">
+                                <span>Amount Paid</span>
+                                <strong>{{ number_format($paidSoFar, 2) }}</strong>
+                            </div>
+                            <div class="be-invoice-totals__row be-invoice-totals__row--balance">
+                                <span>Balance Due</span>
+                                <strong>{{ number_format($editBalance, 2) }}</strong>
+                            </div>
+                            @if ($editOverpay > 0)
+                                <div class="be-invoice-totals__row text-[11px]" style="color:#8a4b00;">
+                                    <span>Overpayment → credit</span>
+                                    <strong>{{ number_format($editOverpay, 2) }}</strong>
+                                </div>
+                            @elseif ($editBalance > 0 && $paidSoFar > 0)
+                                <div class="be-invoice-totals__row text-[11px] text-gray-600">
+                                    <span>Still to collect</span>
+                                    <strong>{{ number_format($editBalance, 2) }}</strong>
+                                </div>
+                            @endif
+                        @else
+                            <div class="be-invoice-totals__row">
+                                <span>Payments Applied</span>
+                                <strong>{{ $receive_payment_now && ! $is_pending ? number_format((float) ($payment_amount !== '' ? $payment_amount : $total), 2) : '0.00' }}</strong>
+                            </div>
+                            <div class="be-invoice-totals__row be-invoice-totals__row--balance">
+                                <span>Balance Due</span>
+                                <strong>
+                                    @php
+                                        $appliedPreview = ($receive_payment_now && ! $is_pending)
+                                            ? (float) ($payment_amount !== '' ? $payment_amount : $total)
+                                            : 0;
+                                        $balancePreview = max(0, (float) $total - $appliedPreview);
+                                    @endphp
+                                    {{ number_format($balancePreview, 2) }}
+                                </strong>
+                            </div>
+                        @endif
                     </div>
                 </div>
 
+                @unless ($savedInvoice)
                 <div class="be-invoice-paynow border px-2 py-2 mb-2" style="border-color:#8aa3bc;background:#f3f7fb;">
                     <label class="inline-flex items-center gap-2 text-[12px] font-semibold">
                         <input type="checkbox" wire:model.live="receive_payment_now" @disabled($is_pending)>
@@ -227,6 +255,9 @@
                         <p class="mt-1 text-[11px] text-gray-600">Clear Pending before receiving payment.</p>
                     @endif
                 </div>
+                @else
+                <p class="mb-2 text-[11px] text-gray-600">Editing {{ $savedInvoice->invoice_number }}. Save updates stock and paid/balance. Extra due stays open; overpayment becomes a customer credit.</p>
+                @endunless
 
                 <div class="be-invoice-actions">
                     <button type="button" class="be-btn be-btn--primary" wire:click="saveAndClose">Save &amp; Close</button>

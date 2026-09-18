@@ -30,6 +30,7 @@
                         <th>Status</th>
                         <th class="text-right">Lines</th>
                         <th class="text-right">Total</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -37,7 +38,10 @@
                         <tr
                             wire:key="so-{{ $order->id }}"
                             wire:click="selectLine({{ $order->id }})"
-                            class="{{ $selectedLineId === $order->id ? 'is-selected' : '' }}"
+                            @if ($order->status !== 'invoiced')
+                                wire:dblclick="openEdit({{ $order->id }})"
+                            @endif
+                            class="{{ $selectedLineId === $order->id ? 'is-selected' : '' }} cursor-pointer"
                         >
                             <td>{{ $order->order_date?->format('m/d/Y') }}</td>
                             <td>{{ $order->number }}</td>
@@ -45,9 +49,16 @@
                             <td><span class="be-badge">{{ $order->status }}</span></td>
                             <td class="num">{{ $order->lines_count }}</td>
                             <td class="num">{{ number_format((float) $order->total, 2) }}</td>
+                            <td class="whitespace-nowrap">
+                                @if ($order->status !== 'invoiced')
+                                    <x-erp.workspace-link route="sales-orders.edit" :params="['salesOrder' => $order->id]" :title="'SO: '.$order->number" class="be-link-btn" @click.stop>
+                                        Edit
+                                    </x-erp.workspace-link>
+                                @endif
+                            </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6"><x-erp.empty-state title="No sales orders" /></td></tr>
+                        <tr><td colspan="7"><x-erp.empty-state title="No sales orders" /></td></tr>
                     @endforelse
                 </tbody>
             </table>

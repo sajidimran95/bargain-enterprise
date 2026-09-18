@@ -51,6 +51,7 @@
                         <th>Vendor</th>
                         <th class="text-right">Lines</th>
                         <th>Memo</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -58,16 +59,38 @@
                         <tr
                             wire:key="gr-<?php echo e($receipt->id); ?>"
                             wire:click="selectLine(<?php echo e($receipt->id); ?>)"
-                            class="<?php echo e($selectedLineId === $receipt->id ? 'is-selected' : ''); ?>"
+                            wire:dblclick="openEdit(<?php echo e($receipt->id); ?>)"
+                            class="<?php echo e($selectedLineId === $receipt->id ? 'is-selected' : ''); ?> cursor-pointer"
                         >
                             <td><?php echo e($receipt->receipt_date?->format('m/d/Y')); ?></td>
                             <td><?php echo e($receipt->number); ?></td>
                             <td><?php echo e($receipt->vendor?->display_name); ?></td>
                             <td class="num"><?php echo e($receipt->lines_count); ?></td>
                             <td><?php echo e($receipt->memo); ?></td>
+                            <td class="whitespace-nowrap">
+                                <?php if (isset($component)) { $__componentOriginal5abd15ccddcad372df58dab78ed00d60 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal5abd15ccddcad372df58dab78ed00d60 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.workspace-link','data' => ['route' => 'goods-receipts.edit','params' => ['goodsReceipt' => $receipt->id],'title' => 'Receipt: '.$receipt->number,'class' => 'be-link-btn','@click.stop' => true]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('erp.workspace-link'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['route' => 'goods-receipts.edit','params' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(['goodsReceipt' => $receipt->id]),'title' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute('Receipt: '.$receipt->number),'class' => 'be-link-btn','@click.stop' => true]); ?>Edit <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
+<?php $attributes = $__attributesOriginal5abd15ccddcad372df58dab78ed00d60; ?>
+<?php unset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
+<?php $component = $__componentOriginal5abd15ccddcad372df58dab78ed00d60; ?>
+<?php unset($__componentOriginal5abd15ccddcad372df58dab78ed00d60); ?>
+<?php endif; ?>
+                            </td>
                         </tr>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                        <tr><td colspan="5"><?php if (isset($component)) { $__componentOriginal93f05f5416e760f97131cc8c9b752903 = $component; } ?>
+                        <tr><td colspan="6"><?php if (isset($component)) { $__componentOriginal93f05f5416e760f97131cc8c9b752903 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal93f05f5416e760f97131cc8c9b752903 = $attributes; } ?>
 <?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.empty-state','data' => ['title' => 'No goods receipts']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('erp.empty-state'); ?>

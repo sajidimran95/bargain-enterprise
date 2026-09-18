@@ -112,6 +112,7 @@
                         <th>Status</th>
                         <th class="text-right">Lines</th>
                         <th class="text-right">Total</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -119,7 +120,10 @@
                         <tr
                             wire:key="po-<?php echo e($order->id); ?>"
                             wire:click="selectLine(<?php echo e($order->id); ?>)"
-                            class="<?php echo e($selectedLineId === $order->id ? 'is-selected' : ''); ?>"
+                            <?php if(! in_array($order->status, ['partial', 'received', 'cancelled'], true)): ?>
+                                wire:dblclick="openEdit(<?php echo e($order->id); ?>)"
+                            <?php endif; ?>
+                            class="<?php echo e($selectedLineId === $order->id ? 'is-selected' : ''); ?> cursor-pointer"
                         >
                             <td><?php echo e($order->order_date?->format('m/d/Y')); ?></td>
                             <td><?php echo e($order->number); ?></td>
@@ -127,9 +131,32 @@
                             <td><span class="be-badge"><?php echo e($order->status); ?></span></td>
                             <td class="num"><?php echo e($order->lines_count); ?></td>
                             <td class="num"><?php echo e(number_format((float) $order->total, 2)); ?></td>
+                            <td class="whitespace-nowrap">
+                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(! in_array($order->status, ['partial', 'received', 'cancelled'], true)): ?>
+                                    <?php if (isset($component)) { $__componentOriginal5abd15ccddcad372df58dab78ed00d60 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal5abd15ccddcad372df58dab78ed00d60 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.workspace-link','data' => ['route' => 'purchase-orders.edit','params' => ['purchaseOrder' => $order->id],'title' => 'PO: '.$order->number,'class' => 'be-link-btn','@click.stop' => true]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('erp.workspace-link'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['route' => 'purchase-orders.edit','params' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(['purchaseOrder' => $order->id]),'title' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute('PO: '.$order->number),'class' => 'be-link-btn','@click.stop' => true]); ?>Edit <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
+<?php $attributes = $__attributesOriginal5abd15ccddcad372df58dab78ed00d60; ?>
+<?php unset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
+<?php $component = $__componentOriginal5abd15ccddcad372df58dab78ed00d60; ?>
+<?php unset($__componentOriginal5abd15ccddcad372df58dab78ed00d60); ?>
+<?php endif; ?>
+                                <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                            </td>
                         </tr>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                        <tr><td colspan="6"><?php if (isset($component)) { $__componentOriginal93f05f5416e760f97131cc8c9b752903 = $component; } ?>
+                        <tr><td colspan="7"><?php if (isset($component)) { $__componentOriginal93f05f5416e760f97131cc8c9b752903 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal93f05f5416e760f97131cc8c9b752903 = $attributes; } ?>
 <?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.empty-state','data' => ['title' => 'No purchase orders']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('erp.empty-state'); ?>

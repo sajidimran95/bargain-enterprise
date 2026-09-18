@@ -13,6 +13,7 @@
                         <th>Vendor</th>
                         <th class="text-right">Lines</th>
                         <th>Memo</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -20,16 +21,20 @@
                         <tr
                             wire:key="gr-{{ $receipt->id }}"
                             wire:click="selectLine({{ $receipt->id }})"
-                            class="{{ $selectedLineId === $receipt->id ? 'is-selected' : '' }}"
+                            wire:dblclick="openEdit({{ $receipt->id }})"
+                            class="{{ $selectedLineId === $receipt->id ? 'is-selected' : '' }} cursor-pointer"
                         >
                             <td>{{ $receipt->receipt_date?->format('m/d/Y') }}</td>
                             <td>{{ $receipt->number }}</td>
                             <td>{{ $receipt->vendor?->display_name }}</td>
                             <td class="num">{{ $receipt->lines_count }}</td>
                             <td>{{ $receipt->memo }}</td>
+                            <td class="whitespace-nowrap">
+                                <x-erp.workspace-link route="goods-receipts.edit" :params="['goodsReceipt' => $receipt->id]" :title="'Receipt: '.$receipt->number" class="be-link-btn" @click.stop>Edit</x-erp.workspace-link>
+                            </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5"><x-erp.empty-state title="No goods receipts" /></td></tr>
+                        <tr><td colspan="6"><x-erp.empty-state title="No goods receipts" /></td></tr>
                     @endforelse
                 </tbody>
             </table>

@@ -74,8 +74,8 @@
                             <tr
                                 wire:key="item-{{ $item->id }}"
                                 wire:click="selectItem({{ $item->id }})"
+                                wire:dblclick="openEdit({{ $item->id }})"
                                 class="cursor-pointer {{ $selectedId === $item->id ? 'is-selected' : '' }}"
-                                @dblclick="window.location.assign(@js(route('items.edit', $item)))"
                             >
                                 <td>
                                     {{ $item->sku }}

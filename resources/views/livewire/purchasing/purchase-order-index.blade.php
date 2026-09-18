@@ -48,6 +48,7 @@
                         <th>Status</th>
                         <th class="text-right">Lines</th>
                         <th class="text-right">Total</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -55,7 +56,10 @@
                         <tr
                             wire:key="po-{{ $order->id }}"
                             wire:click="selectLine({{ $order->id }})"
-                            class="{{ $selectedLineId === $order->id ? 'is-selected' : '' }}"
+                            @if (! in_array($order->status, ['partial', 'received', 'cancelled'], true))
+                                wire:dblclick="openEdit({{ $order->id }})"
+                            @endif
+                            class="{{ $selectedLineId === $order->id ? 'is-selected' : '' }} cursor-pointer"
                         >
                             <td>{{ $order->order_date?->format('m/d/Y') }}</td>
                             <td>{{ $order->number }}</td>
@@ -63,9 +67,14 @@
                             <td><span class="be-badge">{{ $order->status }}</span></td>
                             <td class="num">{{ $order->lines_count }}</td>
                             <td class="num">{{ number_format((float) $order->total, 2) }}</td>
+                            <td class="whitespace-nowrap">
+                                @if (! in_array($order->status, ['partial', 'received', 'cancelled'], true))
+                                    <x-erp.workspace-link route="purchase-orders.edit" :params="['purchaseOrder' => $order->id]" :title="'PO: '.$order->number" class="be-link-btn" @click.stop>Edit</x-erp.workspace-link>
+                                @endif
+                            </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6"><x-erp.empty-state title="No purchase orders" /></td></tr>
+                        <tr><td colspan="7"><x-erp.empty-state title="No purchase orders" /></td></tr>
                     @endforelse
                 </tbody>
             </table>

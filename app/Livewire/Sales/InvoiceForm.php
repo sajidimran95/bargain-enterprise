@@ -4,6 +4,7 @@ namespace App\Livewire\Sales;
 
 use App\Actions\Sales\CreateInvoiceAction;
 use App\Actions\Sales\ReceivePaymentAction;
+use App\Actions\Sales\UpdateInvoiceAction;
 use App\Livewire\Concerns\WithDocumentRibbon;
 use App\Livewire\Concerns\WithLineItems;
 use App\Models\AuditLog;
@@ -15,6 +16,7 @@ use App\Support\DocumentNumbers;
 use App\Support\ItemCatalog;
 use App\Support\PaymentMethods;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -72,9 +74,17 @@ class InvoiceForm extends Component
         $this->inspectorOpen = ! $this->inspectorOpen;
     }
 
-    public function mount(): void
+    public function mount(?Invoice $invoice = null): void
     {
         abort_unless(auth()->user()?->hasPermission('invoice.create'), 403);
+
+        if ($invoice?->exists) {
+            $this->loadDocumentIntoForm($invoice);
+            $this->navigatorId = (int) $invoice->id;
+
+            return;
+        }
+
         $this->invoice_number = DocumentNumbers::next(Invoice::class, 'invoice_number', 'INV-');
         $this->invoice_date = now()->toDateString();
         $this->due_date = now()->addDays(30)->toDateString();
@@ -195,23 +205,23 @@ class InvoiceForm extends Component
         }
     }
 
-    public function saveAndClose(CreateInvoiceAction $action): mixed
+    public function saveAndClose(): mixed
     {
         $this->saveMode = 'close';
 
-        return $this->save($action);
+        return $this->save();
     }
 
-    public function saveAndNew(CreateInvoiceAction $action): mixed
+    public function saveAndNew(): mixed
     {
         $this->saveMode = 'new';
 
-        return $this->save($action);
+        return $this->save();
     }
 
-    public function save(CreateInvoiceAction $action): mixed
+    public function save(): mixed
     {
-        $invoice = $this->persistInvoice($action);
+        $invoice = $this->persistInvoice();
         if (! $invoice) {
             return null;
         }
@@ -233,15 +243,20 @@ class InvoiceForm extends Component
     {
         $this->saveMode = 'stay';
 
-        return $this->persistInvoice(app(CreateInvoiceAction::class));
+        return $this->persistInvoice();
     }
 
-    protected function persistInvoice(CreateInvoiceAction $action): ?Invoice
+    protected function persistInvoice(): ?Invoice
     {
         abort_unless(auth()->user()?->hasPermission('invoice.create'), 403);
 
         $this->validate([
-            'invoice_number' => ['required', 'string', 'max:50', 'unique:invoices,invoice_number'],
+            'invoice_number' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('invoices', 'invoice_number')->ignore($this->navigatorId),
+            ],
             'customer_id' => ['required', 'exists:customers,id'],
             'invoice_date' => ['required', 'date'],
             'due_date' => ['nullable', 'date'],
@@ -252,24 +267,45 @@ class InvoiceForm extends Component
             'template' => ['nullable', 'string', 'max:100'],
         ]);
 
+        $header = [
+            'customer_id' => (int) $this->customer_id,
+            'invoice_number' => $this->invoice_number,
+            'invoice_date' => $this->invoice_date,
+            'due_date' => $this->due_date ?: null,
+            'status' => $this->is_pending ? 'pending' : 'open',
+            'tax_code_id' => $this->tax_code_id ?: null,
+            'memo' => $this->memo ?: null,
+            'customer_message' => $this->customer_message ?: null,
+            'class' => $this->class ?: null,
+            'template' => $this->template ?: null,
+            'print_later' => $this->print_later,
+            'email_later' => $this->email_later,
+            'is_pending' => $this->is_pending,
+            'allow_negative_inventory' => auth()->user()?->hasPermission('inventory.override') ?? false,
+        ];
+
         try {
-            $invoice = $action->handle([
-                'customer_id' => (int) $this->customer_id,
-                'invoice_number' => $this->invoice_number,
-                'invoice_date' => $this->invoice_date,
-                'due_date' => $this->due_date ?: null,
-                'status' => $this->is_pending ? 'pending' : 'open',
-                'tax_code_id' => $this->tax_code_id ?: null,
-                'memo' => $this->memo ?: null,
-                'customer_message' => $this->customer_message ?: null,
-                'class' => $this->class ?: null,
-                'template' => $this->template ?: null,
-                'print_later' => $this->print_later,
-                'email_later' => $this->email_later,
-                'is_pending' => $this->is_pending,
-                'created_by' => auth()->id(),
-                'allow_negative_inventory' => auth()->user()?->hasPermission('inventory.override') ?? false,
-            ], $this->validatedLinePayload());
+            if ($this->navigatorId) {
+                $result = app(UpdateInvoiceAction::class)->handle(
+                    Invoice::query()->findOrFail($this->navigatorId),
+                    $header + ['updated_by' => auth()->id()],
+                    $this->validatedLinePayload()
+                );
+                $invoice = $result['invoice'];
+                $editNote = '';
+                if (bccomp($result['overpayment'], '0', 2) > 0) {
+                    $creditNo = $result['overpayment_credit']?->credit_number ?? '';
+                    $editNote = ' Overpayment '.$result['overpayment'].' returned as credit '.$creditNo.'.';
+                } elseif (bccomp($result['amount_still_due'], '0', 2) > 0) {
+                    $editNote = ' Amount still to collect: '.$result['amount_still_due'].'.';
+                }
+            } else {
+                $invoice = app(CreateInvoiceAction::class)->handle(
+                    $header + ['created_by' => auth()->id()],
+                    $this->validatedLinePayload()
+                );
+                $editNote = '';
+            }
         } catch (ValidationException $e) {
             throw $e;
         } catch (\Throwable $e) {
@@ -279,7 +315,7 @@ class InvoiceForm extends Component
         }
 
         $paymentNote = '';
-        if ($this->receive_payment_now && ! $this->is_pending) {
+        if ($this->receive_payment_now && ! $this->is_pending && ! $this->navigatorId) {
             abort_unless(auth()->user()?->hasPermission('payment.create'), 403);
 
             $payAmount = number_format((float) ($this->payment_amount !== '' ? $this->payment_amount : $invoice->total), 2, '.', '');
@@ -314,7 +350,7 @@ class InvoiceForm extends Component
 
         $this->navigatorId = (int) $invoice->id;
         $stored = $this->storePendingAttachmentsFor('attachments/invoices/'.$invoice->invoice_number);
-        $this->dispatch('be-toast', message: 'Invoice '.$invoice->invoice_number.' saved.'.$paymentNote
+        $this->dispatch('be-toast', message: 'Invoice '.$invoice->invoice_number.' saved.'.$editNote.$paymentNote
             .($stored ? ' '.$stored.' attachment(s) stored.' : ''));
 
         return $invoice;
@@ -389,7 +425,8 @@ class InvoiceForm extends Component
         $this->print_later = (bool) $document->print_later;
         $this->email_later = (bool) $document->email_later;
         $this->is_pending = (bool) $document->is_pending;
-        $this->invoice_number = DocumentNumbers::next(Invoice::class, 'invoice_number', 'INV-');
+        $this->invoice_number = (string) $document->invoice_number;
+        $this->receive_payment_now = false;
 
         $this->lines = [];
         foreach ($document->lines as $line) {
@@ -459,8 +496,8 @@ class InvoiceForm extends Component
             'auditTrail' => $auditTrail,
             'paymentMethodOptions' => PaymentMethods::options(),
         ])->layoutData([
-            'title' => 'Create Invoices',
-            'windowTitle' => 'Create Invoices',
+            'title' => $savedInvoice ? 'Edit Invoice '.$savedInvoice->invoice_number : 'Create Invoices',
+            'windowTitle' => $savedInvoice ? 'Edit Invoice '.$savedInvoice->invoice_number : 'Create Invoices',
         ]);
     }
 }

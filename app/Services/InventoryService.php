@@ -61,6 +61,223 @@ class InventoryService
         });
     }
 
+    /**
+     * Sync sale quantities for a document by posting only the net delta per item.
+     * Positive delta = additional qty_out (sale); negative = qty_in (return to stock).
+     *
+     * @param  iterable<int, array{item: Item, quantity: float|string}>  $oldLines
+     * @param  iterable<int, array{item: Item, quantity: float|string}>  $newLines
+     * @param  array{occurred_at?: mixed, created_by?: ?int, allow_negative?: bool, memo?: ?string, type?: string}  $meta
+     */
+    public function syncSaleQuantities(
+        iterable $oldLines,
+        iterable $newLines,
+        string $referenceType,
+        int $referenceId,
+        array $meta = [],
+    ): void {
+        $oldByItem = $this->aggregateInventoryQtyByItem($oldLines);
+        $newByItem = $this->aggregateInventoryQtyByItem($newLines);
+        $itemIds = array_unique([...array_keys($oldByItem), ...array_keys($newByItem)]);
+
+        foreach ($itemIds as $itemId) {
+            $oldQty = $oldByItem[$itemId] ?? '0.0000';
+            $newQty = $newByItem[$itemId] ?? '0.0000';
+            $delta = bcsub($newQty, $oldQty, 4);
+
+            if (bccomp($delta, '0', 4) === 0) {
+                continue;
+            }
+
+            $item = Item::query()->findOrFail($itemId);
+            if (! $item->tracksInventory()) {
+                continue;
+            }
+
+            $payload = [
+                'type' => $meta['type'] ?? 'invoice_edit',
+                'unit_cost' => $item->average_cost,
+                'reference_type' => $referenceType,
+                'reference_id' => $referenceId,
+                'occurred_at' => $meta['occurred_at'] ?? now(),
+                'created_by' => $meta['created_by'] ?? auth()->id(),
+                'allow_negative' => (bool) ($meta['allow_negative'] ?? false),
+                'memo' => $meta['memo'] ?? null,
+            ];
+
+            if (bccomp($delta, '0', 4) > 0) {
+                $payload['qty_out'] = $delta;
+            } else {
+                $payload['qty_in'] = bcmul($delta, '-1', 4);
+            }
+
+            $this->post($item, $payload);
+        }
+    }
+
+    /**
+     * Adjust on_so_qty commitment (does not change on_hand).
+     *
+     * @param  iterable<int, array{item: Item, quantity: float|string}|array{item_id: int, quantity: float|string}>  $oldLines
+     * @param  iterable<int, array{item: Item, quantity: float|string}|array{item_id: int, quantity: float|string}>  $newLines
+     */
+    public function syncOnSoQty(iterable $oldLines, iterable $newLines): void
+    {
+        $oldByItem = $this->aggregateInventoryQtyByItem($oldLines);
+        $newByItem = $this->aggregateInventoryQtyByItem($newLines);
+        $itemIds = array_unique([...array_keys($oldByItem), ...array_keys($newByItem)]);
+
+        foreach ($itemIds as $itemId) {
+            $oldQty = $oldByItem[$itemId] ?? '0.0000';
+            $newQty = $newByItem[$itemId] ?? '0.0000';
+            $delta = bcsub($newQty, $oldQty, 4);
+
+            if (bccomp($delta, '0', 4) === 0) {
+                continue;
+            }
+
+            $locked = Item::query()->whereKey($itemId)->lockForUpdate()->firstOrFail();
+            if (! $locked->tracksInventory()) {
+                continue;
+            }
+
+            $locked->on_so_qty = bcadd((string) $locked->on_so_qty, $delta, 4);
+            if (bccomp((string) $locked->on_so_qty, '0', 4) < 0) {
+                $locked->on_so_qty = '0.0000';
+            }
+            $locked->save();
+        }
+    }
+
+    /**
+     * Adjust on_po_qty commitment (does not change on_hand).
+     *
+     * @param  iterable<int, array{item: Item, quantity: float|string}|array{item_id: int, quantity: float|string}>  $oldLines
+     * @param  iterable<int, array{item: Item, quantity: float|string}|array{item_id: int, quantity: float|string}>  $newLines
+     */
+    public function syncOnPoQty(iterable $oldLines, iterable $newLines): void
+    {
+        $oldByItem = $this->aggregateInventoryQtyByItem($oldLines);
+        $newByItem = $this->aggregateInventoryQtyByItem($newLines);
+        $itemIds = array_unique([...array_keys($oldByItem), ...array_keys($newByItem)]);
+
+        foreach ($itemIds as $itemId) {
+            $oldQty = $oldByItem[$itemId] ?? '0.0000';
+            $newQty = $newByItem[$itemId] ?? '0.0000';
+            $delta = bcsub($newQty, $oldQty, 4);
+
+            if (bccomp($delta, '0', 4) === 0) {
+                continue;
+            }
+
+            $locked = Item::query()->whereKey($itemId)->lockForUpdate()->firstOrFail();
+            if (! $locked->tracksInventory()) {
+                continue;
+            }
+
+            $locked->on_po_qty = bcadd((string) $locked->on_po_qty, $delta, 4);
+            if (bccomp((string) $locked->on_po_qty, '0', 4) < 0) {
+                $locked->on_po_qty = '0.0000';
+            }
+            $locked->save();
+        }
+    }
+
+    /**
+     * Sync purchase receipt quantities (qty_in). Positive delta = more received; negative = reverse stock in.
+     *
+     * @param  iterable<int, array{item: Item, quantity: float|string, unit_cost?: float|string}>  $oldLines
+     * @param  iterable<int, array{item: Item, quantity: float|string, unit_cost?: float|string}>  $newLines
+     * @param  array{occurred_at?: mixed, created_by?: ?int, allow_negative?: bool, memo?: ?string, type?: string}  $meta
+     */
+    public function syncPurchaseQuantities(
+        iterable $oldLines,
+        iterable $newLines,
+        string $referenceType,
+        int $referenceId,
+        array $meta = [],
+    ): void {
+        $oldByItem = $this->aggregateInventoryQtyByItem($oldLines);
+        $newByItem = $this->aggregateInventoryQtyByItem($newLines);
+        $costs = [];
+        foreach ($newLines as $line) {
+            $item = $line['item'] ?? null;
+            $itemId = $item instanceof Item ? (int) $item->id : (int) ($line['item_id'] ?? 0);
+            if ($itemId > 0 && isset($line['unit_cost'])) {
+                $costs[$itemId] = (string) $line['unit_cost'];
+            }
+        }
+
+        $itemIds = array_unique([...array_keys($oldByItem), ...array_keys($newByItem)]);
+
+        foreach ($itemIds as $itemId) {
+            $oldQty = $oldByItem[$itemId] ?? '0.0000';
+            $newQty = $newByItem[$itemId] ?? '0.0000';
+            $delta = bcsub($newQty, $oldQty, 4);
+
+            if (bccomp($delta, '0', 4) === 0) {
+                continue;
+            }
+
+            $item = Item::query()->findOrFail($itemId);
+            if (! $item->tracksInventory()) {
+                continue;
+            }
+
+            $payload = [
+                'type' => $meta['type'] ?? 'receipt_edit',
+                'unit_cost' => $costs[$itemId] ?? $item->average_cost,
+                'reference_type' => $referenceType,
+                'reference_id' => $referenceId,
+                'occurred_at' => $meta['occurred_at'] ?? now(),
+                'created_by' => $meta['created_by'] ?? auth()->id(),
+                'allow_negative' => (bool) ($meta['allow_negative'] ?? false),
+                'memo' => $meta['memo'] ?? null,
+            ];
+
+            if (bccomp($delta, '0', 4) > 0) {
+                $payload['qty_in'] = $delta;
+            } else {
+                $payload['qty_out'] = bcmul($delta, '-1', 4);
+            }
+
+            $this->post($item, $payload);
+        }
+    }
+
+    /**
+     * @param  iterable<int, array{item?: Item, item_id?: int, quantity: float|string}>  $lines
+     * @return array<int, string>
+     */
+    protected function aggregateInventoryQtyByItem(iterable $lines): array
+    {
+        $totals = [];
+
+        foreach ($lines as $line) {
+            $item = $line['item'] ?? null;
+            $itemId = $item instanceof Item ? (int) $item->id : (int) ($line['item_id'] ?? 0);
+            if ($itemId <= 0) {
+                continue;
+            }
+
+            if ($item instanceof Item && ! $item->tracksInventory()) {
+                continue;
+            }
+
+            if (! $item instanceof Item) {
+                $item = Item::query()->find($itemId);
+                if (! $item || ! $item->tracksInventory()) {
+                    continue;
+                }
+            }
+
+            $qty = number_format((float) $line['quantity'], 4, '.', '');
+            $totals[$itemId] = bcadd($totals[$itemId] ?? '0.0000', $qty, 4);
+        }
+
+        return $totals;
+    }
+
     protected function recalculateAverageCost(Item $item, string $qtyIn, string $unitCost): void
     {
         $currentQty = (string) $item->on_hand;

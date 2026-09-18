@@ -28,14 +28,22 @@
                         <th class="text-right">Lines</th>
                         <th class="text-right">Total</th>
                         <th class="text-right">Balance</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($bills as $bill)
+                        @php
+                            $isRtv = str_starts_with((string) $bill->bill_number, 'RTV-')
+                                || str_contains((string) ($bill->memo ?? ''), 'CREDIT');
+                            $editRoute = $isRtv ? 'vendor-returns.edit' : 'vendor-bills.edit';
+                            $editTitle = ($isRtv ? 'RTV: ' : 'Bill: ').$bill->bill_number;
+                        @endphp
                         <tr
                             wire:key="vb-{{ $bill->id }}"
                             wire:click="selectLine({{ $bill->id }})"
-                            class="{{ $selectedLineId === $bill->id ? 'is-selected' : '' }}"
+                            wire:dblclick="openEdit({{ $bill->id }})"
+                            class="{{ $selectedLineId === $bill->id ? 'is-selected' : '' }} cursor-pointer"
                         >
                             <td>{{ $bill->bill_date?->format('m/d/Y') }}</td>
                             <td>{{ $bill->bill_number }}</td>
@@ -44,9 +52,12 @@
                             <td class="num">{{ $bill->lines_count }}</td>
                             <td class="num">{{ number_format((float) $bill->total, 2) }}</td>
                             <td class="num">{{ number_format((float) $bill->balance_due, 2) }}</td>
+                            <td class="whitespace-nowrap">
+                                <x-erp.workspace-link :route="$editRoute" :params="['vendorBill' => $bill->id]" :title="$editTitle" class="be-link-btn" @click.stop>Edit</x-erp.workspace-link>
+                            </td>
                         </tr>
                     @empty
-                        <tr><td colspan="7"><x-erp.empty-state title="No vendor bills" /></td></tr>
+                        <tr><td colspan="8"><x-erp.empty-state title="No vendor bills" /></td></tr>
                     @endforelse
                 </tbody>
             </table>

@@ -25,6 +25,15 @@ class GoodsReceiptIndex extends Component
         abort_unless(auth()->user()?->hasPermission('purchase.view'), 403);
     }
 
+    public function openEdit(int $id): void
+    {
+        abort_unless(auth()->user()?->hasPermission('purchase.view'), 403);
+
+        $receipt = GoodsReceipt::query()->findOrFail($id);
+        $this->selectedLineId = $id;
+        $this->openWorkspaceEdit('goods-receipts.edit', ['goodsReceipt' => $receipt->id], 'Receipt: '.$receipt->number);
+    }
+
     public function createDraft(): void
     {
         abort_unless(auth()->user()?->hasPermission('purchase.create'), 403);

@@ -95,7 +95,8 @@
                         <tr
                             wire:key="inv-<?php echo e($invoice->id); ?>"
                             wire:click="selectLine(<?php echo e($invoice->id); ?>)"
-                            class="<?php echo e($selectedLineId === $invoice->id ? 'is-selected' : ''); ?>"
+                            wire:dblclick="openEdit(<?php echo e($invoice->id); ?>)"
+                            class="<?php echo e($selectedLineId === $invoice->id ? 'is-selected' : ''); ?> cursor-pointer"
                         >
                             <td><?php echo e($invoice->invoice_date?->format('m/d/Y')); ?></td>
                             <td><?php echo e($invoice->invoice_number); ?></td>
@@ -104,6 +105,25 @@
                             <td class="num"><?php echo e(number_format((float) $invoice->total, 2)); ?></td>
                             <td class="num"><?php echo e(number_format((float) $invoice->balance_due, 2)); ?></td>
                             <td class="whitespace-nowrap">
+                                <?php if (isset($component)) { $__componentOriginal5abd15ccddcad372df58dab78ed00d60 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal5abd15ccddcad372df58dab78ed00d60 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.workspace-link','data' => ['route' => 'invoices.edit','params' => ['invoice' => $invoice->id],'title' => 'Invoice: '.$invoice->invoice_number,'class' => 'be-link-btn','@click.stop' => true]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('erp.workspace-link'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['route' => 'invoices.edit','params' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(['invoice' => $invoice->id]),'title' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute('Invoice: '.$invoice->invoice_number),'class' => 'be-link-btn','@click.stop' => true]); ?>Edit <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
+<?php $attributes = $__attributesOriginal5abd15ccddcad372df58dab78ed00d60; ?>
+<?php unset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
+<?php $component = $__componentOriginal5abd15ccddcad372df58dab78ed00d60; ?>
+<?php unset($__componentOriginal5abd15ccddcad372df58dab78ed00d60); ?>
+<?php endif; ?>
                                 <a href="<?php echo e(route('invoices.pdf', $invoice)); ?>" class="be-link-btn" target="_blank" @click.stop>PDF</a>
                                 <button type="button" class="be-link-btn" wire:click="openInvoiceEmail(<?php echo e($invoice->id); ?>)" @click.stop>Email</button>
                             </td>

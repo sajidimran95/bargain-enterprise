@@ -64,6 +64,21 @@ class ItemList extends Component
         $this->showActivity = true;
     }
 
+    public function openEdit(int $id): void
+    {
+        $item = Item::query()->findOrFail($id);
+        $this->authorize('update', $item);
+        $this->selectedId = $id;
+
+        $title = 'Item: '.$item->sku;
+        $this->js(
+            'if(window.parent&&window.parent!==window){window.parent.postMessage({type:"be-workspace-open",route:"items.edit",params:{item:'.$item->id.'},title:'.json_encode($title).'},"*");}'
+            .'else if(window.beWorkspace&&typeof window.beWorkspace.open==="function"){window.beWorkspace.open("items.edit",{item:'.$item->id.'},'.json_encode($title).');}'
+            .'else if(typeof beOpenWorkspace==="function"){beOpenWorkspace("items.edit",{item:'.$item->id.'},'.json_encode($title).');}'
+            .'else{window.location.assign('.json_encode(route('items.edit', $item)).');}'
+        );
+    }
+
     public function openActivityHistory(): void
     {
         if (! $this->selectedId) {
