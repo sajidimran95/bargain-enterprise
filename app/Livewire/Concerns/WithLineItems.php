@@ -140,19 +140,19 @@ trait WithLineItems
             }
         }
 
-        $qty = (float) ($this->lines[$index]['quantity'] ?? 0);
-        $rate = (float) ($this->lines[$index]['rate'] ?? 0);
-        $this->lines[$index]['amount'] = number_format($qty * $rate, 2, '.', '');
+        $qty = number_format((float) ($this->lines[$index]['quantity'] ?? 0), 4, '.', '');
+        $rate = number_format((float) ($this->lines[$index]['rate'] ?? 0), 2, '.', '');
+        $this->lines[$index]['amount'] = $this->lineAmount($qty, $rate);
     }
 
     protected function applyScannedItem(Item $item): void
     {
         foreach ($this->lines as $index => $line) {
             if ((int) ($line['item_id'] ?? 0) === $item->id) {
-                $qty = (float) ($line['quantity'] ?? 0) + 1;
-                $this->lines[$index]['quantity'] = number_format($qty, 2, '.', '');
-                $rate = (float) ($this->lines[$index]['rate'] ?? 0);
-                $this->lines[$index]['amount'] = number_format($qty * $rate, 2, '.', '');
+                $qty = bcadd(number_format((float) ($line['quantity'] ?? 0), 4, '.', ''), '1', 4);
+                $this->lines[$index]['quantity'] = number_format((float) $qty, 2, '.', '');
+                $rate = number_format((float) ($this->lines[$index]['rate'] ?? 0), 2, '.', '');
+                $this->lines[$index]['amount'] = $this->lineAmount($qty, $rate);
 
                 return;
             }
@@ -173,9 +173,9 @@ trait WithLineItems
     protected function fillLineFromItem(int $index, Item $item): void
     {
         $rate = number_format((float) $this->lineRateForItem($item), 2, '.', '');
-        $qty = (float) ($this->lines[$index]['quantity'] ?? 1);
-        if ($qty <= 0) {
-            $qty = 1;
+        $qty = number_format((float) ($this->lines[$index]['quantity'] ?? 1), 4, '.', '');
+        if (bccomp($qty, '0', 4) <= 0) {
+            $qty = '1.0000';
         }
 
         $preserved = $this->lines[$index] ?? [];
@@ -184,9 +184,9 @@ trait WithLineItems
             'item_id' => (string) $item->id,
             'item_code' => $this->itemDisplayCode($item),
             'description' => $this->lineDescriptionForItem($item),
-            'quantity' => number_format($qty, 2, '.', ''),
+            'quantity' => number_format((float) $qty, 2, '.', ''),
             'rate' => $rate,
-            'amount' => number_format($qty * (float) $rate, 2, '.', ''),
+            'amount' => $this->lineAmount($qty, $rate),
             'taxable' => $preserved['taxable'] ?? true,
             'class' => $preserved['class'] ?? '',
         ]);
@@ -279,11 +279,27 @@ trait WithLineItems
         return $item->sales_price;
     }
 
+    protected function lineAmount(float|string $quantity, float|string $rate): string
+    {
+        $qty = number_format((float) $quantity, 4, '.', '');
+        $unit = number_format((float) $rate, 2, '.', '');
+
+        return number_format((float) bcmul($qty, $unit, 4), 2, '.', '');
+    }
+
     protected function linesSubtotal(): string
     {
         $sum = '0.00';
         foreach ($this->lines as $line) {
-            $sum = bcadd($sum, number_format((float) ($line['amount'] ?? 0), 2, '.', ''), 2);
+            if (blank($line['item_id'] ?? null)) {
+                continue;
+            }
+
+            $sum = bcadd(
+                $sum,
+                $this->lineAmount($line['quantity'] ?? 0, $line['rate'] ?? 0),
+                2
+            );
         }
 
         return $sum;
@@ -317,6 +333,15 @@ trait WithLineItems
             ]
         );
 
-        return array_values($validator->validate()['lines']);
+        return array_map(function (array $line): array {
+            $qty = number_format((float) $line['quantity'], 4, '.', '');
+            $rate = number_format((float) $line['rate'], 2, '.', '');
+
+            $line['quantity'] = $qty;
+            $line['rate'] = $rate;
+            $line['amount'] = $this->lineAmount($qty, $rate);
+
+            return $line;
+        }, array_values($validator->validate()['lines']));
     }
 }

@@ -88,6 +88,91 @@ class InvoiceEditStockPaymentTest extends TestCase
         $this->assertSame('15.00', number_format((float) $invoice->fresh()->total, 2, '.', ''));
     }
 
+    public function test_editing_invoice_qty_increase_decrease_add_and_remove_recalculates_stock_and_totals(): void
+    {
+        $this->actingAs($this->owner);
+
+        $customer = Customer::factory()->create(['is_active' => true, 'balance' => 0]);
+        $itemA = Item::factory()->create([
+            'type' => 'inventory_part',
+            'is_active' => true,
+            'on_hand' => 100,
+            'average_cost' => 2,
+            'sales_price' => 10,
+        ]);
+        $itemB = Item::factory()->create([
+            'type' => 'inventory_part',
+            'is_active' => true,
+            'on_hand' => 50,
+            'average_cost' => 3,
+            'sales_price' => 20,
+        ]);
+
+        $invoice = app(CreateInvoiceAction::class)->handle([
+            'customer_id' => $customer->id,
+            'invoice_number' => 'INV-QTY-EDIT',
+            'invoice_date' => now()->toDateString(),
+            'created_by' => $this->owner->id,
+        ], [[
+            'item_id' => $itemA->id,
+            'quantity' => 2,
+            'rate' => 10,
+            'taxable' => false,
+        ]]);
+
+        $this->assertSame('98.0000', number_format((float) $itemA->fresh()->on_hand, 4, '.', ''));
+        $this->assertSame('20.00', number_format((float) $invoice->fresh()->total, 2, '.', ''));
+
+        // Increase qty 2 → 5 (stock out +3, total 50)
+        Livewire::test(InvoiceForm::class, ['invoice' => $invoice])
+            ->assertSet('navigatorId', $invoice->id)
+            ->set('lines.0.quantity', '5')
+            ->assertSet('lines.0.amount', '50.00')
+            ->call('saveAndClose')
+            ->assertRedirect(route('invoices.index'));
+
+        $this->assertSame('95.0000', number_format((float) $itemA->fresh()->on_hand, 4, '.', ''));
+        $this->assertSame('50.00', number_format((float) $invoice->fresh()->total, 2, '.', ''));
+
+        // Decrease qty 5 → 3 (stock in +2, total 30)
+        Livewire::test(InvoiceForm::class, ['invoice' => $invoice->fresh()])
+            ->set('lines.0.quantity', '3')
+            ->assertSet('lines.0.amount', '30.00')
+            ->call('saveAndClose')
+            ->assertRedirect(route('invoices.index'));
+
+        $this->assertSame('97.0000', number_format((float) $itemA->fresh()->on_hand, 4, '.', ''));
+        $this->assertSame('30.00', number_format((float) $invoice->fresh()->total, 2, '.', ''));
+
+        // Add second item line
+        Livewire::test(InvoiceForm::class, ['invoice' => $invoice->fresh()])
+            ->call('addLine')
+            ->set('lines.1.item_id', (string) $itemB->id)
+            ->set('lines.1.quantity', '2')
+            ->set('lines.1.rate', '20')
+            ->set('lines.1.taxable', false)
+            ->assertSet('lines.1.amount', '40.00')
+            ->call('saveAndClose')
+            ->assertRedirect(route('invoices.index'));
+
+        $this->assertSame('97.0000', number_format((float) $itemA->fresh()->on_hand, 4, '.', ''));
+        $this->assertSame('48.0000', number_format((float) $itemB->fresh()->on_hand, 4, '.', ''));
+        $this->assertSame('70.00', number_format((float) $invoice->fresh()->total, 2, '.', ''));
+        $this->assertSame(2, $invoice->fresh()->lines()->count());
+
+        // Remove first line (item A qty 3 restored)
+        Livewire::test(InvoiceForm::class, ['invoice' => $invoice->fresh()])
+            ->call('removeLine', 0)
+            ->call('saveAndClose')
+            ->assertRedirect(route('invoices.index'));
+
+        $this->assertSame('100.0000', number_format((float) $itemA->fresh()->on_hand, 4, '.', ''));
+        $this->assertSame('48.0000', number_format((float) $itemB->fresh()->on_hand, 4, '.', ''));
+        $this->assertSame('40.00', number_format((float) $invoice->fresh()->total, 2, '.', ''));
+        $this->assertSame(1, $invoice->fresh()->lines()->count());
+        $this->assertSame(1, Invoice::query()->count());
+    }
+
     public function test_paid_invoice_total_increase_leaves_extra_balance_due(): void
     {
         $this->actingAs($this->owner);

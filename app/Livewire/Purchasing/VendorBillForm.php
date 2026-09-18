@@ -834,8 +834,9 @@ class VendorBillForm extends Component
             $payload[] = [
                 'item_id' => (int) $line['item_id'],
                 'description' => $line['description'] ?? null,
-                'quantity' => number_format((float) ($line['quantity'] ?? 0), 2, '.', ''),
+                'quantity' => number_format((float) ($line['quantity'] ?? 0), 4, '.', ''),
                 'rate' => number_format((float) ($line['rate'] ?? 0), 2, '.', ''),
+                'amount' => $this->lineAmount($line['quantity'] ?? 0, $line['rate'] ?? 0),
                 'purchase_order_line_id' => (int) ($line['purchase_order_line_id'] ?? 0),
             ];
         }

@@ -61,13 +61,25 @@ class SalesOrderOnSoQtyTest extends TestCase
         Livewire::test(SalesOrderForm::class, ['salesOrder' => $order])
             ->assertSet('editingId', $order->id)
             ->set('lines.0.quantity', '3')
-            ->set('lines.0.amount', '30.00')
+            ->assertSet('lines.0.amount', '30.00')
             ->call('save')
             ->assertRedirect(route('sales-orders.index'));
 
         $item->refresh();
         $this->assertSame('40.0000', number_format((float) $item->on_hand, 4, '.', ''));
         $this->assertSame('3.0000', number_format((float) $item->on_so_qty, 4, '.', ''));
+        $this->assertSame('30.00', number_format((float) $order->fresh()->total, 2, '.', ''));
+
+        Livewire::test(SalesOrderForm::class, ['salesOrder' => $order->fresh()])
+            ->set('lines.0.quantity', '8')
+            ->assertSet('lines.0.amount', '80.00')
+            ->call('save')
+            ->assertRedirect(route('sales-orders.index'));
+
+        $item->refresh();
+        $this->assertSame('40.0000', number_format((float) $item->on_hand, 4, '.', ''));
+        $this->assertSame('8.0000', number_format((float) $item->on_so_qty, 4, '.', ''));
+        $this->assertSame('80.00', number_format((float) $order->fresh()->total, 2, '.', ''));
     }
 
     public function test_fulfilling_sales_order_releases_on_so_qty_and_invoices_stock(): void
