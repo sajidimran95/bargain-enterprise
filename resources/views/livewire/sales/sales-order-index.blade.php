@@ -1,5 +1,7 @@
 <div class="be-page" x-data @be-focus-list-search.window="$refs.listSearch?.focus()">
-    <x-erp.list-toolbar heading="Sales Order List" new-route="sales-orders.create" new-label="New Sales Order" :title="$orders->total().' sales orders'" />
+    <x-erp.list-toolbar heading="Sales Order List" new-route="sales-orders.create" new-label="New Sales Order" :title="$orders->total().' sales orders'">
+        <x-erp.workspace-link route="sales-orders.fulfillment" class="be-btn">Create Invoices from SO…</x-erp.workspace-link>
+    </x-erp.list-toolbar>
 
     <div class="be-panel be-list-panel">
         <div class="be-panel__body">

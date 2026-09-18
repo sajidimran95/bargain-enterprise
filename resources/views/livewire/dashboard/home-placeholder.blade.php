@@ -41,6 +41,7 @@
 
                         <div class="be-home-customers__so">
                             <x-erp.home-tile route="sales-orders.create" title="Sales Orders" icon="cart" tone="so" :badge="$counts['sales_orders'] ?: null">Sales Orders</x-erp.home-tile>
+                            <x-erp.home-tile route="sales-orders.fulfillment" title="SO Fulfillment / Create Invoices" icon="ledger" tone="so">SO → Invoice</x-erp.home-tile>
                             <span class="be-home-arrow" aria-hidden="true"></span>
                         </div>
 
