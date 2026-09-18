@@ -7,6 +7,7 @@ use App\Actions\Lookups\UpsertLookupAction;
 use App\Livewire\Concerns\WithErpListActions;
 use App\Models\ItemCategory;
 use App\Models\ItemType;
+use App\Models\PaymentMethod;
 use App\Models\PriceLevel;
 use App\Models\TaxCode;
 use App\Models\UnitOfMeasure;
@@ -111,6 +112,7 @@ class LookupManager extends Component
             'tax_codes' => ['code' => '', 'name' => '', 'rate' => 0, 'is_active' => true],
             'units' => ['name' => '', 'abbreviation' => '', 'is_active' => true],
             'item_types' => ['name' => '', 'label' => '', 'description' => '', 'is_active' => true],
+            'payment_methods' => ['code' => '', 'name' => '', 'sort_order' => 0, 'is_active' => true],
             default => ['code' => '', 'name' => '', 'description' => '', 'is_active' => true],
         };
         $this->resetErrorBag();
@@ -122,13 +124,14 @@ class LookupManager extends Component
         $this->resetForm();
     }
 
-    protected function findRecord(int $id): PriceLevel|TaxCode|UnitOfMeasure|ItemCategory|ItemType
+    protected function findRecord(int $id): PriceLevel|TaxCode|UnitOfMeasure|ItemCategory|ItemType|PaymentMethod
     {
         return match ($this->activeType) {
             'price_levels' => PriceLevel::query()->findOrFail($id),
             'tax_codes' => TaxCode::query()->findOrFail($id),
             'units' => UnitOfMeasure::query()->findOrFail($id),
             'item_types' => ItemType::query()->findOrFail($id),
+            'payment_methods' => PaymentMethod::query()->findOrFail($id),
             default => ItemCategory::query()->findOrFail($id),
         };
     }
@@ -140,6 +143,7 @@ class LookupManager extends Component
             'tax_codes' => TaxCode::query()->orderBy('code')->get(),
             'units' => UnitOfMeasure::query()->orderBy('name')->get(),
             'item_types' => ItemType::query()->orderBy('label')->get(),
+            'payment_methods' => PaymentMethod::query()->orderBy('sort_order')->orderBy('name')->get(),
             default => ItemCategory::query()->orderBy('code')->get(),
         };
 

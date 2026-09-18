@@ -9,6 +9,7 @@ use App\Models\VendorBill;
 use App\Models\VendorPayment;
 use App\Models\VendorPaymentAllocation;
 use App\Support\DocumentNumbers;
+use App\Support\PaymentMethods;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -28,7 +29,7 @@ class VendorPaymentForm extends Component
 
     public string $amount = '';
 
-    public string $method = 'check';
+    public string $method = '';
 
     public string $check_number = '';
 
@@ -47,6 +48,7 @@ class VendorPaymentForm extends Component
         abort_unless(auth()->user()?->hasPermission('purchase.create'), 403);
         $this->payment_number = DocumentNumbers::next(VendorPayment::class, 'payment_number', 'VPMT-');
         $this->payment_date = now()->toDateString();
+        $this->method = PaymentMethods::defaultCode('check');
     }
 
     public function updatedVendorId(): void
@@ -210,6 +212,7 @@ class VendorPaymentForm extends Component
             'accounts' => Account::query()->where('type', 'asset')->where('is_active', true)->orderBy('number')
                 ->get()->mapWithKeys(fn (Account $a) => [$a->id => $a->number.' — '.$a->name])->all(),
             'openBills' => $openBills,
+            'paymentMethodOptions' => PaymentMethods::options(),
         ])->layoutData([
             'title' => 'Pay Bills',
             'windowTitle' => 'Pay Bills',

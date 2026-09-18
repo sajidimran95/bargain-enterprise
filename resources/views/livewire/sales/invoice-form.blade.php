@@ -210,12 +210,7 @@
                                 <x-erp.select
                                     wire:model="payment_method"
                                     class="be-input--combo"
-                                    :options="[
-                                        'cash' => 'Cash',
-                                        'check' => 'Check',
-                                        'credit_card' => 'Credit Card',
-                                        'other' => 'Other',
-                                    ]"
+                                    :options="$paymentMethodOptions"
                                 />
                             </div>
                             <div class="be-field">

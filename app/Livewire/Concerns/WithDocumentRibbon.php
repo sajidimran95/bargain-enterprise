@@ -243,13 +243,25 @@ trait WithDocumentRibbon
 
     public function createBatch(): void
     {
-        $this->print_later = true;
+        // QB Desktop: Create a Batch opens Print Forms for invoices marked Print/Email Later.
+        $queue = 'print';
+        $hasPrint = property_exists($this, 'print_later') && $this->print_later;
+        $hasEmail = property_exists($this, 'email_later') && $this->email_later;
+
+        if ($hasPrint && $hasEmail) {
+            $queue = 'both';
+        } elseif ($hasEmail) {
+            $queue = 'email';
+        } elseif (property_exists($this, 'print_later')) {
+            $this->print_later = true;
+        }
+
         $route = $this->documentBatchListRouteName();
         $this->js(
             'window.parent.postMessage({type:"be-workspace-open",route:'.json_encode($route)
-            .',params:{later:"print"}},"*")'
+            .',params:'.json_encode(['queue' => $queue]).'},"*")'
         );
-        $this->dispatch('be-toast', message: 'Print Later on. Opening list for batch work.');
+        $this->dispatch('be-toast', message: 'Opening Create a Batch — select Print Later / Email Later invoices to print or email together.');
     }
 
     public function toggleFormattingBold(): void

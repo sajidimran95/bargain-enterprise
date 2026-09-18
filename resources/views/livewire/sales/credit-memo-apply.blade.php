@@ -99,7 +99,7 @@
                             </div>
                             <div class="be-field be-field--inline">
                                 <label class="be-field__label be-field__label--caps">Method</label>
-                                <x-erp.select wire:model="refund_method" class="be-input--combo" :options="['cash' => 'Cash', 'check' => 'Check', 'other' => 'Other']" />
+                                <x-erp.select wire:model="refund_method" class="be-input--combo" :options="$paymentMethodOptions" />
                             </div>
                             <div class="be-field be-field--inline">
                                 <label class="be-field__label be-field__label--caps">Payout Account</label>

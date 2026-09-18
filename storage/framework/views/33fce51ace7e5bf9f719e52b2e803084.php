@@ -315,6 +315,25 @@ unset($__defined_vars, $__key, $__value); ?>
 <?php endif; ?>
             <?php if (isset($component)) { $__componentOriginal5abd15ccddcad372df58dab78ed00d60 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal5abd15ccddcad372df58dab78ed00d60 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.workspace-link','data' => ['route' => 'reports.ar-aging','class' => 'be-ribbon__btn']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('erp.workspace-link'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['route' => 'reports.ar-aging','class' => 'be-ribbon__btn']); ?><span>A/R Aging</span> <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
+<?php $attributes = $__attributesOriginal5abd15ccddcad372df58dab78ed00d60; ?>
+<?php unset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
+<?php $component = $__componentOriginal5abd15ccddcad372df58dab78ed00d60; ?>
+<?php unset($__componentOriginal5abd15ccddcad372df58dab78ed00d60); ?>
+<?php endif; ?>
+            <?php if (isset($component)) { $__componentOriginal5abd15ccddcad372df58dab78ed00d60 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal5abd15ccddcad372df58dab78ed00d60 = $attributes; } ?>
 <?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.workspace-link','data' => ['route' => 'reports.sales-by-item','class' => 'be-ribbon__btn']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('erp.workspace-link'); ?>
 <?php if ($component->shouldRender()): ?>
@@ -322,45 +341,7 @@ unset($__defined_vars, $__key, $__value); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['route' => 'reports.sales-by-item','class' => 'be-ribbon__btn']); ?><span>MSA Sales Report</span> <?php echo $__env->renderComponent(); ?>
-<?php endif; ?>
-<?php if (isset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
-<?php $attributes = $__attributesOriginal5abd15ccddcad372df58dab78ed00d60; ?>
-<?php unset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60); ?>
-<?php endif; ?>
-<?php if (isset($__componentOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
-<?php $component = $__componentOriginal5abd15ccddcad372df58dab78ed00d60; ?>
-<?php unset($__componentOriginal5abd15ccddcad372df58dab78ed00d60); ?>
-<?php endif; ?>
-            <?php if (isset($component)) { $__componentOriginal5abd15ccddcad372df58dab78ed00d60 = $component; } ?>
-<?php if (isset($attributes)) { $__attributesOriginal5abd15ccddcad372df58dab78ed00d60 = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.workspace-link','data' => ['route' => 'reports.inventory','class' => 'be-ribbon__btn']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
-<?php $component->withName('erp.workspace-link'); ?>
-<?php if ($component->shouldRender()): ?>
-<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
-<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
-<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
-<?php endif; ?>
-<?php $component->withAttributes(['route' => 'reports.inventory','class' => 'be-ribbon__btn']); ?><span>MSA Inventory</span> <?php echo $__env->renderComponent(); ?>
-<?php endif; ?>
-<?php if (isset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
-<?php $attributes = $__attributesOriginal5abd15ccddcad372df58dab78ed00d60; ?>
-<?php unset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60); ?>
-<?php endif; ?>
-<?php if (isset($__componentOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
-<?php $component = $__componentOriginal5abd15ccddcad372df58dab78ed00d60; ?>
-<?php unset($__componentOriginal5abd15ccddcad372df58dab78ed00d60); ?>
-<?php endif; ?>
-            <?php if (isset($component)) { $__componentOriginal5abd15ccddcad372df58dab78ed00d60 = $component; } ?>
-<?php if (isset($attributes)) { $__attributesOriginal5abd15ccddcad372df58dab78ed00d60 = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.workspace-link','data' => ['route' => 'reports.customers','class' => 'be-ribbon__btn']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
-<?php $component->withName('erp.workspace-link'); ?>
-<?php if ($component->shouldRender()): ?>
-<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
-<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
-<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
-<?php endif; ?>
-<?php $component->withAttributes(['route' => 'reports.customers','class' => 'be-ribbon__btn']); ?><span>MSA Customer List</span> <?php echo $__env->renderComponent(); ?>
+<?php $component->withAttributes(['route' => 'reports.sales-by-item','class' => 'be-ribbon__btn']); ?><span>Sales by Item</span> <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
 <?php $attributes = $__attributesOriginal5abd15ccddcad372df58dab78ed00d60; ?>
@@ -380,6 +361,44 @@ unset($__defined_vars, $__key, $__value); ?>
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
 <?php $component->withAttributes(['route' => 'invoices.index','class' => 'be-ribbon__btn']); ?><span>Invoice List</span> <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
+<?php $attributes = $__attributesOriginal5abd15ccddcad372df58dab78ed00d60; ?>
+<?php unset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
+<?php $component = $__componentOriginal5abd15ccddcad372df58dab78ed00d60; ?>
+<?php unset($__componentOriginal5abd15ccddcad372df58dab78ed00d60); ?>
+<?php endif; ?>
+            <?php if (isset($component)) { $__componentOriginal5abd15ccddcad372df58dab78ed00d60 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal5abd15ccddcad372df58dab78ed00d60 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.workspace-link','data' => ['route' => 'invoices.batch','params' => ['queue' => 'print'],'class' => 'be-ribbon__btn']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('erp.workspace-link'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['route' => 'invoices.batch','params' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(['queue' => 'print']),'class' => 'be-ribbon__btn']); ?><span>Print Forms (Batch)</span> <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
+<?php $attributes = $__attributesOriginal5abd15ccddcad372df58dab78ed00d60; ?>
+<?php unset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
+<?php $component = $__componentOriginal5abd15ccddcad372df58dab78ed00d60; ?>
+<?php unset($__componentOriginal5abd15ccddcad372df58dab78ed00d60); ?>
+<?php endif; ?>
+            <?php if (isset($component)) { $__componentOriginal5abd15ccddcad372df58dab78ed00d60 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal5abd15ccddcad372df58dab78ed00d60 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.workspace-link','data' => ['route' => 'payments.create','class' => 'be-ribbon__btn']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('erp.workspace-link'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['route' => 'payments.create','class' => 'be-ribbon__btn']); ?><span>Receive Payments</span> <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
 <?php $attributes = $__attributesOriginal5abd15ccddcad372df58dab78ed00d60; ?>

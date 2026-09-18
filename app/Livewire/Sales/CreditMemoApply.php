@@ -7,6 +7,7 @@ use App\Actions\Sales\RefundCreditMemoAction;
 use App\Models\Account;
 use App\Models\CreditMemo;
 use App\Models\Invoice;
+use App\Support\PaymentMethods;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -27,7 +28,7 @@ class CreditMemoApply extends Component
 
     public string $refund_amount = '';
 
-    public string $refund_method = 'check';
+    public string $refund_method = '';
 
     public string $refund_account_id = '';
 
@@ -42,6 +43,7 @@ class CreditMemoApply extends Component
         $this->creditMemo = $creditMemo->load('customer');
         $this->refund_date = now()->toDateString();
         $this->refund_amount = number_format((float) $creditMemo->remaining_credit, 2, '.', '');
+        $this->refund_method = PaymentMethods::defaultCode('check');
 
         $cash = Account::query()->where('number', '1000')->first();
         $this->refund_account_id = $cash ? (string) $cash->id : '';
@@ -166,6 +168,7 @@ class CreditMemoApply extends Component
         return view('livewire.sales.credit-memo-apply', [
             'invoices' => $invoices,
             'payoutAccounts' => $payoutAccounts,
+            'paymentMethodOptions' => PaymentMethods::options(),
         ])->layoutData([
             'title' => 'Apply / Refund Credit',
             'windowTitle' => 'Apply / Refund Credit',

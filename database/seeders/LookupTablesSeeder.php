@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\ItemCategory;
 use App\Models\ItemType;
+use App\Models\PaymentMethod;
 use App\Models\PriceLevel;
 use App\Models\Setting;
 use App\Models\TaxCode;
@@ -66,6 +67,20 @@ class LookupTablesSeeder extends Seeder
             ItemType::query()->updateOrCreate(
                 ['name' => $type['name']],
                 $type + ['description' => null, 'is_active' => true]
+            );
+        }
+
+        foreach ([
+            ['code' => 'cash', 'name' => 'Cash', 'sort_order' => 10],
+            ['code' => 'check', 'name' => 'Check', 'sort_order' => 20],
+            ['code' => 'credit_card', 'name' => 'Credit Card', 'sort_order' => 30],
+            ['code' => 'card', 'name' => 'Card', 'sort_order' => 40],
+            ['code' => 'ach', 'name' => 'ACH', 'sort_order' => 50],
+            ['code' => 'other', 'name' => 'Other', 'sort_order' => 90],
+        ] as $method) {
+            PaymentMethod::query()->updateOrCreate(
+                ['code' => $method['code']],
+                $method + ['is_active' => true]
             );
         }
     }

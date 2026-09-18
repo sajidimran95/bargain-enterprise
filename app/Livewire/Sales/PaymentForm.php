@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Support\DocumentNumbers;
+use App\Support\PaymentMethods;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -24,7 +25,7 @@ class PaymentForm extends Component
 
     public string $amount = '';
 
-    public string $method = 'check';
+    public string $method = '';
 
     public string $reference = '';
 
@@ -40,6 +41,7 @@ class PaymentForm extends Component
         abort_unless(auth()->user()?->hasPermission('payment.create'), 403);
         $this->payment_number = DocumentNumbers::next(Payment::class, 'payment_number', 'PMT-');
         $this->payment_date = now()->toDateString();
+        $this->method = PaymentMethods::defaultCode('check');
     }
 
     public function updatedCustomerId(): void
@@ -126,6 +128,7 @@ class PaymentForm extends Component
             'accounts' => Account::query()->where('type', 'asset')->where('is_active', true)->orderBy('number')
                 ->get()->mapWithKeys(fn (Account $a) => [$a->id => $a->number.' — '.$a->name])->all(),
             'openInvoices' => $openInvoices,
+            'paymentMethodOptions' => PaymentMethods::options(),
         ])->layoutData([
             'title' => 'Receive Payment',
             'windowTitle' => 'Receive Payment',

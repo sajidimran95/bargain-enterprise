@@ -1,7 +1,7 @@
 <div class="be-page">
     <x-erp.toolbar>
         <a href="{{ route('items.index') }}" class="be-btn">Back to Items</a>
-        <span class="ml-auto text-[11px] text-gray-500">Categories · Types · Units · Tax · Price Levels</span>
+        <span class="ml-auto text-[11px] text-gray-500">Categories · Types · Units · Tax · Price Levels · Payment Methods</span>
     </x-erp.toolbar>
 
     <div class="be-panel m-3">
@@ -16,6 +16,7 @@
                     'units' => 'Units',
                     'tax_codes' => 'Tax Codes',
                     'price_levels' => 'Price Levels',
+                    'payment_methods' => 'Payment Methods',
                 ] as $key => $label)
                     <button
                         type="button"
@@ -30,7 +31,7 @@
                     <table class="be-table be-table--line-select">
                         <thead>
                             <tr>
-                                @if (in_array($activeType, ['categories', 'tax_codes']))
+                                @if (in_array($activeType, ['categories', 'tax_codes', 'payment_methods']))
                                     <th>Code</th>
                                 @endif
                                 <th>Name</th>
@@ -39,6 +40,9 @@
                                 @endif
                                 @if ($activeType === 'price_levels')
                                     <th class="text-right">Adj %</th>
+                                @endif
+                                @if ($activeType === 'payment_methods')
+                                    <th class="text-right">Sort</th>
                                 @endif
                                 <th>Active</th>
                                 <th></th>
@@ -51,7 +55,7 @@
                                     wire:click="selectLine({{ $record->id }})"
                                     class="{{ $selectedLineId === $record->id ? 'is-selected' : '' }}"
                                 >
-                                    @if (in_array($activeType, ['categories', 'tax_codes']))
+                                    @if (in_array($activeType, ['categories', 'tax_codes', 'payment_methods']))
                                         <td>{{ $record->code }}</td>
                                     @endif
                                     <td>{{ $record->label ?? $record->name }}</td>
@@ -60,6 +64,9 @@
                                     @endif
                                     @if ($activeType === 'price_levels')
                                         <td class="num">{{ number_format((float) $record->adjustment_percent, 4) }}</td>
+                                    @endif
+                                    @if ($activeType === 'payment_methods')
+                                        <td class="num">{{ $record->sort_order }}</td>
                                     @endif
                                     <td>{{ $record->is_active ? 'Yes' : 'No' }}</td>
                                     <td class="whitespace-nowrap">
@@ -91,6 +98,10 @@
                         <div class="be-field mb-2"><label class="be-field__label">Code *</label><x-erp.input wire:model="form.code" /></div>
                         <div class="be-field mb-2"><label class="be-field__label">Name *</label><x-erp.input wire:model="form.name" /></div>
                         <div class="be-field mb-2"><label class="be-field__label">Rate % *</label><x-erp.input wire:model="form.rate" /></div>
+                    @elseif ($activeType === 'payment_methods')
+                        <div class="be-field mb-2"><label class="be-field__label">Code *</label><x-erp.input wire:model="form.code" />@error('form.code') <span class="be-field__error">{{ $message }}</span> @enderror</div>
+                        <div class="be-field mb-2"><label class="be-field__label">Name *</label><x-erp.input wire:model="form.name" /></div>
+                        <div class="be-field mb-2"><label class="be-field__label">Sort order</label><x-erp.input type="number" wire:model="form.sort_order" /></div>
                     @else
                         <div class="be-field mb-2"><label class="be-field__label">Name *</label><x-erp.input wire:model="form.name" /></div>
                         <div class="be-field mb-2"><label class="be-field__label">Description</label><x-erp.input wire:model="form.description" /></div>

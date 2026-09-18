@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\SalesReceipt;
 use App\Support\DocumentNumbers;
 use App\Support\ItemCatalog;
+use App\Support\PaymentMethods;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -25,7 +26,7 @@ class SalesReceiptForm extends Component
 
     public string $receipt_date = '';
 
-    public string $payment_method = 'cash';
+    public string $payment_method = '';
 
     public string $memo = '';
 
@@ -34,6 +35,7 @@ class SalesReceiptForm extends Component
         abort_unless(auth()->user()?->hasPermission('invoice.create'), 403);
         $this->number = DocumentNumbers::next(SalesReceipt::class, 'number', 'SR-');
         $this->receipt_date = now()->toDateString();
+        $this->payment_method = PaymentMethods::defaultCode('cash');
         $this->addLine();
     }
 
@@ -90,6 +92,7 @@ class SalesReceiptForm extends Component
             'numberField' => 'number',
             'numberLabel' => 'Receipt #',
             'showPaymentMethod' => true,
+            'paymentMethodOptions' => PaymentMethods::options(),
             'itemOptions' => ItemCatalog::selectOptions(),
         ])->layoutData([
             'title' => 'Create Sales Receipt',

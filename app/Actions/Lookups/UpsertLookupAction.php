@@ -4,6 +4,7 @@ namespace App\Actions\Lookups;
 
 use App\Models\ItemCategory;
 use App\Models\ItemType;
+use App\Models\PaymentMethod;
 use App\Models\PriceLevel;
 use App\Models\TaxCode;
 use App\Models\UnitOfMeasure;
@@ -25,6 +26,7 @@ class UpsertLookupAction
             'units' => $this->upsert(UnitOfMeasure::class, $this->validateUnit($data, $id), $id),
             'categories' => $this->upsert(ItemCategory::class, $this->validateCategory($data, $id), $id),
             'item_types' => $this->upsert(ItemType::class, $this->validateItemType($data, $id), $id),
+            'payment_methods' => $this->upsert(PaymentMethod::class, $this->validatePaymentMethod($data, $id), $id),
             default => throw new InvalidArgumentException("Unknown lookup type [{$type}]."),
         };
     }
@@ -110,6 +112,20 @@ class UpsertLookupAction
             'name' => ['required', 'string', 'max:100', Rule::unique('item_types', 'name')->ignore($id)],
             'label' => ['required', 'string', 'max:100'],
             'description' => ['nullable', 'string'],
+            'is_active' => ['sometimes', 'boolean'],
+        ])->validate();
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function validatePaymentMethod(array $data, ?int $id): array
+    {
+        return Validator::make($data, [
+            'code' => ['required', 'string', 'max:50', 'alpha_dash', Rule::unique('payment_methods', 'code')->ignore($id)],
+            'name' => ['required', 'string', 'max:100'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['sometimes', 'boolean'],
         ])->validate();
     }

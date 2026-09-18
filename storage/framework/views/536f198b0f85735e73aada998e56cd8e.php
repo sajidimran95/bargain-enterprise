@@ -476,24 +476,14 @@ unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendB
                                 <label class="be-field__label be-field__label--caps">Method</label>
                                 <?php if (isset($component)) { $__componentOriginal847fd48de2d422593186c84a70c7291b = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal847fd48de2d422593186c84a70c7291b = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.select','data' => ['wire:model' => 'payment_method','class' => 'be-input--combo','options' => [
-                                        'cash' => 'Cash',
-                                        'check' => 'Check',
-                                        'credit_card' => 'Credit Card',
-                                        'other' => 'Other',
-                                    ]]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.select','data' => ['wire:model' => 'payment_method','class' => 'be-input--combo','options' => $paymentMethodOptions]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('erp.select'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['wire:model' => 'payment_method','class' => 'be-input--combo','options' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute([
-                                        'cash' => 'Cash',
-                                        'check' => 'Check',
-                                        'credit_card' => 'Credit Card',
-                                        'other' => 'Other',
-                                    ])]); ?>
+<?php $component->withAttributes(['wire:model' => 'payment_method','class' => 'be-input--combo','options' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($paymentMethodOptions)]); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal847fd48de2d422593186c84a70c7291b)): ?>

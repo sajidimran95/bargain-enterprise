@@ -52,6 +52,7 @@ use App\Livewire\Sales\CreditMemoApply;
 use App\Livewire\Sales\CreditMemoForm;
 use App\Livewire\Sales\CreditMemoIndex;
 use App\Livewire\Sales\CustomerStatement;
+use App\Livewire\Sales\InvoiceBatch;
 use App\Livewire\Sales\InvoiceForm;
 use App\Livewire\Sales\InvoiceIndex;
 use App\Livewire\Sales\PaymentForm;
@@ -107,6 +108,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('sales-orders/create', SalesOrderForm::class)->name('sales-orders.create');
 
         Route::get('invoices', InvoiceIndex::class)->name('invoices.index');
+        Route::get('invoices/batch', InvoiceBatch::class)->name('invoices.batch');
         Route::get('invoices/create', InvoiceForm::class)->name('invoices.create');
 
         Route::get('sales-receipts', SalesReceiptIndex::class)->name('sales-receipts.index');

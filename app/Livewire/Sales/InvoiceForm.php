@@ -13,6 +13,7 @@ use App\Models\Payment;
 use App\Models\TaxCode;
 use App\Support\DocumentNumbers;
 use App\Support\ItemCatalog;
+use App\Support\PaymentMethods;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
@@ -52,7 +53,7 @@ class InvoiceForm extends Component
 
     public bool $receive_payment_now = false;
 
-    public string $payment_method = 'cash';
+    public string $payment_method = '';
 
     public string $payment_amount = '';
 
@@ -77,6 +78,7 @@ class InvoiceForm extends Component
         $this->invoice_number = DocumentNumbers::next(Invoice::class, 'invoice_number', 'INV-');
         $this->invoice_date = now()->toDateString();
         $this->due_date = now()->addDays(30)->toDateString();
+        $this->payment_method = PaymentMethods::defaultCode('cash');
         $this->ensureLineCapacity(10);
         $this->restoreMemorizedIfEmpty();
     }
@@ -114,7 +116,7 @@ class InvoiceForm extends Component
         $this->is_pending = false;
         $this->pendingAttachments = [];
         $this->receive_payment_now = false;
-        $this->payment_method = 'cash';
+        $this->payment_method = PaymentMethods::defaultCode('cash');
         $this->payment_amount = '';
         $this->payment_reference = '';
     }
@@ -124,7 +126,7 @@ class InvoiceForm extends Component
         if ($value) {
             $this->payment_amount = $this->currentInvoiceTotal();
             if ($this->payment_method === '') {
-                $this->payment_method = 'cash';
+                $this->payment_method = PaymentMethods::defaultCode('cash');
             }
         }
     }
@@ -358,7 +360,7 @@ class InvoiceForm extends Component
 
     protected function documentBatchListRouteName(): string
     {
-        return 'invoices.index';
+        return 'invoices.batch';
     }
 
     protected function documentPdfView(): string
@@ -455,6 +457,7 @@ class InvoiceForm extends Component
             'attachmentCount' => count($this->pendingAttachments),
             'savedInvoice' => $savedInvoice,
             'auditTrail' => $auditTrail,
+            'paymentMethodOptions' => PaymentMethods::options(),
         ])->layoutData([
             'title' => 'Create Invoices',
             'windowTitle' => 'Create Invoices',

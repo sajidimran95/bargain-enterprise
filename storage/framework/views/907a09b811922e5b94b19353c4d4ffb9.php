@@ -10,7 +10,7 @@
 <?php endif; ?>
 <?php $component->withAttributes([]); ?>
         <a href="<?php echo e(route('items.index')); ?>" class="be-btn">Back to Items</a>
-        <span class="ml-auto text-[11px] text-gray-500">Categories · Types · Units · Tax · Price Levels</span>
+        <span class="ml-auto text-[11px] text-gray-500">Categories · Types · Units · Tax · Price Levels · Payment Methods</span>
      <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal405c66773dfcb9f37dc65f464a3f4a10)): ?>
@@ -34,6 +34,7 @@
                     'units' => 'Units',
                     'tax_codes' => 'Tax Codes',
                     'price_levels' => 'Price Levels',
+                    'payment_methods' => 'Payment Methods',
                 ]; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <button
                         type="button"
@@ -48,7 +49,7 @@
                     <table class="be-table be-table--line-select">
                         <thead>
                             <tr>
-                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(in_array($activeType, ['categories', 'tax_codes'])): ?>
+                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(in_array($activeType, ['categories', 'tax_codes', 'payment_methods'])): ?>
                                     <th>Code</th>
                                 <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                                 <th>Name</th>
@@ -57,6 +58,9 @@
                                 <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                                 <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($activeType === 'price_levels'): ?>
                                     <th class="text-right">Adj %</th>
+                                <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($activeType === 'payment_methods'): ?>
+                                    <th class="text-right">Sort</th>
                                 <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                                 <th>Active</th>
                                 <th></th>
@@ -69,7 +73,7 @@
                                     wire:click="selectLine(<?php echo e($record->id); ?>)"
                                     class="<?php echo e($selectedLineId === $record->id ? 'is-selected' : ''); ?>"
                                 >
-                                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(in_array($activeType, ['categories', 'tax_codes'])): ?>
+                                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(in_array($activeType, ['categories', 'tax_codes', 'payment_methods'])): ?>
                                         <td><?php echo e($record->code); ?></td>
                                     <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                                     <td><?php echo e($record->label ?? $record->name); ?></td>
@@ -78,6 +82,9 @@
                                     <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                                     <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($activeType === 'price_levels'): ?>
                                         <td class="num"><?php echo e(number_format((float) $record->adjustment_percent, 4)); ?></td>
+                                    <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($activeType === 'payment_methods'): ?>
+                                        <td class="num"><?php echo e($record->sort_order); ?></td>
                                     <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                                     <td><?php echo e($record->is_active ? 'Yes' : 'No'); ?></td>
                                     <td class="whitespace-nowrap">
@@ -291,6 +298,74 @@ unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendB
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
 <?php $component->withAttributes(['wire:model' => 'form.rate']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal5ffc033813591e85e4508e27a2ee1612)): ?>
+<?php $attributes = $__attributesOriginal5ffc033813591e85e4508e27a2ee1612; ?>
+<?php unset($__attributesOriginal5ffc033813591e85e4508e27a2ee1612); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal5ffc033813591e85e4508e27a2ee1612)): ?>
+<?php $component = $__componentOriginal5ffc033813591e85e4508e27a2ee1612; ?>
+<?php unset($__componentOriginal5ffc033813591e85e4508e27a2ee1612); ?>
+<?php endif; ?></div>
+                    <?php elseif($activeType === 'payment_methods'): ?>
+                        <div class="be-field mb-2"><label class="be-field__label">Code *</label><?php if (isset($component)) { $__componentOriginal5ffc033813591e85e4508e27a2ee1612 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal5ffc033813591e85e4508e27a2ee1612 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.input','data' => ['wire:model' => 'form.code']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('erp.input'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['wire:model' => 'form.code']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal5ffc033813591e85e4508e27a2ee1612)): ?>
+<?php $attributes = $__attributesOriginal5ffc033813591e85e4508e27a2ee1612; ?>
+<?php unset($__attributesOriginal5ffc033813591e85e4508e27a2ee1612); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal5ffc033813591e85e4508e27a2ee1612)): ?>
+<?php $component = $__componentOriginal5ffc033813591e85e4508e27a2ee1612; ?>
+<?php unset($__componentOriginal5ffc033813591e85e4508e27a2ee1612); ?>
+<?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__errorArgs = ['form.code'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <span class="be-field__error"><?php echo e($message); ?></span> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?></div>
+                        <div class="be-field mb-2"><label class="be-field__label">Name *</label><?php if (isset($component)) { $__componentOriginal5ffc033813591e85e4508e27a2ee1612 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal5ffc033813591e85e4508e27a2ee1612 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.input','data' => ['wire:model' => 'form.name']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('erp.input'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['wire:model' => 'form.name']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal5ffc033813591e85e4508e27a2ee1612)): ?>
+<?php $attributes = $__attributesOriginal5ffc033813591e85e4508e27a2ee1612; ?>
+<?php unset($__attributesOriginal5ffc033813591e85e4508e27a2ee1612); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal5ffc033813591e85e4508e27a2ee1612)): ?>
+<?php $component = $__componentOriginal5ffc033813591e85e4508e27a2ee1612; ?>
+<?php unset($__componentOriginal5ffc033813591e85e4508e27a2ee1612); ?>
+<?php endif; ?></div>
+                        <div class="be-field mb-2"><label class="be-field__label">Sort order</label><?php if (isset($component)) { $__componentOriginal5ffc033813591e85e4508e27a2ee1612 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal5ffc033813591e85e4508e27a2ee1612 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.input','data' => ['type' => 'number','wire:model' => 'form.sort_order']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('erp.input'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['type' => 'number','wire:model' => 'form.sort_order']); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal5ffc033813591e85e4508e27a2ee1612)): ?>

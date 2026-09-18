@@ -38,7 +38,7 @@
                         </div>
                         <div class="be-field be-field--inline">
                             <label class="be-field__label be-field__label--caps">Pmt Method</label>
-                            <x-erp.select wire:model="method" class="be-input--combo" :options="['check' => 'Check', 'cash' => 'Cash', 'card' => 'Card', 'ach' => 'ACH', 'other' => 'Other']" />
+                            <x-erp.select wire:model="method" class="be-input--combo" :options="$paymentMethodOptions" />
                         </div>
                         <div class="be-field be-field--inline">
                             <label class="be-field__label be-field__label--caps">Reference #</label>

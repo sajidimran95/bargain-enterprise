@@ -4,9 +4,13 @@ namespace App\Actions\Lookups;
 
 use App\Models\ItemCategory;
 use App\Models\ItemType;
+use App\Models\Payment;
+use App\Models\PaymentMethod;
 use App\Models\PriceLevel;
+use App\Models\SalesReceipt;
 use App\Models\TaxCode;
 use App\Models\UnitOfMeasure;
+use App\Models\VendorPayment;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use RuntimeException;
@@ -32,6 +36,7 @@ class DeleteLookupAction
             'units' => UnitOfMeasure::query()->findOrFail($id),
             'categories' => ItemCategory::query()->findOrFail($id),
             'item_types' => ItemType::query()->findOrFail($id),
+            'payment_methods' => PaymentMethod::query()->findOrFail($id),
             default => throw new InvalidArgumentException("Unknown lookup type [{$type}]."),
         };
     }
@@ -44,6 +49,9 @@ class DeleteLookupAction
             'units' => $record->items()->exists(),
             'categories' => $record->items()->exists(),
             'item_types' => $record->items()->exists(),
+            'payment_methods' => Payment::query()->where('method', $record->code)->exists()
+                || VendorPayment::query()->where('method', $record->code)->exists()
+                || SalesReceipt::query()->where('payment_method', $record->code)->exists(),
             default => false,
         };
     }
