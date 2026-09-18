@@ -30,6 +30,11 @@ class User extends Authenticatable
         return $this->belongsToMany(Role::class)->withTimestamps();
     }
 
+    public function permissions(): BelongsToMany
+    {
+        return $this->belongsToMany(Permission::class)->withTimestamps();
+    }
+
     public function assignRole(string|Role $role): void
     {
         $role = $role instanceof Role
@@ -52,7 +57,12 @@ class User extends Authenticatable
             return true;
         }
 
-        $this->loadMissing('roles.permissions');
+        $this->loadMissing(['permissions', 'roles.permissions']);
+
+        // Per-user permission overrides (does not change the role).
+        if ($this->permissions->isNotEmpty()) {
+            return $this->permissions->contains('name', $permission);
+        }
 
         return $this->roles
             ->flatMap(fn (Role $role) => $role->permissions)
@@ -63,6 +73,15 @@ class User extends Authenticatable
     {
         $ids = Role::query()->whereIn('name', $roleNames)->pluck('id');
         $this->roles()->sync($ids);
+    }
+
+    /**
+     * @param  list<string>  $permissionNames
+     */
+    public function syncPermissions(array $permissionNames): void
+    {
+        $ids = Permission::query()->whereIn('name', $permissionNames)->pluck('id');
+        $this->permissions()->sync($ids);
     }
 
     public function primaryRoleLabel(): ?string

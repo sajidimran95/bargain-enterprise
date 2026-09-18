@@ -54,13 +54,44 @@ class UserRoleManagementTest extends TestCase
             ->set('password', 'Password1!')
             ->set('password_confirmation', 'Password1!')
             ->set('role', 'sales_representative')
+            ->assertSet('selectedPermissions', fn ($perms) => in_array('invoice.create', $perms, true))
             ->call('save')
             ->assertRedirect(route('users.index'));
 
-        $user = User::query()->where('email', 'rep@bargain.local')->firstOrFail();
+        $user = User::query()->where('email', 'rep@bargain.local')->with('permissions')->firstOrFail();
         $this->assertTrue($user->hasRole('sales_representative'));
+        $this->assertTrue($user->permissions->isNotEmpty());
         $this->assertTrue($user->hasPermission('invoice.create'));
         $this->assertFalse($user->hasPermission('settings.manage'));
+    }
+
+    public function test_user_permission_overrides_do_not_change_role(): void
+    {
+        $this->actingAs($this->admin);
+
+        $role = Role::query()->where('name', 'sales_representative')->with('permissions')->firstOrFail();
+        $rolePermissionCount = $role->permissions->count();
+
+        Livewire::test(UserForm::class)
+            ->set('name', 'Custom Rep')
+            ->set('email', 'custom-rep@bargain.local')
+            ->set('password', 'Password1!')
+            ->set('password_confirmation', 'Password1!')
+            ->set('role', 'sales_representative')
+            ->call('togglePermission', 'invoice.create')
+            ->call('togglePermission', 'vendor.view')
+            ->call('save')
+            ->assertRedirect(route('users.index'));
+
+        $role->refresh()->load('permissions');
+        $this->assertSame($rolePermissionCount, $role->permissions->count());
+        $this->assertTrue($role->hasPermission('invoice.create'));
+        $this->assertFalse($role->hasPermission('vendor.view'));
+
+        $user = User::query()->where('email', 'custom-rep@bargain.local')->firstOrFail();
+        $this->assertFalse($user->hasPermission('invoice.create'));
+        $this->assertTrue($user->hasPermission('vendor.view'));
+        $this->assertTrue($user->hasPermission('payment.create'));
     }
 
     public function test_role_form_toggles_menu_submenu_permissions(): void
