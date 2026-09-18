@@ -13,6 +13,11 @@ if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php'))
 // Register the Composer autoloader...
 require __DIR__.'/../vendor/autoload.php';
 
+// Web SAPIs sometimes miss ext-bcmath; keep money math working on all pages.
+if (! function_exists('bcadd')) {
+    require_once __DIR__.'/../app/Support/bcmath_polyfill.php';
+}
+
 // Bootstrap Laravel and handle the request...
 /** @var Application $app */
 $app = require_once __DIR__.'/../bootstrap/app.php';

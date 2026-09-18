@@ -13,7 +13,10 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        // Ensure BCMath helpers exist for web SAPIs that ship without ext-bcmath.
+        if (! function_exists('bcadd')) {
+            require_once app_path('Support/bcmath_polyfill.php');
+        }
     }
 
     public function boot(): void
