@@ -3,10 +3,13 @@
 namespace App\Livewire\Sales;
 
 use App\Actions\Sales\CreateInvoiceAction;
+use App\Actions\Sales\ReceivePaymentAction;
 use App\Livewire\Concerns\WithDocumentRibbon;
 use App\Livewire\Concerns\WithLineItems;
+use App\Models\AuditLog;
 use App\Models\Customer;
 use App\Models\Invoice;
+use App\Models\Payment;
 use App\Models\TaxCode;
 use App\Support\DocumentNumbers;
 use App\Support\ItemCatalog;
@@ -46,6 +49,14 @@ class InvoiceForm extends Component
     public bool $email_later = false;
 
     public bool $is_pending = false;
+
+    public bool $receive_payment_now = false;
+
+    public string $payment_method = 'cash';
+
+    public string $payment_amount = '';
+
+    public string $payment_reference = '';
 
     public string $ribbonTab = 'main';
 
@@ -102,6 +113,20 @@ class InvoiceForm extends Component
         $this->email_later = false;
         $this->is_pending = false;
         $this->pendingAttachments = [];
+        $this->receive_payment_now = false;
+        $this->payment_method = 'cash';
+        $this->payment_amount = '';
+        $this->payment_reference = '';
+    }
+
+    public function updatedReceivePaymentNow(bool $value): void
+    {
+        if ($value) {
+            $this->payment_amount = $this->currentInvoiceTotal();
+            if ($this->payment_method === '') {
+                $this->payment_method = 'cash';
+            }
+        }
     }
 
     public function createCopy(): void
@@ -251,12 +276,69 @@ class InvoiceForm extends Component
             return null;
         }
 
+        $paymentNote = '';
+        if ($this->receive_payment_now && ! $this->is_pending) {
+            abort_unless(auth()->user()?->hasPermission('payment.create'), 403);
+
+            $payAmount = number_format((float) ($this->payment_amount !== '' ? $this->payment_amount : $invoice->total), 2, '.', '');
+            if (bccomp($payAmount, '0', 2) <= 0) {
+                $this->dispatch('be-toast', message: 'Invoice saved, but payment amount must be greater than 0.');
+            } elseif (bccomp($payAmount, (string) $invoice->balance_due, 2) > 0) {
+                $this->dispatch('be-toast', message: 'Invoice saved, but payment cannot exceed invoice total.');
+            } else {
+                try {
+                    app(ReceivePaymentAction::class)->handle([
+                        'customer_id' => (int) $invoice->customer_id,
+                        'payment_number' => DocumentNumbers::next(Payment::class, 'payment_number', 'PMT-'),
+                        'payment_date' => $this->invoice_date,
+                        'amount' => $payAmount,
+                        'method' => $this->payment_method ?: 'cash',
+                        'reference' => $this->payment_reference ?: null,
+                        'memo' => 'Paid with invoice '.$invoice->invoice_number,
+                        'created_by' => auth()->id(),
+                    ], [[
+                        'invoice_id' => $invoice->id,
+                        'amount' => $payAmount,
+                    ]]);
+                    $invoice->refresh();
+                    $paymentNote = ' Payment '.$payAmount.' applied ('.$this->payment_method.').';
+                } catch (\Throwable $e) {
+                    $this->dispatch('be-toast', message: 'Invoice saved, payment failed: '.$e->getMessage());
+
+                    return $invoice;
+                }
+            }
+        }
+
         $this->navigatorId = (int) $invoice->id;
         $stored = $this->storePendingAttachmentsFor('attachments/invoices/'.$invoice->invoice_number);
-        $this->dispatch('be-toast', message: 'Invoice '.$invoice->invoice_number.' saved.'
+        $this->dispatch('be-toast', message: 'Invoice '.$invoice->invoice_number.' saved.'.$paymentNote
             .($stored ? ' '.$stored.' attachment(s) stored.' : ''));
 
         return $invoice;
+    }
+
+    protected function currentInvoiceTotal(): string
+    {
+        $subtotal = $this->linesSubtotal();
+        $taxRate = '0';
+        if ($this->tax_code_id !== '') {
+            $taxRate = (string) (TaxCode::query()->whereKey($this->tax_code_id)->value('rate') ?? 0);
+        }
+
+        $taxTotal = '0.00';
+        foreach ($this->lines as $line) {
+            if (! ($line['taxable'] ?? true) || blank($line['item_id'] ?? null)) {
+                continue;
+            }
+            $taxTotal = bcadd(
+                $taxTotal,
+                number_format((float) bcmul((string) ($line['amount'] ?? 0), bcdiv((string) $taxRate, '100', 6), 6), 2, '.', ''),
+                2
+            );
+        }
+
+        return bcadd($subtotal, $taxTotal, 2);
     }
 
     protected function documentModelClass(): string
@@ -346,6 +428,20 @@ class InvoiceForm extends Component
         }
         $total = bcadd($subtotal, $taxTotal, 2);
 
+        $savedInvoice = $this->navigatorId
+            ? Invoice::query()->with(['createdBy', 'updatedBy'])->find($this->navigatorId)
+            : null;
+
+        $auditTrail = $savedInvoice
+            ? AuditLog::query()
+                ->with('user')
+                ->where('model_type', Invoice::class)
+                ->where('model_id', $savedInvoice->id)
+                ->latest('id')
+                ->limit(40)
+                ->get()
+            : collect();
+
         return view('livewire.sales.invoice-form', [
             'customers' => Customer::query()->active()->orderBy('display_name')->get(),
             'taxCodes' => TaxCode::query()->where('is_active', true)->orderBy('code')->pluck('name', 'id')->all(),
@@ -357,6 +453,8 @@ class InvoiceForm extends Component
             'total' => $total,
             'recentInvoices' => $customer?->invoices ?? collect(),
             'attachmentCount' => count($this->pendingAttachments),
+            'savedInvoice' => $savedInvoice,
+            'auditTrail' => $auditTrail,
         ])->layoutData([
             'title' => 'Create Invoices',
             'windowTitle' => 'Create Invoices',

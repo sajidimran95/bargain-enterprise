@@ -165,6 +165,24 @@ $message = $__bag->first($__errorArgs[0]); ?> <span class="be-field__error"><?ph
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($savedInvoice): ?>
+                            <div class="be-invoice-audit text-[11px] text-gray-700 leading-snug mt-1">
+                                <div>
+                                    <strong>Created:</strong>
+                                    <?php echo e($savedInvoice->created_at?->format('m/d/Y g:i A') ?? '—'); ?>
+
+                                    by <?php echo e($savedInvoice->createdBy?->name ?? 'System'); ?>
+
+                                </div>
+                                <div>
+                                    <strong>Last edit:</strong>
+                                    <?php echo e($savedInvoice->updated_at?->format('m/d/Y g:i A') ?? '—'); ?>
+
+                                    by <?php echo e($savedInvoice->updatedBy?->name ?? $savedInvoice->createdBy?->name ?? 'System'); ?>
+
+                                </div>
+                            </div>
+                        <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                         <div class="be-field">
                             <label class="be-field__label be-field__label--caps">Bill To</label>
                             <textarea class="be-input be-invoice-billto" rows="5" readonly><?php echo e($selectedCustomer?->formattedBillingAddress() ?: ''); ?></textarea>
@@ -429,13 +447,115 @@ unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendB
                         </div>
                         <div class="be-invoice-totals__row">
                             <span>Payments Applied</span>
-                            <strong>0.00</strong>
+                            <strong><?php echo e($receive_payment_now && ! $is_pending ? number_format((float) ($payment_amount !== '' ? $payment_amount : $total), 2) : '0.00'); ?></strong>
                         </div>
                         <div class="be-invoice-totals__row be-invoice-totals__row--balance">
                             <span>Balance Due</span>
-                            <strong><?php echo e(number_format((float) $total, 2)); ?></strong>
+                            <strong>
+                                <?php
+                                    $appliedPreview = ($receive_payment_now && ! $is_pending)
+                                        ? (float) ($payment_amount !== '' ? $payment_amount : $total)
+                                        : 0;
+                                    $balancePreview = max(0, (float) $total - $appliedPreview);
+                                ?>
+                                <?php echo e(number_format($balancePreview, 2)); ?>
+
+                            </strong>
                         </div>
                     </div>
+                </div>
+
+                <div class="be-invoice-paynow border px-2 py-2 mb-2" style="border-color:#8aa3bc;background:#f3f7fb;">
+                    <label class="inline-flex items-center gap-2 text-[12px] font-semibold">
+                        <input type="checkbox" wire:model.live="receive_payment_now" <?php if($is_pending): echo 'disabled'; endif; ?>>
+                        Receive payment now (pay with this invoice)
+                    </label>
+                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($receive_payment_now && ! $is_pending): ?>
+                        <div class="mt-2 grid gap-2 md:grid-cols-3">
+                            <div class="be-field">
+                                <label class="be-field__label be-field__label--caps">Method</label>
+                                <?php if (isset($component)) { $__componentOriginal847fd48de2d422593186c84a70c7291b = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal847fd48de2d422593186c84a70c7291b = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.select','data' => ['wire:model' => 'payment_method','class' => 'be-input--combo','options' => [
+                                        'cash' => 'Cash',
+                                        'check' => 'Check',
+                                        'credit_card' => 'Credit Card',
+                                        'other' => 'Other',
+                                    ]]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('erp.select'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['wire:model' => 'payment_method','class' => 'be-input--combo','options' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute([
+                                        'cash' => 'Cash',
+                                        'check' => 'Check',
+                                        'credit_card' => 'Credit Card',
+                                        'other' => 'Other',
+                                    ])]); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal847fd48de2d422593186c84a70c7291b)): ?>
+<?php $attributes = $__attributesOriginal847fd48de2d422593186c84a70c7291b; ?>
+<?php unset($__attributesOriginal847fd48de2d422593186c84a70c7291b); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal847fd48de2d422593186c84a70c7291b)): ?>
+<?php $component = $__componentOriginal847fd48de2d422593186c84a70c7291b; ?>
+<?php unset($__componentOriginal847fd48de2d422593186c84a70c7291b); ?>
+<?php endif; ?>
+                            </div>
+                            <div class="be-field">
+                                <label class="be-field__label be-field__label--caps">Amount</label>
+                                <?php if (isset($component)) { $__componentOriginal5ffc033813591e85e4508e27a2ee1612 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal5ffc033813591e85e4508e27a2ee1612 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.input','data' => ['type' => 'number','step' => '0.01','min' => '0','wire:model.live' => 'payment_amount','class' => 'be-input--combo text-right']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('erp.input'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['type' => 'number','step' => '0.01','min' => '0','wire:model.live' => 'payment_amount','class' => 'be-input--combo text-right']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal5ffc033813591e85e4508e27a2ee1612)): ?>
+<?php $attributes = $__attributesOriginal5ffc033813591e85e4508e27a2ee1612; ?>
+<?php unset($__attributesOriginal5ffc033813591e85e4508e27a2ee1612); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal5ffc033813591e85e4508e27a2ee1612)): ?>
+<?php $component = $__componentOriginal5ffc033813591e85e4508e27a2ee1612; ?>
+<?php unset($__componentOriginal5ffc033813591e85e4508e27a2ee1612); ?>
+<?php endif; ?>
+                            </div>
+                            <div class="be-field">
+                                <label class="be-field__label be-field__label--caps">Reference #</label>
+                                <?php if (isset($component)) { $__componentOriginal5ffc033813591e85e4508e27a2ee1612 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal5ffc033813591e85e4508e27a2ee1612 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.input','data' => ['wire:model' => 'payment_reference','class' => 'be-input--combo','placeholder' => 'Check / Ref #']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('erp.input'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['wire:model' => 'payment_reference','class' => 'be-input--combo','placeholder' => 'Check / Ref #']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal5ffc033813591e85e4508e27a2ee1612)): ?>
+<?php $attributes = $__attributesOriginal5ffc033813591e85e4508e27a2ee1612; ?>
+<?php unset($__attributesOriginal5ffc033813591e85e4508e27a2ee1612); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal5ffc033813591e85e4508e27a2ee1612)): ?>
+<?php $component = $__componentOriginal5ffc033813591e85e4508e27a2ee1612; ?>
+<?php unset($__componentOriginal5ffc033813591e85e4508e27a2ee1612); ?>
+<?php endif; ?>
+                            </div>
+                        </div>
+                        <p class="mt-1 text-[11px] text-gray-600">Leave amount blank to pay the full invoice total (<?php echo e(number_format((float) $total, 2)); ?>).</p>
+                    <?php elseif($is_pending): ?>
+                        <p class="mt-1 text-[11px] text-gray-600">Clear Pending before receiving payment.</p>
+                    <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                 </div>
 
                 <div class="be-invoice-actions">
@@ -463,9 +583,58 @@ unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendB
                 <div class="be-inspector-tabs">
                     <button type="button" class="<?php echo e($inspectorTab === 'name' ? 'is-active' : ''); ?>" wire:click="$set('inspectorTab', 'name')">Customer</button>
                     <button type="button" class="<?php echo e($inspectorTab === 'transaction' ? 'is-active' : ''); ?>" wire:click="$set('inspectorTab', 'transaction')">Transaction</button>
+                    <button type="button" class="<?php echo e($inspectorTab === 'history' ? 'is-active' : ''); ?>" wire:click="$set('inspectorTab', 'history')">History</button>
                 </div>
 
-                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($inspectorTab === 'transaction'): ?>
+                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($inspectorTab === 'history'): ?>
+                    <div class="be-inspector-section">
+                        <h3>Who / When</h3>
+                        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($savedInvoice): ?>
+                            <dl class="be-inspector-summary text-[11px]">
+                                <div>
+                                    <dt>Invoice date</dt>
+                                    <dd><?php echo e($savedInvoice->invoice_date?->format('m/d/Y')); ?></dd>
+                                </div>
+                                <div>
+                                    <dt>Created</dt>
+                                    <dd><?php echo e($savedInvoice->created_at?->format('m/d/Y g:i A')); ?><br><?php echo e($savedInvoice->createdBy?->name ?? 'System'); ?></dd>
+                                </div>
+                                <div>
+                                    <dt>Last edit</dt>
+                                    <dd><?php echo e($savedInvoice->updated_at?->format('m/d/Y g:i A')); ?><br><?php echo e($savedInvoice->updatedBy?->name ?? $savedInvoice->createdBy?->name ?? 'System'); ?></dd>
+                                </div>
+                                <div>
+                                    <dt>Status</dt>
+                                    <dd><?php echo e($savedInvoice->status); ?></dd>
+                                </div>
+                                <div>
+                                    <dt>Paid / Balance</dt>
+                                    <dd><?php echo e(number_format((float) $savedInvoice->amount_paid, 2)); ?> / <?php echo e(number_format((float) $savedInvoice->balance_due, 2)); ?></dd>
+                                </div>
+                            </dl>
+                            <h3 class="mt-3">Activity</h3>
+                            <div class="space-y-2 max-h-72 overflow-auto">
+                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__empty_1 = true; $__currentLoopData = $auditTrail; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $log): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                                    <div class="border px-1.5 py-1 text-[11px]" style="border-color: var(--be-border);" wire:key="inv-audit-<?php echo e($log->id); ?>">
+                                        <div class="font-semibold"><?php echo e(ucfirst($log->action)); ?> · <?php echo e($log->user?->name ?? 'System'); ?></div>
+                                        <div class="text-gray-500"><?php echo e($log->created_at?->format('m/d/Y g:i A')); ?></div>
+                                        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(is_array($log->new_values) && $log->new_values !== []): ?>
+                                            <div class="mt-0.5 text-gray-700">
+                                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__currentLoopData = collect($log->new_values)->only(['invoice_number','status','total','amount_paid','balance_due','customer_id','method','allocated'])->filter(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key => $value): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                    <div><?php echo e(str_replace('_', ' ', $key)); ?>: <?php echo e(is_scalar($value) ? $value : json_encode($value)); ?></div>
+                                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                                            </div>
+                                        <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                                    </div>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                                    <p class="be-inspector-empty">No activity logged yet. Save the invoice to start history.</p>
+                                <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                            </div>
+                        <?php else: ?>
+                            <p class="be-inspector-empty">Save or open an invoice (Prev/Next) to see who created/edited it and full activity.</p>
+                        <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                    </div>
+                <?php elseif($inspectorTab === 'transaction'): ?>
                     <div class="be-inspector-section">
                         <h3>Transaction</h3>
                         <dl>
@@ -473,6 +642,10 @@ unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendB
                             <div><dt>Template</dt><dd><?php echo e($template); ?></dd></div>
                             <div><dt>Print later</dt><dd><?php echo e($print_later ? 'Yes' : 'No'); ?></dd></div>
                             <div><dt>Email later</dt><dd><?php echo e($email_later ? 'Yes' : 'No'); ?></dd></div>
+                            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($savedInvoice): ?>
+                                <div><dt>Created</dt><dd><?php echo e($savedInvoice->created_at?->format('m/d/Y g:i A')); ?> · <?php echo e($savedInvoice->createdBy?->name ?? 'System'); ?></dd></div>
+                                <div><dt>Last edit</dt><dd><?php echo e($savedInvoice->updated_at?->format('m/d/Y g:i A')); ?> · <?php echo e($savedInvoice->updatedBy?->name ?? $savedInvoice->createdBy?->name ?? 'System'); ?></dd></div>
+                            <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                         </dl>
                     </div>
                 <?php elseif($selectedCustomer): ?>

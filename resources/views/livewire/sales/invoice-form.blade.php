@@ -70,6 +70,20 @@
                             <x-erp.input wire:model="invoice_number" class="be-input--combo" />
                         </div>
                         @error('invoice_number') <span class="be-field__error">{{ $message }}</span> @enderror
+                        @if ($savedInvoice)
+                            <div class="be-invoice-audit text-[11px] text-gray-700 leading-snug mt-1">
+                                <div>
+                                    <strong>Created:</strong>
+                                    {{ $savedInvoice->created_at?->format('m/d/Y g:i A') ?? '—' }}
+                                    by {{ $savedInvoice->createdBy?->name ?? 'System' }}
+                                </div>
+                                <div>
+                                    <strong>Last edit:</strong>
+                                    {{ $savedInvoice->updated_at?->format('m/d/Y g:i A') ?? '—' }}
+                                    by {{ $savedInvoice->updatedBy?->name ?? $savedInvoice->createdBy?->name ?? 'System' }}
+                                </div>
+                            </div>
+                        @endif
                         <div class="be-field">
                             <label class="be-field__label be-field__label--caps">Bill To</label>
                             <textarea class="be-input be-invoice-billto" rows="5" readonly>{{ $selectedCustomer?->formattedBillingAddress() ?: '' }}</textarea>
@@ -167,13 +181,56 @@
                         </div>
                         <div class="be-invoice-totals__row">
                             <span>Payments Applied</span>
-                            <strong>0.00</strong>
+                            <strong>{{ $receive_payment_now && ! $is_pending ? number_format((float) ($payment_amount !== '' ? $payment_amount : $total), 2) : '0.00' }}</strong>
                         </div>
                         <div class="be-invoice-totals__row be-invoice-totals__row--balance">
                             <span>Balance Due</span>
-                            <strong>{{ number_format((float) $total, 2) }}</strong>
+                            <strong>
+                                @php
+                                    $appliedPreview = ($receive_payment_now && ! $is_pending)
+                                        ? (float) ($payment_amount !== '' ? $payment_amount : $total)
+                                        : 0;
+                                    $balancePreview = max(0, (float) $total - $appliedPreview);
+                                @endphp
+                                {{ number_format($balancePreview, 2) }}
+                            </strong>
                         </div>
                     </div>
+                </div>
+
+                <div class="be-invoice-paynow border px-2 py-2 mb-2" style="border-color:#8aa3bc;background:#f3f7fb;">
+                    <label class="inline-flex items-center gap-2 text-[12px] font-semibold">
+                        <input type="checkbox" wire:model.live="receive_payment_now" @disabled($is_pending)>
+                        Receive payment now (pay with this invoice)
+                    </label>
+                    @if ($receive_payment_now && ! $is_pending)
+                        <div class="mt-2 grid gap-2 md:grid-cols-3">
+                            <div class="be-field">
+                                <label class="be-field__label be-field__label--caps">Method</label>
+                                <x-erp.select
+                                    wire:model="payment_method"
+                                    class="be-input--combo"
+                                    :options="[
+                                        'cash' => 'Cash',
+                                        'check' => 'Check',
+                                        'credit_card' => 'Credit Card',
+                                        'other' => 'Other',
+                                    ]"
+                                />
+                            </div>
+                            <div class="be-field">
+                                <label class="be-field__label be-field__label--caps">Amount</label>
+                                <x-erp.input type="number" step="0.01" min="0" wire:model.live="payment_amount" class="be-input--combo text-right" />
+                            </div>
+                            <div class="be-field">
+                                <label class="be-field__label be-field__label--caps">Reference #</label>
+                                <x-erp.input wire:model="payment_reference" class="be-input--combo" placeholder="Check / Ref #" />
+                            </div>
+                        </div>
+                        <p class="mt-1 text-[11px] text-gray-600">Leave amount blank to pay the full invoice total ({{ number_format((float) $total, 2) }}).</p>
+                    @elseif ($is_pending)
+                        <p class="mt-1 text-[11px] text-gray-600">Clear Pending before receiving payment.</p>
+                    @endif
                 </div>
 
                 <div class="be-invoice-actions">
@@ -200,9 +257,58 @@
                 <div class="be-inspector-tabs">
                     <button type="button" class="{{ $inspectorTab === 'name' ? 'is-active' : '' }}" wire:click="$set('inspectorTab', 'name')">Customer</button>
                     <button type="button" class="{{ $inspectorTab === 'transaction' ? 'is-active' : '' }}" wire:click="$set('inspectorTab', 'transaction')">Transaction</button>
+                    <button type="button" class="{{ $inspectorTab === 'history' ? 'is-active' : '' }}" wire:click="$set('inspectorTab', 'history')">History</button>
                 </div>
 
-                @if ($inspectorTab === 'transaction')
+                @if ($inspectorTab === 'history')
+                    <div class="be-inspector-section">
+                        <h3>Who / When</h3>
+                        @if ($savedInvoice)
+                            <dl class="be-inspector-summary text-[11px]">
+                                <div>
+                                    <dt>Invoice date</dt>
+                                    <dd>{{ $savedInvoice->invoice_date?->format('m/d/Y') }}</dd>
+                                </div>
+                                <div>
+                                    <dt>Created</dt>
+                                    <dd>{{ $savedInvoice->created_at?->format('m/d/Y g:i A') }}<br>{{ $savedInvoice->createdBy?->name ?? 'System' }}</dd>
+                                </div>
+                                <div>
+                                    <dt>Last edit</dt>
+                                    <dd>{{ $savedInvoice->updated_at?->format('m/d/Y g:i A') }}<br>{{ $savedInvoice->updatedBy?->name ?? $savedInvoice->createdBy?->name ?? 'System' }}</dd>
+                                </div>
+                                <div>
+                                    <dt>Status</dt>
+                                    <dd>{{ $savedInvoice->status }}</dd>
+                                </div>
+                                <div>
+                                    <dt>Paid / Balance</dt>
+                                    <dd>{{ number_format((float) $savedInvoice->amount_paid, 2) }} / {{ number_format((float) $savedInvoice->balance_due, 2) }}</dd>
+                                </div>
+                            </dl>
+                            <h3 class="mt-3">Activity</h3>
+                            <div class="space-y-2 max-h-72 overflow-auto">
+                                @forelse ($auditTrail as $log)
+                                    <div class="border px-1.5 py-1 text-[11px]" style="border-color: var(--be-border);" wire:key="inv-audit-{{ $log->id }}">
+                                        <div class="font-semibold">{{ ucfirst($log->action) }} · {{ $log->user?->name ?? 'System' }}</div>
+                                        <div class="text-gray-500">{{ $log->created_at?->format('m/d/Y g:i A') }}</div>
+                                        @if (is_array($log->new_values) && $log->new_values !== [])
+                                            <div class="mt-0.5 text-gray-700">
+                                                @foreach (collect($log->new_values)->only(['invoice_number','status','total','amount_paid','balance_due','customer_id','method','allocated'])->filter() as $key => $value)
+                                                    <div>{{ str_replace('_', ' ', $key) }}: {{ is_scalar($value) ? $value : json_encode($value) }}</div>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </div>
+                                @empty
+                                    <p class="be-inspector-empty">No activity logged yet. Save the invoice to start history.</p>
+                                @endforelse
+                            </div>
+                        @else
+                            <p class="be-inspector-empty">Save or open an invoice (Prev/Next) to see who created/edited it and full activity.</p>
+                        @endif
+                    </div>
+                @elseif ($inspectorTab === 'transaction')
                     <div class="be-inspector-section">
                         <h3>Transaction</h3>
                         <dl>
@@ -210,6 +316,10 @@
                             <div><dt>Template</dt><dd>{{ $template }}</dd></div>
                             <div><dt>Print later</dt><dd>{{ $print_later ? 'Yes' : 'No' }}</dd></div>
                             <div><dt>Email later</dt><dd>{{ $email_later ? 'Yes' : 'No' }}</dd></div>
+                            @if ($savedInvoice)
+                                <div><dt>Created</dt><dd>{{ $savedInvoice->created_at?->format('m/d/Y g:i A') }} · {{ $savedInvoice->createdBy?->name ?? 'System' }}</dd></div>
+                                <div><dt>Last edit</dt><dd>{{ $savedInvoice->updated_at?->format('m/d/Y g:i A') }} · {{ $savedInvoice->updatedBy?->name ?? $savedInvoice->createdBy?->name ?? 'System' }}</dd></div>
+                            @endif
                         </dl>
                     </div>
                 @elseif ($selectedCustomer)

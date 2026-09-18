@@ -70,6 +70,10 @@ class ReceivePaymentAction
                     throw new RuntimeException("Allocation exceeds balance on {$invoice->invoice_number}.");
                 }
 
+                $beforePaid = $invoice->amount_paid;
+                $beforeBalance = $invoice->balance_due;
+                $beforeStatus = $invoice->status;
+
                 PaymentAllocation::query()->create([
                     'payment_id' => $payment->id,
                     'invoice_id' => $invoice->id,
@@ -81,7 +85,21 @@ class ReceivePaymentAction
                 $invoice->status = bccomp((string) $invoice->balance_due, '0', 2) === 0
                     ? 'paid'
                     : (bccomp((string) $invoice->amount_paid, '0', 2) > 0 ? 'partial' : $invoice->status);
+                $invoice->updated_by = $header['created_by'] ?? auth()->id();
                 $invoice->save();
+
+                $this->audit->record('updated', $invoice, [
+                    'amount_paid' => $beforePaid,
+                    'balance_due' => $beforeBalance,
+                    'status' => $beforeStatus,
+                ], [
+                    'invoice_number' => $invoice->invoice_number,
+                    'status' => $invoice->status,
+                    'amount_paid' => $invoice->amount_paid,
+                    'balance_due' => $invoice->balance_due,
+                    'method' => $header['method'] ?? null,
+                    'allocated' => $amount,
+                ], $header['created_by'] ?? auth()->id());
 
                 $allocated = bcadd($allocated, $amount, 2);
             }

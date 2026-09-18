@@ -113,6 +113,7 @@ class CreateInvoiceAction
                 'email_later' => (bool) ($header['email_later'] ?? false),
                 'is_pending' => $isPending,
                 'created_by' => $header['created_by'] ?? auth()->id(),
+                'updated_by' => $header['created_by'] ?? auth()->id(),
             ]);
 
             foreach ($prepared as $line) {

@@ -222,6 +222,25 @@
 <?php $component = $__componentOriginalc19b0eb78905fcee5b378041fd965211; ?>
 <?php unset($__componentOriginalc19b0eb78905fcee5b378041fd965211); ?>
 <?php endif; ?>
+                            <?php if (isset($component)) { $__componentOriginalc19b0eb78905fcee5b378041fd965211 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalc19b0eb78905fcee5b378041fd965211 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.home-tile','data' => ['route' => 'sales-orders.fulfillment','title' => 'SO Fulfillment / Create Invoices','icon' => 'ledger','tone' => 'so']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('erp.home-tile'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['route' => 'sales-orders.fulfillment','title' => 'SO Fulfillment / Create Invoices','icon' => 'ledger','tone' => 'so']); ?>SO → Invoice <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalc19b0eb78905fcee5b378041fd965211)): ?>
+<?php $attributes = $__attributesOriginalc19b0eb78905fcee5b378041fd965211; ?>
+<?php unset($__attributesOriginalc19b0eb78905fcee5b378041fd965211); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalc19b0eb78905fcee5b378041fd965211)): ?>
+<?php $component = $__componentOriginalc19b0eb78905fcee5b378041fd965211; ?>
+<?php unset($__componentOriginalc19b0eb78905fcee5b378041fd965211); ?>
+<?php endif; ?>
                             <span class="be-home-arrow" aria-hidden="true"></span>
                         </div>
 
