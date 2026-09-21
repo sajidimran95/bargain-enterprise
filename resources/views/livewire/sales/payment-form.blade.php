@@ -38,7 +38,12 @@
                         </div>
                         <div class="be-field be-field--inline">
                             <label class="be-field__label be-field__label--caps">Pmt Method</label>
-                            <x-erp.select wire:model="method" class="be-input--combo" :options="$paymentMethodOptions" />
+                            <x-erp.select wire:model.live="method" class="be-input--combo" :options="$paymentMethodOptions" />
+                            @if ($paymentMethodOptions === [])
+                                <p class="text-[11px] text-amber-700">
+                                    <x-erp.workspace-link route="payment-methods.index" class="be-link-btn">Add payment methods</x-erp.workspace-link>
+                                </p>
+                            @endif
                         </div>
                         <div class="be-field be-field--inline">
                             <label class="be-field__label be-field__label--caps">Reference #</label>

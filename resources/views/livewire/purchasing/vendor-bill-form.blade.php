@@ -269,6 +269,45 @@
                         <button type="button" class="be-btn" wire:click="clearForm">Clear</button>
                     </div>
                 </div>
+
+                @unless ($isRtv || $docType === 'credit')
+                    <div class="be-invoice-paynow mt-3 border-t border-gray-200 px-1 pt-3">
+                        <label class="mb-2 inline-flex items-center gap-2 text-[12px]">
+                            <input type="checkbox" wire:model.live="pay_bill_now" @disabled($is_pending)>
+                            Pay bill now (record payment with this bill)
+                        </label>
+                        @if ($pay_bill_now && ! $is_pending)
+                            <div class="grid max-w-3xl gap-2 md:grid-cols-3">
+                                <div class="be-field">
+                                    <label class="be-field__label">Payment Method</label>
+                                    @if ($paymentMethodOptions === [])
+                                        <p class="text-[11px] text-amber-700">
+                                            No payment methods yet.
+                                            <x-erp.workspace-link route="payment-methods.index" class="be-link-btn">Open Payment Method List</x-erp.workspace-link>
+                                        </p>
+                                    @else
+                                        <x-erp.select
+                                            wire:model.live="payment_method"
+                                            class="be-input--combo"
+                                            :options="$paymentMethodOptions"
+                                        />
+                                    @endif
+                                </div>
+                                <div class="be-field">
+                                    <label class="be-field__label">Amount</label>
+                                    <x-erp.input type="number" step="0.01" min="0" wire:model.live="payment_amount" class="be-input--combo text-right" placeholder="{{ number_format((float) $amountDue, 2, '.', '') }}" />
+                                </div>
+                                <div class="be-field">
+                                    <label class="be-field__label">Check / Ref #</label>
+                                    <x-erp.input wire:model="payment_reference" class="be-input--combo" placeholder="Optional" />
+                                </div>
+                            </div>
+                            <p class="mt-1 text-[11px] text-gray-600">Leave amount blank to pay the full amount due ({{ number_format((float) $amountDue, 2) }}).</p>
+                        @elseif ($is_pending)
+                            <p class="mt-1 text-[11px] text-gray-600">Clear Pending before paying the bill.</p>
+                        @endif
+                    </div>
+                @endunless
             </div>
         </div>
 

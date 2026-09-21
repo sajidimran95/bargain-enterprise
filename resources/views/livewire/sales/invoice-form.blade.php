@@ -236,10 +236,16 @@
                             <div class="be-field">
                                 <label class="be-field__label be-field__label--caps">Method</label>
                                 <x-erp.select
-                                    wire:model="payment_method"
+                                    wire:model.live="payment_method"
                                     class="be-input--combo"
                                     :options="$paymentMethodOptions"
                                 />
+                                @if ($paymentMethodOptions === [])
+                                    <p class="mt-1 text-[11px] text-amber-700">
+                                        No methods —
+                                        <x-erp.workspace-link route="payment-methods.index" class="be-link-btn">Payment Method List</x-erp.workspace-link>
+                                    </p>
+                                @endif
                             </div>
                             <div class="be-field">
                                 <label class="be-field__label be-field__label--caps">Amount</label>

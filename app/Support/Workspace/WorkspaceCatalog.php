@@ -28,6 +28,7 @@ class WorkspaceCatalog
             'items.create' => ['type' => 'item-form', 'title' => 'New Item', 'closable' => true],
             'items.edit' => ['type' => 'item-form', 'title' => 'Edit Item', 'closable' => true],
             'lookups.index' => ['type' => 'lookups', 'title' => 'Lookups', 'closable' => true],
+            'payment-methods.index' => ['type' => 'payment-methods', 'title' => 'Payment Methods', 'closable' => true],
             'inventory.index' => ['type' => 'inventory', 'title' => 'Stock Status', 'closable' => true],
             'inventory.adjustments' => ['type' => 'inventory', 'title' => 'Inventory Adjustments', 'closable' => true],
             'quotes.index' => ['type' => 'quotes', 'title' => 'Quotes', 'closable' => true],

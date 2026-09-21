@@ -25,6 +25,7 @@ use App\Livewire\Inventory\InventoryIndex;
 use App\Livewire\Items\ItemForm;
 use App\Livewire\Items\ItemList;
 use App\Livewire\Lookups\LookupManager;
+use App\Livewire\Lookups\PaymentMethodList;
 use App\Livewire\Purchasing\GoodsReceiptForm;
 use App\Livewire\Purchasing\GoodsReceiptIndex;
 use App\Livewire\Purchasing\PurchaseOrderForm;
@@ -100,6 +101,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('items/create', ItemForm::class)->name('items.create');
         Route::get('items/{item}/edit', ItemForm::class)->name('items.edit');
         Route::get('lookups', LookupManager::class)->name('lookups.index');
+        Route::get('payment-methods', PaymentMethodList::class)->name('payment-methods.index');
 
         Route::get('inventory', InventoryIndex::class)->name('inventory.index');
         Route::get('inventory/adjustments', InventoryAdjustmentIndex::class)->name('inventory.adjustments');

@@ -38,7 +38,7 @@
         href="{{ route('dashboard', ['open' => $entry['route']]) }}"
         class="be-menubar__link"
         role="menuitem"
-        @click.prevent="beOpenWorkspace(@js($entry['route'])); open = null"
+        @click.prevent="beOpenWorkspace(@js($entry['route']), @js($entry['params'] ?? []), @js($entry['title'] ?? ($entry['label'] ?? null))); open = null"
     >
         <span class="be-menubar__link-label">{{ $entry['label'] }}</span>
         @if (! empty($entry['shortcut']))

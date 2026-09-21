@@ -21,6 +21,22 @@ class PaymentMethods
             ->all();
     }
 
+    /**
+     * Select options with a blank prompt when methods exist.
+     *
+     * @return array<string, string>
+     */
+    public static function selectOptions(string $blank = 'Select method…'): array
+    {
+        $options = self::options();
+
+        if ($options === []) {
+            return ['' => 'No methods — open Payment Method List'];
+        }
+
+        return ['' => $blank] + $options;
+    }
+
     public static function defaultCode(?string $preferred = 'cash'): string
     {
         $options = self::options();
@@ -30,5 +46,25 @@ class PaymentMethods
         }
 
         return (string) (array_key_first($options) ?? ($preferred ?? 'cash'));
+    }
+
+    public static function labelFor(?string $code): string
+    {
+        if ($code === null || $code === '') {
+            return '—';
+        }
+
+        $name = PaymentMethod::query()->where('code', $code)->value('name');
+
+        return $name ? (string) $name : $code;
+    }
+
+    public static function isValid(?string $code): bool
+    {
+        if ($code === null || $code === '') {
+            return false;
+        }
+
+        return array_key_exists($code, self::options());
     }
 }

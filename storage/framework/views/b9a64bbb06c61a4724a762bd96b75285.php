@@ -85,7 +85,7 @@ unset($__defined_vars, $__key, $__value); ?>
         href="<?php echo e(route('dashboard', ['open' => $entry['route']])); ?>"
         class="be-menubar__link"
         role="menuitem"
-        @click.prevent="beOpenWorkspace(<?php echo \Illuminate\Support\Js::from($entry['route'])->toHtml() ?>); open = null"
+        @click.prevent="beOpenWorkspace(<?php echo \Illuminate\Support\Js::from($entry['route'])->toHtml() ?>, <?php echo \Illuminate\Support\Js::from($entry['params'] ?? [])->toHtml() ?>, <?php echo \Illuminate\Support\Js::from($entry['title'] ?? ($entry['label'] ?? null))->toHtml() ?>); open = null"
     >
         <span class="be-menubar__link-label"><?php echo e($entry['label']); ?></span>
         <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(! empty($entry['shortcut'])): ?>

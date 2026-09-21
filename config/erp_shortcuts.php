@@ -226,5 +226,12 @@ return [
             'permission' => 'roles.manage',
             'match' => 'roles.*',
         ],
+        'payment_methods' => [
+            'label' => 'Payment Methods',
+            'route' => 'payment-methods.index',
+            'icon' => 'cash',
+            'permission' => 'settings.manage',
+            'match' => 'payment-methods.*',
+        ],
     ],
 ];

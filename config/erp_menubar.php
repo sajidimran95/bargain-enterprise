@@ -97,7 +97,8 @@ return [
         ['label' => 'Memorized Transaction List', 'route' => 'reports.index'],
         ['separator' => true],
         ['label' => 'Customer & Vendor Profile Lists', 'children' => [
-            ['label' => 'Payment Methods / Lookups', 'route' => 'lookups.index'],
+            ['label' => 'Payment Method List', 'route' => 'payment-methods.index'],
+            ['label' => 'All Lookups', 'route' => 'lookups.index'],
             ['label' => 'Terms / Tax Codes / Units', 'route' => 'lookups.index'],
             ['label' => 'Price Levels', 'route' => 'lookups.index'],
             ['label' => 'Item Categories', 'route' => 'lookups.index'],

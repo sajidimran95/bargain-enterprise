@@ -710,6 +710,116 @@ unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendB
                         <button type="button" class="be-btn" wire:click="clearForm">Clear</button>
                     </div>
                 </div>
+
+                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if (! ($isRtv || $docType === 'credit')): ?>
+                    <div class="be-invoice-paynow mt-3 border-t border-gray-200 px-1 pt-3">
+                        <label class="mb-2 inline-flex items-center gap-2 text-[12px]">
+                            <input type="checkbox" wire:model.live="pay_bill_now" <?php if($is_pending): echo 'disabled'; endif; ?>>
+                            Pay bill now (record payment with this bill)
+                        </label>
+                        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($pay_bill_now && ! $is_pending): ?>
+                            <div class="grid max-w-3xl gap-2 md:grid-cols-3">
+                                <div class="be-field">
+                                    <label class="be-field__label">Payment Method</label>
+                                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($paymentMethodOptions === []): ?>
+                                        <p class="text-[11px] text-amber-700">
+                                            No payment methods yet.
+                                            <?php if (isset($component)) { $__componentOriginal5abd15ccddcad372df58dab78ed00d60 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal5abd15ccddcad372df58dab78ed00d60 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.workspace-link','data' => ['route' => 'payment-methods.index','class' => 'be-link-btn']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('erp.workspace-link'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['route' => 'payment-methods.index','class' => 'be-link-btn']); ?>Open Payment Method List <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
+<?php $attributes = $__attributesOriginal5abd15ccddcad372df58dab78ed00d60; ?>
+<?php unset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
+<?php $component = $__componentOriginal5abd15ccddcad372df58dab78ed00d60; ?>
+<?php unset($__componentOriginal5abd15ccddcad372df58dab78ed00d60); ?>
+<?php endif; ?>
+                                        </p>
+                                    <?php else: ?>
+                                        <?php if (isset($component)) { $__componentOriginal847fd48de2d422593186c84a70c7291b = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal847fd48de2d422593186c84a70c7291b = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.select','data' => ['wire:model.live' => 'payment_method','class' => 'be-input--combo','options' => $paymentMethodOptions]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('erp.select'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['wire:model.live' => 'payment_method','class' => 'be-input--combo','options' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($paymentMethodOptions)]); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal847fd48de2d422593186c84a70c7291b)): ?>
+<?php $attributes = $__attributesOriginal847fd48de2d422593186c84a70c7291b; ?>
+<?php unset($__attributesOriginal847fd48de2d422593186c84a70c7291b); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal847fd48de2d422593186c84a70c7291b)): ?>
+<?php $component = $__componentOriginal847fd48de2d422593186c84a70c7291b; ?>
+<?php unset($__componentOriginal847fd48de2d422593186c84a70c7291b); ?>
+<?php endif; ?>
+                                    <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                                </div>
+                                <div class="be-field">
+                                    <label class="be-field__label">Amount</label>
+                                    <?php if (isset($component)) { $__componentOriginal5ffc033813591e85e4508e27a2ee1612 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal5ffc033813591e85e4508e27a2ee1612 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.input','data' => ['type' => 'number','step' => '0.01','min' => '0','wire:model.live' => 'payment_amount','class' => 'be-input--combo text-right','placeholder' => ''.e(number_format((float) $amountDue, 2, '.', '')).'']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('erp.input'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['type' => 'number','step' => '0.01','min' => '0','wire:model.live' => 'payment_amount','class' => 'be-input--combo text-right','placeholder' => ''.e(number_format((float) $amountDue, 2, '.', '')).'']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal5ffc033813591e85e4508e27a2ee1612)): ?>
+<?php $attributes = $__attributesOriginal5ffc033813591e85e4508e27a2ee1612; ?>
+<?php unset($__attributesOriginal5ffc033813591e85e4508e27a2ee1612); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal5ffc033813591e85e4508e27a2ee1612)): ?>
+<?php $component = $__componentOriginal5ffc033813591e85e4508e27a2ee1612; ?>
+<?php unset($__componentOriginal5ffc033813591e85e4508e27a2ee1612); ?>
+<?php endif; ?>
+                                </div>
+                                <div class="be-field">
+                                    <label class="be-field__label">Check / Ref #</label>
+                                    <?php if (isset($component)) { $__componentOriginal5ffc033813591e85e4508e27a2ee1612 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal5ffc033813591e85e4508e27a2ee1612 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.input','data' => ['wire:model' => 'payment_reference','class' => 'be-input--combo','placeholder' => 'Optional']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('erp.input'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['wire:model' => 'payment_reference','class' => 'be-input--combo','placeholder' => 'Optional']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal5ffc033813591e85e4508e27a2ee1612)): ?>
+<?php $attributes = $__attributesOriginal5ffc033813591e85e4508e27a2ee1612; ?>
+<?php unset($__attributesOriginal5ffc033813591e85e4508e27a2ee1612); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal5ffc033813591e85e4508e27a2ee1612)): ?>
+<?php $component = $__componentOriginal5ffc033813591e85e4508e27a2ee1612; ?>
+<?php unset($__componentOriginal5ffc033813591e85e4508e27a2ee1612); ?>
+<?php endif; ?>
+                                </div>
+                            </div>
+                            <p class="mt-1 text-[11px] text-gray-600">Leave amount blank to pay the full amount due (<?php echo e(number_format((float) $amountDue, 2)); ?>).</p>
+                        <?php elseif($is_pending): ?>
+                            <p class="mt-1 text-[11px] text-gray-600">Clear Pending before paying the bill.</p>
+                        <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                    </div>
+                <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
             </div>
         </div>
 

@@ -202,14 +202,14 @@ unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendB
                             <label class="be-field__label be-field__label--caps">Method</label>
                             <?php if (isset($component)) { $__componentOriginal847fd48de2d422593186c84a70c7291b = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal847fd48de2d422593186c84a70c7291b = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.select','data' => ['wire:model' => 'method','class' => 'be-input--combo','options' => ['check' => 'Check', 'ach' => 'ACH', 'cash' => 'Cash', 'other' => 'Other']]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.select','data' => ['wire:model.live' => 'method','class' => 'be-input--combo','options' => $paymentMethodOptions]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('erp.select'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['wire:model' => 'method','class' => 'be-input--combo','options' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(['check' => 'Check', 'ach' => 'ACH', 'cash' => 'Cash', 'other' => 'Other'])]); ?>
+<?php $component->withAttributes(['wire:model.live' => 'method','class' => 'be-input--combo','options' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($paymentMethodOptions)]); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal847fd48de2d422593186c84a70c7291b)): ?>
@@ -220,6 +220,29 @@ unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendB
 <?php $component = $__componentOriginal847fd48de2d422593186c84a70c7291b; ?>
 <?php unset($__componentOriginal847fd48de2d422593186c84a70c7291b); ?>
 <?php endif; ?>
+                            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($paymentMethodOptions === []): ?>
+                                <p class="text-[11px] text-amber-700">
+                                    <?php if (isset($component)) { $__componentOriginal5abd15ccddcad372df58dab78ed00d60 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal5abd15ccddcad372df58dab78ed00d60 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.workspace-link','data' => ['route' => 'payment-methods.index','class' => 'be-link-btn']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('erp.workspace-link'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['route' => 'payment-methods.index','class' => 'be-link-btn']); ?>Add payment methods <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
+<?php $attributes = $__attributesOriginal5abd15ccddcad372df58dab78ed00d60; ?>
+<?php unset($__attributesOriginal5abd15ccddcad372df58dab78ed00d60); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal5abd15ccddcad372df58dab78ed00d60)): ?>
+<?php $component = $__componentOriginal5abd15ccddcad372df58dab78ed00d60; ?>
+<?php unset($__componentOriginal5abd15ccddcad372df58dab78ed00d60); ?>
+<?php endif; ?>
+                                </p>
+                            <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                         </div>
                         <div class="be-field be-field--inline">
                             <label class="be-field__label be-field__label--caps">Check No.</label>

@@ -11,10 +11,13 @@ use App\Models\PurchaseOrderLine;
 use App\Models\Vendor;
 use App\Models\VendorBill;
 use App\Models\VendorBillLine;
+use App\Models\VendorPayment;
+use App\Models\VendorPaymentAllocation;
 use App\Services\DocumentPdfService;
 use App\Services\InventoryService;
 use App\Support\DocumentNumbers;
 use App\Support\ItemCatalog;
+use App\Support\PaymentMethods;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -72,12 +75,22 @@ class VendorBillForm extends Component
 
     public string $saveMode = 'close';
 
+    public bool $pay_bill_now = false;
+
+    public string $payment_method = '';
+
+    public string $payment_amount = '';
+
+    public string $payment_reference = '';
+
     /** @var array<int, array{account: string, description: string, amount: string, customer_job: string, billable: bool, class: string}> */
     public array $expenseLines = [];
 
     public function mount(?VendorBill $vendorBill = null): void
     {
         abort_unless(auth()->user()?->hasPermission('purchase.create'), 403);
+
+        $this->payment_method = PaymentMethods::defaultCode('check');
 
         $this->isRtv = request()->routeIs('vendor-returns.create')
             || request()->routeIs('vendor-returns.edit')
@@ -351,6 +364,10 @@ class VendorBillForm extends Component
         $this->print_later = false;
         $this->email_later = false;
         $this->is_pending = false;
+        $this->pay_bill_now = false;
+        $this->payment_amount = '';
+        $this->payment_reference = '';
+        $this->payment_method = PaymentMethods::defaultCode('check');
         $this->pendingAttachments = [];
     }
 
@@ -581,10 +598,77 @@ class VendorBillForm extends Component
         $this->navigatorId = (int) $bill->id;
         $stored = $this->storePendingAttachmentsFor('attachments/vendor-bills/'.$bill->bill_number);
         $label = $isCredit ? ($this->isRtv ? 'RTV' : 'Vendor credit') : 'Bill';
-        $this->dispatch('be-toast', message: $label.' '.$this->bill_number.' saved.'
+        $paymentNote = $this->applyPayBillNowIfRequested($bill, $isCredit);
+        $this->dispatch('be-toast', message: $label.' '.$this->bill_number.' saved.'.$paymentNote
             .($stored ? ' '.$stored.' attachment(s) stored.' : ''));
 
-        return $bill;
+        return $bill->fresh();
+    }
+
+    protected function applyPayBillNowIfRequested(VendorBill $bill, bool $isCredit): string
+    {
+        if ($isCredit || $this->isRtv || $this->is_pending || ! $this->pay_bill_now) {
+            return '';
+        }
+
+        $bill->refresh();
+        $payAmount = number_format(
+            (float) ($this->payment_amount !== '' ? $this->payment_amount : $bill->balance_due),
+            2,
+            '.',
+            ''
+        );
+
+        if (bccomp($payAmount, '0', 2) <= 0) {
+            return ' Payment skipped — amount must be greater than 0.';
+        }
+
+        if (bccomp($payAmount, (string) $bill->balance_due, 2) > 0) {
+            return ' Payment skipped — amount cannot exceed bill balance.';
+        }
+
+        $method = $this->payment_method !== ''
+            ? $this->payment_method
+            : PaymentMethods::defaultCode('check');
+
+        try {
+            DB::transaction(function () use ($bill, $payAmount, $method) {
+                $payment = VendorPayment::query()->create([
+                    'payment_number' => DocumentNumbers::next(VendorPayment::class, 'payment_number', 'VPMT-'),
+                    'vendor_id' => (int) $bill->vendor_id,
+                    'payment_date' => $this->bill_date,
+                    'amount' => $payAmount,
+                    'method' => $method,
+                    'bank_account_id' => null,
+                    'memo' => trim(
+                        ($this->payment_reference !== '' ? 'Ref '.$this->payment_reference.' · ' : '')
+                        .'Paid with bill '.$bill->bill_number
+                    ),
+                ]);
+
+                VendorPaymentAllocation::query()->create([
+                    'vendor_payment_id' => $payment->id,
+                    'vendor_bill_id' => $bill->id,
+                    'amount' => $payAmount,
+                ]);
+
+                $locked = VendorBill::query()->whereKey($bill->id)->lockForUpdate()->firstOrFail();
+                $locked->amount_paid = bcadd((string) $locked->amount_paid, $payAmount, 2);
+                $locked->balance_due = bcsub((string) $locked->balance_due, $payAmount, 2);
+                $locked->status = bccomp((string) $locked->balance_due, '0', 2) === 0
+                    ? 'paid'
+                    : 'partial';
+                $locked->save();
+
+                $vendor = Vendor::query()->lockForUpdate()->findOrFail((int) $locked->vendor_id);
+                $vendor->balance = bcsub((string) $vendor->balance, $payAmount, 2);
+                $vendor->save();
+            });
+        } catch (\Throwable $e) {
+            return ' Payment failed: '.$e->getMessage();
+        }
+
+        return ' Payment '.$payAmount.' applied ('.$method.').';
     }
 
     /**
@@ -1028,6 +1112,7 @@ class VendorBillForm extends Component
             'selectedVendor' => $vendor,
             'recentBills' => $vendor?->vendorBills ?? collect(),
             'pageTitle' => $pageTitle,
+            'paymentMethodOptions' => PaymentMethods::options(),
         ])->layoutData([
             'title' => $pageTitle,
             'windowTitle' => $pageTitle,
