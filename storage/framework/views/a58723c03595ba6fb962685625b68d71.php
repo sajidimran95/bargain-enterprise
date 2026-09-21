@@ -1,13 +1,13 @@
 <?php if (isset($component)) { $__componentOriginal1a5737427d04f5e63c498f38666d4996 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal1a5737427d04f5e63c498f38666d4996 = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.report-shell','data' => ['title' => 'MSA Sales Report','subtitle' => $subtitle,'showBasis' => true,'basis' => $basis,'hideHeader' => $hideHeader,'showExtraFilters' => $showExtraFilters,'sortBy' => $sortBy,'datePresetOptions' => $datePresetOptions,'sortByOptions' => $sortByOptions,'showEmailModal' => $showEmailModal,'showCommentModal' => $showCommentModal,'showShareModal' => $showShareModal,'showMemorizeModal' => $showMemorizeModal,'reportComment' => $reportComment,'shareUrl' => $shareUrl,'memorizeName' => $memorizeName,'emailSubject' => $emailSubject]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.report-shell','data' => ['title' => 'MSA Sales Report — '.e($layoutTitle).'','subtitle' => $subtitle,'showBasis' => true,'basis' => $basis,'hideHeader' => $hideHeader,'showExtraFilters' => $showExtraFilters,'sortBy' => $sortBy,'datePresetOptions' => $datePresetOptions,'sortByOptions' => $sortByOptions,'showEmailModal' => $showEmailModal,'showCommentModal' => $showCommentModal,'showShareModal' => $showShareModal,'showMemorizeModal' => $showMemorizeModal,'reportComment' => $reportComment,'shareUrl' => $shareUrl,'memorizeName' => $memorizeName,'emailSubject' => $emailSubject]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('erp.report-shell'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['title' => 'MSA Sales Report','subtitle' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($subtitle),'show-basis' => true,'basis' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($basis),'hide-header' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($hideHeader),'show-extra-filters' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($showExtraFilters),'sort-by' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($sortBy),'date-preset-options' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($datePresetOptions),'sort-by-options' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($sortByOptions),'show-email-modal' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($showEmailModal),'show-comment-modal' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($showCommentModal),'show-share-modal' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($showShareModal),'show-memorize-modal' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($showMemorizeModal),'report-comment' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($reportComment),'share-url' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($shareUrl),'memorize-name' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($memorizeName),'email-subject' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($emailSubject)]); ?>
+<?php $component->withAttributes(['title' => 'MSA Sales Report — '.e($layoutTitle).'','subtitle' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($subtitle),'show-basis' => true,'basis' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($basis),'hide-header' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($hideHeader),'show-extra-filters' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($showExtraFilters),'sort-by' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($sortBy),'date-preset-options' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($datePresetOptions),'sort-by-options' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($sortByOptions),'show-email-modal' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($showEmailModal),'show-comment-modal' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($showCommentModal),'show-share-modal' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($showShareModal),'show-memorize-modal' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($showMemorizeModal),'report-comment' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($reportComment),'share-url' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($shareUrl),'memorize-name' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($memorizeName),'email-subject' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($emailSubject)]); ?>
      <?php $__env->slot('excel', null, []); ?> 
         <?php if (isset($component)) { $__componentOriginal1533802996c09e398453c7a7b321bf25 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal1533802996c09e398453c7a7b321bf25 = $attributes; } ?>
@@ -32,6 +32,14 @@
 
      <?php $__env->slot('filters', null, []); ?> 
         <div class="be-field">
+            <label class="be-field__label">Excel / Report type</label>
+            <select class="be-input w-72" wire:model.live="layout">
+                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__currentLoopData = $layoutOptions; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $value => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <option value="<?php echo e($value); ?>"><?php echo e($label); ?></option>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+            </select>
+        </div>
+        <div class="be-field">
             <label class="be-field__label">Scan / Look for</label>
             <input
                 type="text"
@@ -47,10 +55,14 @@
     <table class="be-report-table be-table be-table--line-select be-report-table--wide">
         <thead>
             <tr>
+                <th>Type</th>
                 <th>Date</th>
                 <th>Num</th>
+                <th>Memo</th>
                 <th>Name</th>
                 <th class="num">Qty</th>
+                <th>U/M</th>
+                <th class="num">Sales Price</th>
                 <th class="num">Amount</th>
                 <th class="num">Balance</th>
             </tr>
@@ -62,7 +74,7 @@
                     class="be-report-table__group"
                     @click="collapsed['<?php echo e($groupKey); ?>'] = !collapsed['<?php echo e($groupKey); ?>']"
                 >
-                    <td colspan="6">
+                    <td colspan="10">
                         <span
                             class="be-report-table__group-toggle"
                             x-text="collapsed['<?php echo e($groupKey); ?>'] ? '▶' : '▼'"
@@ -78,27 +90,35 @@
                         @click="selectedLine = 'line-<?php echo e($line->id); ?>'"
                         :class="selectedLine === 'line-<?php echo e($line->id); ?>' ? 'is-selected' : ''"
                     >
+                        <td>Invoice</td>
                         <td><?php echo e($line->invoice?->invoice_date?->format('m/d/Y')); ?></td>
                         <td><?php echo e($line->invoice?->invoice_number); ?></td>
+                        <td><?php echo e($line->invoice?->memo); ?></td>
                         <td><?php echo e($line->invoice?->customer?->display_name); ?></td>
                         <td class="num"><?php echo e(number_format((float) $line->quantity, 0)); ?></td>
+                        <td><?php echo e($line->item?->unitOfMeasure?->abbreviation ?: $line->item?->unitOfMeasure?->name); ?></td>
+                        <td class="num"><?php echo e(number_format((float) $line->rate, 2)); ?></td>
                         <td class="num"><?php echo e(number_format((float) $line->amount, 2)); ?></td>
                         <td class="num"><?php echo e(number_format((float) $this->lineBalanceShare($line), 2)); ?></td>
                     </tr>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                 <tr class="be-report-table__subtotal" x-show="!collapsed['<?php echo e($groupKey); ?>']">
-                    <td colspan="3" class="text-right">Total <?php echo e($group['item_label']); ?></td>
+                    <td colspan="5" class="text-right">Total <?php echo e($group['item_label']); ?></td>
                     <td class="num"><?php echo e(number_format((float) $group['qty'], 0)); ?></td>
+                    <td></td>
+                    <td></td>
                     <td class="num"><?php echo e(number_format((float) $group['amount'], 2)); ?></td>
                     <td class="num"><?php echo e(number_format((float) $group['balance'], 2)); ?></td>
                 </tr>
             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                <tr><td colspan="6">No sales in this date range.</td></tr>
+                <tr><td colspan="10">No sales in this date range.</td></tr>
             <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
             <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($groups->isNotEmpty()): ?>
                 <tr class="be-report-table__total">
-                    <td colspan="3" class="text-right">TOTAL</td>
+                    <td colspan="5" class="text-right">TOTAL</td>
                     <td class="num"><?php echo e(number_format((float) $grandQty, 0)); ?></td>
+                    <td></td>
+                    <td></td>
                     <td class="num"><?php echo e(number_format((float) $grandAmount, 2)); ?></td>
                     <td class="num"><?php echo e(number_format((float) $grandBalance, 2)); ?></td>
                 </tr>

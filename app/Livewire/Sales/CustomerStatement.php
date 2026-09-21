@@ -7,7 +7,7 @@ use App\Models\CreditMemo;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Payment;
-use App\Support\CsvExporter;
+use App\Support\XlsxExporter;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
@@ -83,10 +83,11 @@ class CustomerStatement extends Component
             number_format($row['balance'], 2, '.', ''),
         ]);
 
-        return app(CsvExporter::class)->download(
-            'customer-statement.csv',
+        return app(XlsxExporter::class)->download(
+            'customer-statement.xlsm',
             ['Date', 'Type', 'Num', 'Memo', 'Amount', 'Balance'],
-            $rows
+            $rows,
+            title: 'Customer Statement',
         );
     }
 

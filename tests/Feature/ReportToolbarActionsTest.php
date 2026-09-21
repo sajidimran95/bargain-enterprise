@@ -82,7 +82,7 @@ class ReportToolbarActionsTest extends TestCase
 
         Livewire::test(CustomerOpenBalanceReport::class)
             ->call('exportExcel')
-            ->assertFileDownloaded('customer-open-balance.csv');
+            ->assertFileDownloaded('customer-open-balance.xlsm');
 
         Livewire::test(CustomerOpenBalanceReport::class)
             ->call('exportPdf')

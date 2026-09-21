@@ -8,7 +8,7 @@ use App\Actions\Vendors\DuplicateVendorAction;
 use App\Models\Vendor;
 use App\Models\VendorContact;
 use App\Models\VendorNote;
-use App\Support\CsvExporter;
+use App\Support\XlsxExporter;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -196,7 +196,7 @@ class VendorCenter extends Component
         $this->dispatch('be-toast', message: 'Note deleted.');
     }
 
-    public function exportExcel(CsvExporter $exporter): StreamedResponse
+    public function exportExcel(XlsxExporter $exporter): StreamedResponse
     {
         $this->authorize('viewAny', Vendor::class);
 
@@ -216,9 +216,9 @@ class VendorCenter extends Component
                 $v->is_active ? 'Active' : 'Inactive',
             ]);
 
-        return $exporter->download('vendors.csv', [
+        return $exporter->download('vendors.xlsm', [
             'Vendor #', 'Display Name', 'Company', 'Email', 'Phone', 'Balance', 'Status',
-        ], $rows);
+        ], $rows, title: 'Vendor Center');
     }
 
     public function selectedVendor(): ?Vendor

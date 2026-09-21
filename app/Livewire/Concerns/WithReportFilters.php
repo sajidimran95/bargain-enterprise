@@ -3,9 +3,9 @@
 namespace App\Livewire\Concerns;
 
 use App\Models\Setting;
-use App\Support\CsvExporter;
 use App\Support\ErpReportsCatalog;
 use App\Support\QbDatePresets;
+use App\Support\XlsxExporter;
 use Carbon\Carbon;
 use Illuminate\Support\Js;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -226,6 +226,8 @@ trait WithReportFilters
     }
 
     /**
+     * Download a QuickBooks-style .xlsm report (not CSV).
+     *
      * @param  array<int, string>  $headers
      * @param  iterable<int, array<int, string|int|float|null>>  $rows
      */
@@ -233,7 +235,18 @@ trait WithReportFilters
     {
         abort_unless(auth()->user()?->hasPermission('report.export'), 403);
 
-        return app(CsvExporter::class)->download($filename, $headers, $rows);
+        $title = method_exists($this, 'reportPdfTitle') ? $this->reportPdfTitle() : null;
+        $subtitle = method_exists($this, 'reportPdfSubtitle')
+            ? $this->reportPdfSubtitle()
+            : (method_exists($this, 'reportPeriodLabel') ? $this->reportPeriodLabel() : null);
+
+        return app(XlsxExporter::class)->download(
+            $filename,
+            $headers,
+            $rows,
+            title: is_string($title) ? $title : null,
+            subtitle: is_string($subtitle) ? $subtitle : null,
+        );
     }
 
     /**

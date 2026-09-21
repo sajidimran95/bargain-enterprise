@@ -5,9 +5,12 @@ namespace App\Livewire\Reports;
 use App\Livewire\Concerns\WithReportDelivery;
 use App\Livewire\Concerns\WithReportFilters;
 use App\Models\InvoiceLine;
+use App\Support\QbSalesReportExport;
+use App\Support\XlsxExporter;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -20,44 +23,41 @@ class SalesByItemReport extends Component
 
     public string $search = '';
 
+    #[Url]
+    public string $layout = 'item_detail';
+
     public function mount(): void
     {
         abort_unless(auth()->user()?->hasPermission('report.view'), 403);
         $this->datePreset = 'last_week';
         $this->applyDatePreset('last_week');
         $this->sortBy = 'default';
+
+        if (! array_key_exists($this->layout, QbSalesReportExport::layouts())) {
+            $this->layout = 'item_detail';
+        }
+    }
+
+    public function updatedLayout(string $value): void
+    {
+        if (! array_key_exists($value, QbSalesReportExport::layouts())) {
+            $this->layout = 'item_detail';
+        }
     }
 
     public function exportExcel(): StreamedResponse
     {
-        $flat = [];
-        foreach ($this->groupedRows() as $group) {
-            foreach ($group['lines'] as $line) {
-                $flat[] = [
-                    $group['item_label'],
-                    $line->invoice?->invoice_date?->format('Y-m-d'),
-                    $line->invoice?->invoice_number,
-                    $line->invoice?->customer?->display_name,
-                    number_format((float) $line->quantity, 4, '.', ''),
-                    number_format((float) $line->amount, 2, '.', ''),
-                    $this->lineBalanceShare($line),
-                ];
-            }
-            $flat[] = [
-                'Total '.$group['item_label'],
-                '',
-                '',
-                '',
-                number_format((float) $group['qty'], 4, '.', ''),
-                number_format((float) $group['amount'], 2, '.', ''),
-                number_format((float) $group['balance'], 2, '.', ''),
-            ];
-        }
+        abort_unless(auth()->user()?->hasPermission('report.export'), 403);
 
-        return $this->exportReportCsv(
-            'sales-by-item.csv',
-            ['Item', 'Date', 'Num', 'Name', 'Qty', 'Amount', 'Balance'],
-            $flat
+        $payload = app(QbSalesReportExport::class)->build($this->layout, $this->exportLines());
+
+        return app(XlsxExporter::class)->download(
+            QbSalesReportExport::filename($this->layout),
+            $payload['headers'],
+            $payload['rows'],
+            title: QbSalesReportExport::title($this->layout),
+            subtitle: $this->reportPeriodLabel(),
+            qbLayout: true,
         );
     }
 
@@ -86,12 +86,20 @@ class SalesByItemReport extends Component
     }
 
     /**
-     * @return Collection<int, array{item_label: string, item_code: string, lines: Collection, qty: string, amount: string, balance: string}>
+     * @return Collection<int, InvoiceLine>
      */
-    protected function groupedRows(): Collection
+    protected function exportLines(): Collection
+    {
+        return $this->queryLines()->values();
+    }
+
+    /**
+     * @return Collection<int, InvoiceLine>
+     */
+    protected function queryLines(): Collection
     {
         $lines = InvoiceLine::query()
-            ->with(['item', 'invoice.customer'])
+            ->with(['item.unitOfMeasure', 'item.itemType', 'invoice.customer', 'invoice.createdBy'])
             ->whereHas('invoice', function ($query) {
                 $query->whereNotIn('status', ['draft', 'pending'])
                     ->where('is_pending', false)
@@ -116,18 +124,27 @@ class SalesByItemReport extends Component
             })
             ->get();
 
-        $sorted = match ($this->sortBy) {
+        return match ($this->sortBy) {
             'date' => $lines->sortBy(fn (InvoiceLine $line) => $line->invoice?->invoice_date?->timestamp ?? 0),
             'amount' => $lines->sortByDesc(fn (InvoiceLine $line) => (float) $line->amount),
             'num' => $lines->sortBy(fn (InvoiceLine $line) => $line->invoice?->invoice_number),
             'name' => $lines->sortBy(fn (InvoiceLine $line) => $line->invoice?->customer?->display_name ?? ''),
             default => $lines->sortBy([
+                fn (InvoiceLine $line) => $line->item?->itemType?->label
+                    ?: $line->item?->type
+                    ?: 'Inventory',
                 fn (InvoiceLine $line) => $line->item?->barcode ?: $line->item?->sku ?: '',
                 fn (InvoiceLine $line) => $line->invoice?->invoice_date?->timestamp ?? 0,
             ]),
         };
+    }
 
-        return $sorted
+    /**
+     * @return Collection<int, array{item_label: string, item_code: string, lines: Collection, qty: string, amount: string, balance: string, type_label: string}>
+     */
+    protected function groupedRows(): Collection
+    {
+        return $this->queryLines()
             ->values()
             ->groupBy(fn (InvoiceLine $line) => $line->item_id ?: 'none')
             ->map(function (Collection $group) {
@@ -149,6 +166,11 @@ class SalesByItemReport extends Component
                     'item_label' => $item
                         ? $code.' ('.$description.')'
                         : 'Unassigned',
+                    'type_label' => (string) (
+                        $item?->itemType?->label
+                        ?: $item?->type
+                        ?: 'Inventory'
+                    ),
                     'lines' => $group->values(),
                     'qty' => $qty,
                     'amount' => $amount,
@@ -191,7 +213,9 @@ class SalesByItemReport extends Component
             'grandBalance' => $grandBalance,
             'datePresetOptions' => $this->datePresetOptions(),
             'sortByOptions' => $this->salesSortOptions(),
+            'layoutOptions' => QbSalesReportExport::layouts(),
             'subtitle' => $this->reportPeriodLabel(),
+            'layoutTitle' => QbSalesReportExport::title($this->layout),
         ])->layoutData([
             'title' => 'MSA Sales Report',
             'windowTitle' => 'MSA Sales Report',
@@ -200,7 +224,7 @@ class SalesByItemReport extends Component
 
     protected function reportPdfTitle(): string
     {
-        return 'MSA Sales Report';
+        return QbSalesReportExport::title($this->layout);
     }
 
     protected function reportPdfSubtitle(): ?string
@@ -210,24 +234,29 @@ class SalesByItemReport extends Component
 
     protected function reportPdfFilename(): string
     {
-        return 'msa-sales-report.pdf';
+        return str_replace('.xlsm', '.pdf', QbSalesReportExport::filename($this->layout));
     }
 
     protected function reportPdfBodyHtml(): string
     {
-        $html = '<table><thead><tr><th>Date</th><th>Num</th><th>Name</th><th class="num">Qty</th><th class="num">Amount</th><th class="num">Balance</th></tr></thead><tbody>';
-        foreach ($this->groupedRows() as $group) {
-            $html .= '<tr class="group"><td colspan="6">'.e($group['item_label']).'</td></tr>';
-            foreach ($group['lines'] as $line) {
-                $html .= '<tr>'
-                    .'<td>'.e($line->invoice?->invoice_date?->format('m/d/Y') ?? '').'</td>'
-                    .'<td>'.e($line->invoice?->invoice_number ?? '').'</td>'
-                    .'<td>'.e($line->invoice?->customer?->display_name ?? '').'</td>'
-                    .'<td class="num">'.e(number_format((float) $line->quantity, 2)).'</td>'
-                    .'<td class="num">'.e(number_format((float) $line->amount, 2)).'</td>'
-                    .'<td class="num">'.e(number_format((float) $this->lineBalanceShare($line), 2)).'</td>'
-                    .'</tr>';
+        $payload = app(QbSalesReportExport::class)->build($this->layout, $this->exportLines());
+        $html = '<table><thead><tr>';
+        foreach ($payload['headers'] as $header) {
+            if ($header === '') {
+                continue;
             }
+            $html .= '<th>'.e($header).'</th>';
+        }
+        $html .= '</tr></thead><tbody>';
+        foreach ($payload['rows'] as $row) {
+            $html .= '<tr>';
+            foreach ($row as $index => $cell) {
+                if (($payload['headers'][$index] ?? null) === '' && $index > 0) {
+                    continue;
+                }
+                $html .= '<td>'.e((string) $cell).'</td>';
+            }
+            $html .= '</tr>';
         }
         $html .= '</tbody></table>';
 

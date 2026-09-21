@@ -6,7 +6,7 @@ use App\Actions\Items\ActivateItemAction;
 use App\Actions\Items\DeactivateItemAction;
 use App\Actions\Items\DuplicateItemAction;
 use App\Models\Item;
-use App\Support\CsvExporter;
+use App\Support\XlsxExporter;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -144,7 +144,7 @@ class ItemList extends Component
         $this->dispatch('be-toast', message: 'Item deleted.');
     }
 
-    public function exportExcel(CsvExporter $exporter): StreamedResponse
+    public function exportExcel(XlsxExporter $exporter): StreamedResponse
     {
         $this->authorize('viewAny', Item::class);
 
@@ -170,9 +170,9 @@ class ItemList extends Component
                 $i->is_active ? 'Active' : 'Inactive',
             ]);
 
-        return $exporter->download('items.csv', [
+        return $exporter->download('items.xlsm', [
             'SKU', 'Description', 'Item Type', 'Category', 'Qty On Hand', 'Price', 'Cost', 'Promotion', 'Status',
-        ], $rows);
+        ], $rows, title: 'Item List');
     }
 
     protected function requireSelected(): Item

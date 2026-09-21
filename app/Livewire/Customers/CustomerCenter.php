@@ -11,7 +11,7 @@ use App\Models\CustomerNote;
 use App\Models\CustomerTodo;
 use App\Models\Invoice;
 use App\Models\Payment;
-use App\Support\CsvExporter;
+use App\Support\XlsxExporter;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -321,7 +321,7 @@ class CustomerCenter extends Component
         $this->dispatch('be-toast', message: 'Contact deleted.');
     }
 
-    public function exportExcel(CsvExporter $exporter): StreamedResponse
+    public function exportExcel(XlsxExporter $exporter): StreamedResponse
     {
         $this->authorize('viewAny', Customer::class);
 
@@ -347,10 +347,10 @@ class CustomerCenter extends Component
                 $c->is_active ? 'Active' : 'Inactive',
             ]);
 
-        return $exporter->download('customers.csv', [
+        return $exporter->download('customers.xlsm', [
             'Customer #', 'Display Name', 'Company', 'Full Name', 'Email', 'Phone',
             'Street', 'City', 'State', 'ZIP', 'Balance', 'Status',
-        ], $rows);
+        ], $rows, title: 'Customer Center');
     }
 
     public function selectedCustomer(): ?Customer

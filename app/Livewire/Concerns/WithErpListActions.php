@@ -2,8 +2,8 @@
 
 namespace App\Livewire\Concerns;
 
-use App\Support\CsvExporter;
 use App\Support\Workspace\WorkspaceCatalog;
+use App\Support\XlsxExporter;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 trait WithErpListActions
@@ -74,11 +74,13 @@ trait WithErpListActions
     }
 
     /**
+     * Excel list download as QuickBooks-style .xlsm (not CSV).
+     *
      * @param  array<int, string>  $headers
      * @param  iterable<int, array<int, string|int|float|null>>  $rows
      */
     protected function csvDownload(string $filename, array $headers, iterable $rows): StreamedResponse
     {
-        return app(CsvExporter::class)->download($filename, $headers, $rows);
+        return app(XlsxExporter::class)->download($filename, $headers, $rows);
     }
 }
