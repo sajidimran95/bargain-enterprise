@@ -48,11 +48,21 @@ class VendorBalanceReport extends Component
             ->whereDate('bill_date', '<=', $this->to)
             ->get()
             ->groupBy('vendor_id')
-            ->map(fn (Collection $bills) => [
-                'vendor' => $bills->first()?->vendor?->display_name ?? 'Unknown',
-                'total' => (float) $bills->sum('total'),
-                'balance' => (float) $bills->sum('balance_due'),
-            ])
+            ->map(function (Collection $bills) {
+                $total = 0.0;
+                $balance = 0.0;
+                foreach ($bills as $bill) {
+                    $sign = $bill->isCreditDocument() ? -1.0 : 1.0;
+                    $total += $sign * (float) $bill->total;
+                    $balance += $sign * (float) $bill->balance_due;
+                }
+
+                return [
+                    'vendor' => $bills->first()?->vendor?->display_name ?? 'Unknown',
+                    'total' => $total,
+                    'balance' => $balance,
+                ];
+            })
             ->sortBy('vendor')
             ->values();
     }

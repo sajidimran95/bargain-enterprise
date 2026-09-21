@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'vendor_bill_id',
     'item_id',
+    'purchase_order_line_id',
     'description',
     'quantity',
     'rate',
@@ -36,5 +37,10 @@ class VendorBillLine extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);
+    }
+
+    public function purchaseOrderLine(): BelongsTo
+    {
+        return $this->belongsTo(PurchaseOrderLine::class);
     }
 }

@@ -44,8 +44,13 @@ class PurchaseByItemReport extends Component
     {
         return VendorBillLine::query()
             ->with(['item', 'vendorBill'])
+            ->whereNotNull('item_id')
             ->whereHas('vendorBill', function ($q) {
-                $q->whereNot('status', 'draft')
+                $q->whereNotIn('status', ['draft', 'pending'])
+                    ->where(function ($memo) {
+                        $memo->whereNull('memo')
+                            ->orWhere('memo', 'not like', '%CREDIT%');
+                    })
                     ->whereDate('bill_date', '>=', $this->from)
                     ->whereDate('bill_date', '<=', $this->to);
             })

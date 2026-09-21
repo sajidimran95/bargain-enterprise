@@ -56,6 +56,10 @@ class ApAgingReport extends Component
             ->with('vendor')
             ->whereIn('status', ['open', 'partial'])
             ->where('balance_due', '>', 0)
+            ->where(function ($query) {
+                $query->whereNull('memo')
+                    ->orWhere('memo', 'not like', '%CREDIT%');
+            })
             ->orderBy('vendor_id')
             ->get()
             ->groupBy('vendor_id')

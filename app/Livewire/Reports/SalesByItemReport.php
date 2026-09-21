@@ -40,7 +40,7 @@ class SalesByItemReport extends Component
                     $line->invoice?->customer?->display_name,
                     number_format((float) $line->quantity, 4, '.', ''),
                     number_format((float) $line->amount, 2, '.', ''),
-                    number_format((float) ($line->invoice?->balance_due ?? 0), 2, '.', ''),
+                    $this->lineBalanceShare($line),
                 ];
             }
             $flat[] = [
@@ -62,6 +62,30 @@ class SalesByItemReport extends Component
     }
 
     /**
+     * Attribute open AR balance to this line by amount share of the invoice total.
+     */
+    public function lineBalanceShare(InvoiceLine $line): string
+    {
+        $invoice = $line->invoice;
+        if (! $invoice) {
+            return '0.00';
+        }
+
+        $total = (string) $invoice->total;
+        $balance = (string) $invoice->balance_due;
+        if (bccomp($total, '0', 2) <= 0 || bccomp($balance, '0', 2) === 0) {
+            return '0.00';
+        }
+
+        return number_format(
+            (float) bcmul($balance, bcdiv((string) $line->amount, $total, 8), 8),
+            2,
+            '.',
+            ''
+        );
+    }
+
+    /**
      * @return Collection<int, array{item_label: string, item_code: string, lines: Collection, qty: string, amount: string, balance: string}>
      */
     protected function groupedRows(): Collection
@@ -69,7 +93,8 @@ class SalesByItemReport extends Component
         $lines = InvoiceLine::query()
             ->with(['item', 'invoice.customer'])
             ->whereHas('invoice', function ($query) {
-                $query->whereNot('status', 'draft')
+                $query->whereNotIn('status', ['draft', 'pending'])
+                    ->where('is_pending', false)
                     ->whereDate('invoice_date', '>=', $this->from)
                     ->whereDate('invoice_date', '<=', $this->to);
             })
@@ -116,7 +141,7 @@ class SalesByItemReport extends Component
                 foreach ($group as $line) {
                     $qty = bcadd($qty, (string) $line->quantity, 4);
                     $amount = bcadd($amount, (string) $line->amount, 2);
-                    $balance = bcadd($balance, (string) ($line->invoice?->balance_due ?? 0), 2);
+                    $balance = bcadd($balance, $this->lineBalanceShare($line), 2);
                 }
 
                 return [
@@ -200,7 +225,7 @@ class SalesByItemReport extends Component
                     .'<td>'.e($line->invoice?->customer?->display_name ?? '').'</td>'
                     .'<td class="num">'.e(number_format((float) $line->quantity, 2)).'</td>'
                     .'<td class="num">'.e(number_format((float) $line->amount, 2)).'</td>'
-                    .'<td class="num">'.e(number_format((float) ($line->invoice?->balance_due ?? 0), 2)).'</td>'
+                    .'<td class="num">'.e(number_format((float) $this->lineBalanceShare($line), 2)).'</td>'
                     .'</tr>';
             }
         }

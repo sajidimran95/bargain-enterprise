@@ -73,7 +73,7 @@
                         <td>{{ $line->invoice?->customer?->display_name }}</td>
                         <td class="num">{{ number_format((float) $line->quantity, 0) }}</td>
                         <td class="num">{{ number_format((float) $line->amount, 2) }}</td>
-                        <td class="num">{{ number_format((float) ($line->invoice?->balance_due ?? 0), 2) }}</td>
+                        <td class="num">{{ number_format((float) $this->lineBalanceShare($line), 2) }}</td>
                     </tr>
                 @endforeach
                 <tr class="be-report-table__subtotal" x-show="!collapsed['{{ $groupKey }}']">

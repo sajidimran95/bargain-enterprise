@@ -5,6 +5,7 @@ namespace App\Livewire\Purchasing;
 use App\Livewire\Concerns\WithDocumentRibbon;
 use App\Livewire\Concerns\WithLineItems;
 use App\Mail\DocumentMail;
+use App\Models\InventoryTransaction;
 use App\Models\Item;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderLine;
@@ -565,6 +566,7 @@ class VendorBillForm extends Component
                     'bill_number' => $this->bill_number,
                     'ref_no' => $this->ref_no ?: null,
                     'vendor_id' => (int) $this->vendor_id,
+                    'purchase_order_id' => $this->purchase_order_id !== '' ? (int) $this->purchase_order_id : null,
                     'bill_date' => $this->bill_date,
                     'due_date' => $this->due_date ?: null,
                     'status' => $this->is_pending ? 'pending' : 'open',
@@ -585,7 +587,7 @@ class VendorBillForm extends Component
                     $vendor->save();
                 }
 
-                if ($isCredit && ! $this->is_pending && $this->purchase_order_id !== '') {
+                if (! $this->is_pending && $this->purchase_order_id !== '' && ($isCredit || $this->bill_received)) {
                     $this->refreshPurchaseOrderStatus((int) $this->purchase_order_id);
                 }
             });
@@ -685,10 +687,16 @@ class VendorBillForm extends Component
     ): VendorBill {
         $bill = VendorBill::query()->whereKey($billId)->lockForUpdate()->with('lines.item')->firstOrFail();
         $wasPending = $bill->status === 'pending' || str_contains((string) $bill->memo, 'PENDING');
-        $wasCredit = str_contains((string) $bill->memo, 'CREDIT');
+        $wasCredit = $bill->isCreditDocument();
         $wasReceived = str_contains((string) $bill->memo, 'BILL RECEIVED');
         $oldBalanceDue = (string) $bill->balance_due;
+        $oldVendorId = (int) $bill->vendor_id;
+        $oldPurchaseOrderId = $bill->purchase_order_id ? (int) $bill->purchase_order_id : null;
         $amountPaid = (string) $bill->amount_paid;
+
+        if ($this->purchase_order_id === '' && $oldPurchaseOrderId) {
+            $this->purchase_order_id = (string) $oldPurchaseOrderId;
+        }
 
         if (! $wasPending) {
             $this->reverseBillStock($bill, $wasCredit, $wasReceived);
@@ -707,10 +715,14 @@ class VendorBillForm extends Component
                 ? 'paid'
                 : (bccomp($amountPaid, '0', 2) > 0 ? 'partial' : 'open'));
 
+        $newVendorId = (int) $this->vendor_id;
+        $newPurchaseOrderId = $this->purchase_order_id !== '' ? (int) $this->purchase_order_id : null;
+
         $bill->update([
             'bill_number' => $this->bill_number,
             'ref_no' => $this->ref_no ?: null,
-            'vendor_id' => (int) $this->vendor_id,
+            'vendor_id' => $newVendorId,
+            'purchase_order_id' => $newPurchaseOrderId,
             'bill_date' => $this->bill_date,
             'due_date' => $this->due_date ?: null,
             'status' => $status,
@@ -723,17 +735,38 @@ class VendorBillForm extends Component
 
         $this->writeBillLinesAndStock($bill, $itemLines, $expensePayload, $isCredit, wasPosted: ! $this->is_pending);
 
-        $arDelta = bcsub($balanceDue, $wasPending ? '0.00' : $oldBalanceDue, 2);
-        if (bccomp($arDelta, '0', 2) !== 0) {
-            $vendor = Vendor::query()->lockForUpdate()->findOrFail($bill->vendor_id);
-            $vendor->balance = $isCredit || $wasCredit
-                ? bcsub((string) $vendor->balance, $arDelta, 2)
-                : bcadd((string) $vendor->balance, $arDelta, 2);
-            $vendor->save();
+        $oldSigned = $wasPending
+            ? '0.00'
+            : ($wasCredit ? bcmul($oldBalanceDue, '-1', 2) : $oldBalanceDue);
+        $newSigned = $this->is_pending
+            ? '0.00'
+            : ($isCredit ? bcmul($balanceDue, '-1', 2) : $balanceDue);
+
+        if ($oldVendorId !== $newVendorId) {
+            if (bccomp($oldSigned, '0', 2) !== 0) {
+                $oldVendor = Vendor::query()->lockForUpdate()->findOrFail($oldVendorId);
+                $oldVendor->balance = bcsub((string) $oldVendor->balance, $oldSigned, 2);
+                $oldVendor->save();
+            }
+            if (bccomp($newSigned, '0', 2) !== 0) {
+                $newVendor = Vendor::query()->lockForUpdate()->findOrFail($newVendorId);
+                $newVendor->balance = bcadd((string) $newVendor->balance, $newSigned, 2);
+                $newVendor->save();
+            }
+        } else {
+            $delta = bcsub($newSigned, $oldSigned, 2);
+            if (bccomp($delta, '0', 2) !== 0) {
+                $vendor = Vendor::query()->lockForUpdate()->findOrFail($newVendorId);
+                $vendor->balance = bcadd((string) $vendor->balance, $delta, 2);
+                $vendor->save();
+            }
         }
 
-        if ($isCredit && ! $this->is_pending && $this->purchase_order_id !== '') {
-            $this->refreshPurchaseOrderStatus((int) $this->purchase_order_id);
+        $poIds = array_filter([$oldPurchaseOrderId, $newPurchaseOrderId]);
+        if (! $this->is_pending && $poIds !== [] && ($isCredit || $this->bill_received || $wasCredit || $wasReceived)) {
+            foreach (array_unique($poIds) as $poId) {
+                $this->refreshPurchaseOrderStatus((int) $poId);
+            }
         }
 
         return $bill->fresh('lines');
@@ -754,6 +787,9 @@ class VendorBillForm extends Component
             VendorBillLine::query()->create([
                 'vendor_bill_id' => $bill->id,
                 'item_id' => $line['item_id'],
+                'purchase_order_line_id' => ($line['purchase_order_line_id'] ?? 0) > 0
+                    ? (int) $line['purchase_order_line_id']
+                    : null,
                 'description' => $line['description'] ?? null,
                 'quantity' => $line['quantity'],
                 'rate' => $line['rate'],
@@ -789,16 +825,26 @@ class VendorBillForm extends Component
                     (string) $line['quantity']
                 );
             } elseif ($this->bill_received) {
-                $inventory->post($item, [
-                    'type' => 'purchase',
-                    'qty_in' => $line['quantity'],
-                    'unit_cost' => $line['rate'] ?: $item->average_cost ?: $item->purchase_cost,
-                    'reference_type' => VendorBill::class,
-                    'reference_id' => $bill->id,
-                    'occurred_at' => $this->bill_date,
-                    'created_by' => auth()->id(),
-                    'memo' => 'Bill received '.$bill->bill_number,
-                ]);
+                // Only stock the unreceived portion when a PO already had Receive Inventory.
+                $stockQty = $this->billReceivedStockQty($line);
+                if (bccomp($stockQty, '0', 4) > 0) {
+                    $inventory->post($item, [
+                        'type' => 'purchase',
+                        'qty_in' => $stockQty,
+                        'unit_cost' => $line['rate'] ?: $item->average_cost ?: $item->purchase_cost,
+                        'reference_type' => VendorBill::class,
+                        'reference_id' => $bill->id,
+                        'occurred_at' => $this->bill_date,
+                        'created_by' => auth()->id(),
+                        'memo' => 'Bill received '.$bill->bill_number,
+                    ]);
+
+                    $this->applyPurchaseOrderReceive(
+                        (int) ($line['purchase_order_line_id'] ?? 0),
+                        (int) $line['item_id'],
+                        $stockQty
+                    );
+                }
             }
         }
 
@@ -817,16 +863,29 @@ class VendorBillForm extends Component
     protected function reverseBillStock(VendorBill $bill, bool $wasCredit, bool $wasReceived): void
     {
         $inventory = app(InventoryService::class);
+        $seenItems = [];
 
         foreach ($bill->lines as $line) {
             if (! $line->item_id || ! $line->item?->tracksInventory()) {
                 continue;
             }
 
-            if ($wasCredit) {
+            $itemId = (int) $line->item_id;
+            if (isset($seenItems[$itemId])) {
+                continue;
+            }
+            $seenItems[$itemId] = true;
+
+            $net = $this->netStockPostedForBillItem($bill, $itemId);
+            if (bccomp($net, '0', 4) === 0) {
+                continue;
+            }
+
+            if ($wasCredit && bccomp($net, '0', 4) < 0) {
+                $restore = bcmul($net, '-1', 4);
                 $inventory->post($line->item, [
                     'type' => 'vendor_credit_edit',
-                    'qty_in' => $line->quantity,
+                    'qty_in' => $restore,
                     'unit_cost' => $line->rate ?: $line->item->average_cost,
                     'reference_type' => VendorBill::class,
                     'reference_id' => $bill->id,
@@ -834,10 +893,15 @@ class VendorBillForm extends Component
                     'created_by' => auth()->id(),
                     'memo' => 'Reverse RTV/credit '.$bill->bill_number,
                 ]);
-            } elseif ($wasReceived) {
+                $this->applyPurchaseOrderReceive(
+                    (int) ($line->purchase_order_line_id ?? 0),
+                    $itemId,
+                    $restore
+                );
+            } elseif ($wasReceived && bccomp($net, '0', 4) > 0) {
                 $inventory->post($line->item, [
                     'type' => 'bill_edit',
-                    'qty_out' => $line->quantity,
+                    'qty_out' => $net,
                     'unit_cost' => $line->rate ?: $line->item->average_cost,
                     'reference_type' => VendorBill::class,
                     'reference_id' => $bill->id,
@@ -846,7 +910,96 @@ class VendorBillForm extends Component
                     'allow_negative' => true,
                     'memo' => 'Reverse bill received '.$bill->bill_number,
                 ]);
+                $this->reversePurchaseOrderReceive(
+                    (int) ($line->purchase_order_line_id ?? 0),
+                    $itemId,
+                    $net
+                );
             }
+        }
+    }
+
+    protected function netStockPostedForBillItem(VendorBill $bill, int $itemId): string
+    {
+        $net = '0.0000';
+        $transactions = InventoryTransaction::query()
+            ->where('reference_type', VendorBill::class)
+            ->where('reference_id', $bill->id)
+            ->where('item_id', $itemId)
+            ->get(['qty_in', 'qty_out']);
+
+        foreach ($transactions as $tx) {
+            $net = bcadd($net, bcsub((string) $tx->qty_in, (string) $tx->qty_out, 4), 4);
+        }
+
+        return $net;
+    }
+
+    /**
+     * Qty still eligible to hit on-hand when "Bill Received" is checked.
+     * If Receive Inventory already covered the PO line, return 0 to avoid double stock.
+     *
+     * @param  array{item_id: int, quantity: string, purchase_order_line_id?: int}  $line
+     */
+    protected function billReceivedStockQty(array $line): string
+    {
+        $qty = (string) $line['quantity'];
+        if (bccomp($qty, '0', 4) <= 0) {
+            return '0.0000';
+        }
+
+        $poLine = $this->resolvePurchaseOrderLine(
+            (int) ($line['purchase_order_line_id'] ?? 0),
+            (int) $line['item_id'],
+            forReceive: true
+        );
+
+        if (! $poLine) {
+            return $qty;
+        }
+
+        $remaining = bcsub((string) $poLine->quantity, (string) $poLine->qty_received, 4);
+        if (bccomp($remaining, '0', 4) <= 0) {
+            return '0.0000';
+        }
+
+        return bccomp($qty, $remaining, 4) > 0 ? $remaining : $qty;
+    }
+
+    protected function applyPurchaseOrderReceive(int $poLineId, int $itemId, string $qty): void
+    {
+        if (bccomp($qty, '0', 4) <= 0) {
+            return;
+        }
+
+        $poLine = $this->resolvePurchaseOrderLine($poLineId, $itemId, forReceive: true);
+        if (! $poLine) {
+            return;
+        }
+
+        $receive = $qty;
+        $remaining = bcsub((string) $poLine->quantity, (string) $poLine->qty_received, 4);
+        if (bccomp($remaining, '0', 4) < 0) {
+            $remaining = '0.0000';
+        }
+        if (bccomp($receive, $remaining, 4) > 0) {
+            $receive = $remaining;
+        }
+        if (bccomp($receive, '0', 4) <= 0) {
+            return;
+        }
+
+        $poLine->qty_received = bcadd((string) $poLine->qty_received, $receive, 4);
+        $poLine->save();
+
+        $item = Item::query()->lockForUpdate()->find($itemId ?: $poLine->item_id);
+        if ($item?->tracksInventory()) {
+            $reducePo = $receive;
+            if (bccomp((string) $item->on_po_qty, $reducePo, 4) < 0) {
+                $reducePo = (string) $item->on_po_qty;
+            }
+            $item->on_po_qty = bcsub((string) $item->on_po_qty, $reducePo, 4);
+            $item->save();
         }
     }
 
@@ -856,19 +1009,7 @@ class VendorBillForm extends Component
             return;
         }
 
-        $poLine = null;
-        if ($poLineId > 0) {
-            $poLine = PurchaseOrderLine::query()->lockForUpdate()->find($poLineId);
-        } elseif ($this->purchase_order_id !== '' && $itemId > 0) {
-            $poLine = PurchaseOrderLine::query()
-                ->where('purchase_order_id', (int) $this->purchase_order_id)
-                ->where('item_id', $itemId)
-                ->where('qty_received', '>', 0)
-                ->lockForUpdate()
-                ->orderByDesc('qty_received')
-                ->first();
-        }
-
+        $poLine = $this->resolvePurchaseOrderLine($poLineId, $itemId, forReceive: false);
         if (! $poLine) {
             return;
         }
@@ -890,6 +1031,33 @@ class VendorBillForm extends Component
             $item->on_po_qty = bcadd((string) $item->on_po_qty, $reverse, 4);
             $item->save();
         }
+    }
+
+    protected function resolvePurchaseOrderLine(int $poLineId, int $itemId, bool $forReceive): ?PurchaseOrderLine
+    {
+        if ($poLineId > 0) {
+            return PurchaseOrderLine::query()->lockForUpdate()->find($poLineId);
+        }
+
+        if ($this->purchase_order_id === '' || $itemId <= 0) {
+            return null;
+        }
+
+        $query = PurchaseOrderLine::query()
+            ->where('purchase_order_id', (int) $this->purchase_order_id)
+            ->where('item_id', $itemId)
+            ->lockForUpdate();
+
+        if ($forReceive) {
+            return $query
+                ->orderByRaw('(quantity - qty_received) DESC')
+                ->first();
+        }
+
+        return $query
+            ->where('qty_received', '>', 0)
+            ->orderByDesc('qty_received')
+            ->first();
     }
 
     protected function refreshPurchaseOrderStatus(int $purchaseOrderId): void
@@ -1022,12 +1190,14 @@ class VendorBillForm extends Component
         $document->loadMissing(['lines.item', 'vendor']);
 
         $this->vendor_id = (string) $document->vendor_id;
+        $this->purchase_order_id = $document->purchase_order_id ? (string) $document->purchase_order_id : '';
         $this->address = $document->vendor ? implode("\n", $document->vendor->billFromLines()) : '';
         $this->bill_date = $document->bill_date?->toDateString() ?: now()->toDateString();
         $this->due_date = $document->due_date?->toDateString() ?: now()->addDays(30)->toDateString();
         $this->ref_no = (string) ($document->ref_no ?? '');
         $memo = (string) ($document->memo ?? '');
         $this->docType = str_contains($memo, 'CREDIT') ? 'credit' : 'bill';
+        $this->isRtv = $this->docType === 'credit' && filled($document->purchase_order_id);
         $this->bill_received = str_contains($memo, 'BILL RECEIVED');
         $this->is_pending = $document->status === 'pending' || str_contains($memo, 'PENDING');
         $this->memo = trim(str_replace(['CREDIT · ', 'BILL RECEIVED · ', 'PENDING · ', 'CREDIT', 'BILL RECEIVED', 'PENDING'], '', $memo));
@@ -1047,6 +1217,9 @@ class VendorBillForm extends Component
                     'customer_job' => '',
                     'billable' => false,
                     'class' => '',
+                    'purchase_order_line_id' => $line->purchase_order_line_id
+                        ? (string) $line->purchase_order_line_id
+                        : '',
                 ];
             } else {
                 $this->expenseLines[] = [

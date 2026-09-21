@@ -68,6 +68,7 @@ class UpdateInvoiceAction
                 throw new RuntimeException('Cannot edit a voided invoice.');
             }
 
+            $oldCustomerId = (int) $invoice->customer_id;
             $customer = Customer::query()->whereKey($header['customer_id'])->lockForUpdate()->firstOrFail();
             $taxCode = isset($header['tax_code_id'])
                 ? TaxCode::query()->find($header['tax_code_id'])
@@ -207,7 +208,20 @@ class UpdateInvoiceAction
                     $arDelta = bcmul($oldBalanceDue, '-1', 2);
                 }
 
-                if (bccomp($arDelta, '0', 2) !== 0) {
+                $oldExposure = $wasNonPosting ? '0.00' : $oldBalanceDue;
+                $newExposure = $isNonPosting ? '0.00' : (string) $invoice->balance_due;
+
+                if ($oldCustomerId !== (int) $customer->id) {
+                    if (bccomp($oldExposure, '0', 2) !== 0) {
+                        $oldCustomer = Customer::query()->lockForUpdate()->findOrFail($oldCustomerId);
+                        $oldCustomer->balance = bcsub((string) $oldCustomer->balance, $oldExposure, 2);
+                        $oldCustomer->save();
+                    }
+                    if (bccomp($newExposure, '0', 2) !== 0) {
+                        $customer->balance = bcadd((string) $customer->balance, $newExposure, 2);
+                        $customer->save();
+                    }
+                } elseif (bccomp($arDelta, '0', 2) !== 0) {
                     $customer->balance = bcadd((string) $customer->balance, $arDelta, 2);
                     $customer->save();
                 }

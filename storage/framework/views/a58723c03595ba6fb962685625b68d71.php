@@ -83,7 +83,7 @@
                         <td><?php echo e($line->invoice?->customer?->display_name); ?></td>
                         <td class="num"><?php echo e(number_format((float) $line->quantity, 0)); ?></td>
                         <td class="num"><?php echo e(number_format((float) $line->amount, 2)); ?></td>
-                        <td class="num"><?php echo e(number_format((float) ($line->invoice?->balance_due ?? 0), 2)); ?></td>
+                        <td class="num"><?php echo e(number_format((float) $this->lineBalanceShare($line), 2)); ?></td>
                     </tr>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                 <tr class="be-report-table__subtotal" x-show="!collapsed['<?php echo e($groupKey); ?>']">

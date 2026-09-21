@@ -34,7 +34,13 @@ class BalanceSheetReport extends Component
     protected function statement(): array
     {
         $ar = (float) Invoice::query()->whereIn('status', ['open', 'partial'])->sum('balance_due');
-        $ap = (float) VendorBill::query()->whereIn('status', ['open', 'partial'])->sum('balance_due');
+        $ap = (float) VendorBill::query()
+            ->whereIn('status', ['open', 'partial'])
+            ->where(function ($query) {
+                $query->whereNull('memo')
+                    ->orWhere('memo', 'not like', '%CREDIT%');
+            })
+            ->sum('balance_due');
         $inventory = (float) Item::query()->active()->get()->sum(fn (Item $item) => (float) $item->on_hand * (float) ($item->average_cost ?: 0));
 
         $assets = collect([

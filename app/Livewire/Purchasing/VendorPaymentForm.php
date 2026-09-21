@@ -154,42 +154,51 @@ class VendorPaymentForm extends Component
             return null;
         }
 
-        DB::transaction(function () use ($applied) {
-            $payment = VendorPayment::query()->create([
-                'payment_number' => $this->payment_number,
-                'vendor_id' => (int) $this->vendor_id,
-                'payment_date' => $this->payment_date,
-                'amount' => $applied,
-                'method' => $this->method,
-                'bank_account_id' => $this->bank_account_id ?: null,
-                'memo' => trim(($this->check_number !== '' ? 'Check #'.$this->check_number.' · ' : '').($this->memo ?: '')),
-            ]);
-
-            foreach ($this->allocations as $billId => $amount) {
-                if ($amount === '' || (float) $amount <= 0) {
-                    continue;
-                }
-
-                $bill = VendorBill::query()->lockForUpdate()->findOrFail($billId);
-                $apply = number_format((float) $amount, 2, '.', '');
-                VendorPaymentAllocation::query()->create([
-                    'vendor_payment_id' => $payment->id,
-                    'vendor_bill_id' => $bill->id,
-                    'amount' => $apply,
+        try {
+            DB::transaction(function () use ($applied) {
+                $payment = VendorPayment::query()->create([
+                    'payment_number' => $this->payment_number,
+                    'vendor_id' => (int) $this->vendor_id,
+                    'payment_date' => $this->payment_date,
+                    'amount' => $applied,
+                    'method' => $this->method,
+                    'bank_account_id' => $this->bank_account_id ?: null,
+                    'memo' => trim(($this->check_number !== '' ? 'Check #'.$this->check_number.' · ' : '').($this->memo ?: '')),
                 ]);
 
-                $bill->amount_paid = bcadd((string) $bill->amount_paid, $apply, 2);
-                $bill->balance_due = bcsub((string) $bill->balance_due, $apply, 2);
-                $bill->status = bccomp((string) $bill->balance_due, '0', 2) === 0
-                    ? 'paid'
-                    : 'partial';
-                $bill->save();
-            }
+                foreach ($this->allocations as $billId => $amount) {
+                    if ($amount === '' || (float) $amount <= 0) {
+                        continue;
+                    }
 
-            $vendor = Vendor::query()->lockForUpdate()->findOrFail((int) $this->vendor_id);
-            $vendor->balance = bcsub((string) $vendor->balance, $applied, 2);
-            $vendor->save();
-        });
+                    $bill = VendorBill::query()->lockForUpdate()->findOrFail($billId);
+                    $apply = number_format((float) $amount, 2, '.', '');
+                    if (bccomp($apply, (string) $bill->balance_due, 2) > 0) {
+                        throw new \RuntimeException("Allocation exceeds balance on {$bill->bill_number}.");
+                    }
+                    VendorPaymentAllocation::query()->create([
+                        'vendor_payment_id' => $payment->id,
+                        'vendor_bill_id' => $bill->id,
+                        'amount' => $apply,
+                    ]);
+
+                    $bill->amount_paid = bcadd((string) $bill->amount_paid, $apply, 2);
+                    $bill->balance_due = bcsub((string) $bill->balance_due, $apply, 2);
+                    $bill->status = bccomp((string) $bill->balance_due, '0', 2) === 0
+                        ? 'paid'
+                        : 'partial';
+                    $bill->save();
+                }
+
+                $vendor = Vendor::query()->lockForUpdate()->findOrFail((int) $this->vendor_id);
+                $vendor->balance = bcsub((string) $vendor->balance, $applied, 2);
+                $vendor->save();
+            });
+        } catch (\Throwable $e) {
+            $this->dispatch('be-toast', message: $e->getMessage());
+
+            return null;
+        }
 
         $this->dispatch('be-toast', message: 'Vendor payment '.$this->payment_number.' saved.');
 

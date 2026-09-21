@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'ref_no',
     'vendor_id',
     'goods_receipt_id',
+    'purchase_order_id',
     'bill_date',
     'due_date',
     'status',
@@ -38,6 +39,11 @@ class VendorBill extends Model
         ];
     }
 
+    public function isCreditDocument(): bool
+    {
+        return str_contains((string) $this->memo, 'CREDIT');
+    }
+
     public function vendor(): BelongsTo
     {
         return $this->belongsTo(Vendor::class);
@@ -46,6 +52,11 @@ class VendorBill extends Model
     public function goodsReceipt(): BelongsTo
     {
         return $this->belongsTo(GoodsReceipt::class);
+    }
+
+    public function purchaseOrder(): BelongsTo
+    {
+        return $this->belongsTo(PurchaseOrder::class);
     }
 
     public function lines(): HasMany
