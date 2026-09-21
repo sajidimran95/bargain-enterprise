@@ -588,14 +588,14 @@ unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendB
                                         <td>
                                             <?php if (isset($component)) { $__componentOriginal5ffc033813591e85e4508e27a2ee1612 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal5ffc033813591e85e4508e27a2ee1612 = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.input','data' => ['type' => 'number','step' => '0.01','min' => '0','class' => 'text-right be-input--bare','wire:model.live' => 'lines.'.e($index).'.quantity']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.input','data' => ['type' => 'number','step' => '0.01','min' => '0','class' => 'text-right be-input--bare','wire:model.live.debounce.250ms' => 'lines.'.e($index).'.quantity']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('erp.input'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['type' => 'number','step' => '0.01','min' => '0','class' => 'text-right be-input--bare','wire:model.live' => 'lines.'.e($index).'.quantity']); ?>
+<?php $component->withAttributes(['type' => 'number','step' => '0.01','min' => '0','class' => 'text-right be-input--bare','wire:model.live.debounce.250ms' => 'lines.'.e($index).'.quantity']); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal5ffc033813591e85e4508e27a2ee1612)): ?>
@@ -610,14 +610,14 @@ unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendB
                                         <td>
                                             <?php if (isset($component)) { $__componentOriginal5ffc033813591e85e4508e27a2ee1612 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal5ffc033813591e85e4508e27a2ee1612 = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.input','data' => ['type' => 'number','step' => '0.01','min' => '0','class' => 'text-right be-input--bare','wire:model.live' => 'lines.'.e($index).'.rate']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.erp.input','data' => ['type' => 'number','step' => '0.01','min' => '0','class' => 'text-right be-input--bare','wire:model.live.debounce.250ms' => 'lines.'.e($index).'.rate']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('erp.input'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['type' => 'number','step' => '0.01','min' => '0','class' => 'text-right be-input--bare','wire:model.live' => 'lines.'.e($index).'.rate']); ?>
+<?php $component->withAttributes(['type' => 'number','step' => '0.01','min' => '0','class' => 'text-right be-input--bare','wire:model.live.debounce.250ms' => 'lines.'.e($index).'.rate']); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal5ffc033813591e85e4508e27a2ee1612)): ?>

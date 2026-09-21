@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ItemCatalog;
 use Database\Factories\ItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -44,6 +45,12 @@ class Item extends Model
 {
     /** @use HasFactory<ItemFactory> */
     use HasFactory, SoftDeletes;
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => ItemCatalog::forgetCachedOptions());
+        static::deleted(fn () => ItemCatalog::forgetCachedOptions());
+    }
 
     protected function casts(): array
     {

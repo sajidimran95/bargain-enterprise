@@ -325,9 +325,10 @@ class ReportCenterPreview
     {
         $ar = (float) Invoice::query()->whereIn('status', ['open', 'partial'])->sum('balance_due');
         $ap = (float) VendorBill::query()->whereIn('status', ['open', 'partial'])->sum('balance_due');
-        $inventory = (float) Item::query()->active()->get()->sum(
-            fn (Item $item) => (float) $item->on_hand * (float) ($item->average_cost ?: $item->purchase_cost ?: 0)
-        );
+        $inventory = (float) Item::query()
+            ->active()
+            ->selectRaw('COALESCE(SUM(on_hand * COALESCE(NULLIF(average_cost, 0), purchase_cost, 0)), 0) as asset_value')
+            ->value('asset_value');
 
         return [
             'columns' => ['Account', 'Amount'],

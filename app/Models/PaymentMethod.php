@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\PaymentMethods;
 use Database\Factories\PaymentMethodFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,6 +19,12 @@ class PaymentMethod extends Model
 {
     /** @use HasFactory<PaymentMethodFactory> */
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => PaymentMethods::forgetCachedOptions());
+        static::deleted(fn () => PaymentMethods::forgetCachedOptions());
+    }
 
     protected function casts(): array
     {

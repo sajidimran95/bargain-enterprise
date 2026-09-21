@@ -321,7 +321,7 @@ class GoodsReceiptForm extends Component
         return view('livewire.purchasing.goods-receipt-form', [
             'vendors' => Vendor::query()->active()->orderBy('display_name')->pluck('display_name', 'id')->all(),
             'poOptions' => $poOptions,
-            'itemOptions' => ItemCatalog::selectOptions(purchase: true),
+            'itemOptions' => ItemCatalog::optionsForLineItems($this->lines, purchase: true),
             'subtotal' => $this->linesSubtotal(),
         ])->layoutData([
             'title' => $this->editingId ? 'Edit Receive Inventory' : 'Receive Inventory',

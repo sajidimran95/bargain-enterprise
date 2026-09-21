@@ -101,7 +101,7 @@ class QuoteForm extends Component
             'numberLabel' => 'Quote #',
             'showExpiry' => true,
 
-            'itemOptions' => ItemCatalog::selectOptions(),
+            'itemOptions' => ItemCatalog::optionsForLineItems($this->lines),
         ])->layoutData([
             'title' => 'Create Quote',
             'windowTitle' => 'Create Quote',

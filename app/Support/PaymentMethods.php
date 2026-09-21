@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\PaymentMethod;
+use Illuminate\Support\Facades\Cache;
 
 class PaymentMethods
 {
@@ -13,12 +14,14 @@ class PaymentMethods
      */
     public static function options(): array
     {
-        return PaymentMethod::query()
-            ->active()
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->pluck('name', 'code')
-            ->all();
+        return Cache::remember('payment_methods.options', 300, function () {
+            return PaymentMethod::query()
+                ->active()
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->pluck('name', 'code')
+                ->all();
+        });
     }
 
     /**
@@ -54,9 +57,7 @@ class PaymentMethods
             return '—';
         }
 
-        $name = PaymentMethod::query()->where('code', $code)->value('name');
-
-        return $name ? (string) $name : $code;
+        return self::options()[$code] ?? $code;
     }
 
     public static function isValid(?string $code): bool
@@ -66,5 +67,10 @@ class PaymentMethods
         }
 
         return array_key_exists($code, self::options());
+    }
+
+    public static function forgetCachedOptions(): void
+    {
+        Cache::forget('payment_methods.options');
     }
 }

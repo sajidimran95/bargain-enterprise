@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Item;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class ItemCatalog
 {
@@ -16,6 +17,19 @@ class ItemCatalog
     {
         $query = Item::query()
             ->active()
+            ->select([
+                'id',
+                'sku',
+                'barcode',
+                'name',
+                'sales_description',
+                'purchase_description',
+                'sales_price',
+                'purchase_cost',
+                'on_hand',
+                'type',
+                'is_active',
+            ])
             ->orderByRaw("LOWER(COALESCE(NULLIF(barcode, ''), sku)) asc")
             ->orderByRaw('LOWER(name) asc');
 
@@ -28,15 +42,58 @@ class ItemCatalog
 
     /**
      * Select options: id => "CODE — Description" (alphabetical by code).
+     * Cached briefly so document forms do not re-query the full catalog every Livewire round-trip.
      *
      * @return array<int|string, string>
      */
-    public static function selectOptions(?int $limit = 2000, bool $purchase = false): array
+    public static function selectOptions(?int $limit = 150, bool $purchase = false): array
     {
-        return self::activeItems($limit)
-            ->mapWithKeys(function (Item $item) use ($purchase) {
-                return [$item->id => self::labelFor($item, $purchase)];
-            })
+        $limit ??= 150;
+        $cacheKey = 'item_catalog.options.'.($purchase ? 'purchase' : 'sales').'.'.$limit;
+
+        return Cache::remember($cacheKey, 60, function () use ($limit, $purchase) {
+            return self::activeItems($limit)
+                ->mapWithKeys(fn (Item $item) => [$item->id => self::labelFor($item, $purchase)])
+                ->all();
+        });
+    }
+
+    /**
+     * Slim dropdown options for already-selected line items (forms that also use item search).
+     *
+     * @param  array<int, array<string, mixed>>  $lines
+     * @return array<int|string, string>
+     */
+    public static function optionsForLineItems(array $lines, bool $purchase = false): array
+    {
+        $ids = collect($lines)
+            ->pluck('item_id')
+            ->filter(fn ($id) => filled($id) && (int) $id > 0)
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($ids === []) {
+            return [];
+        }
+
+        return Item::query()
+            ->whereIn('id', $ids)
+            ->select([
+                'id',
+                'sku',
+                'barcode',
+                'name',
+                'sales_description',
+                'purchase_description',
+                'sales_price',
+                'purchase_cost',
+                'type',
+                'is_active',
+            ])
+            ->get()
+            ->mapWithKeys(fn (Item $item) => [$item->id => self::labelFor($item, $purchase)])
             ->all();
     }
 
@@ -56,6 +113,18 @@ class ItemCatalog
 
         return Item::query()
             ->active()
+            ->select([
+                'id',
+                'sku',
+                'barcode',
+                'name',
+                'sales_description',
+                'purchase_description',
+                'sales_price',
+                'purchase_cost',
+                'type',
+                'is_active',
+            ])
             ->where(function ($q) use ($like) {
                 $q->whereRaw('LOWER(barcode) like ?', [$like])
                     ->orWhereRaw('LOWER(sku) like ?', [$like])
@@ -77,13 +146,22 @@ class ItemCatalog
             ->all();
     }
 
+    public static function forgetCachedOptions(): void
+    {
+        foreach (['sales', 'purchase'] as $mode) {
+            foreach ([100, 150, 200, 500, 2000] as $limit) {
+                Cache::forget('item_catalog.options.'.$mode.'.'.$limit);
+            }
+        }
+    }
+
     protected static function labelFor(Item $item, bool $purchase): string
     {
         $code = (string) ($item->barcode ?: $item->sku);
-        $label = $purchase
+        $description = $purchase
             ? ($item->purchase_description ?: $item->name)
             : ($item->sales_description ?: $item->name);
 
-        return $code.' — '.$label;
+        return $code.' — '.$description;
     }
 }

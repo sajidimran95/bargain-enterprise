@@ -120,10 +120,10 @@
                                         <input type="checkbox" wire:model.live="lines.{{ $index }}.taxable" class="be-invoice-tax">
                                     </td>
                                     <td>
-                                        <x-erp.input type="number" step="0.01" min="0" class="text-right be-input--bare" wire:model.live="lines.{{ $index }}.quantity" />
+                                        <x-erp.input type="number" step="0.01" min="0" class="text-right be-input--bare" wire:model.live.debounce.250ms="lines.{{ $index }}.quantity" />
                                     </td>
                                     <td>
-                                        <x-erp.input type="number" step="0.01" min="0" class="text-right be-input--bare" wire:model.live="lines.{{ $index }}.rate" />
+                                        <x-erp.input type="number" step="0.01" min="0" class="text-right be-input--bare" wire:model.live.debounce.250ms="lines.{{ $index }}.rate" />
                                     </td>
                                     <td class="num be-invoice-amount">{{ number_format((float) ($line['amount'] ?? 0), 2) }}</td>
                                     <td class="text-center">

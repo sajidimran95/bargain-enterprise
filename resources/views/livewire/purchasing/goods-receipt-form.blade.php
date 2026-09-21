@@ -86,7 +86,7 @@
                                     <td class="num px-1">{{ number_format((float) ($line['ordered_qty'] ?? 0), 2) }}</td>
                                     <td class="num px-1">{{ number_format((float) ($line['previously_received'] ?? 0), 2) }}</td>
                                     <td>
-                                        <x-erp.input type="number" step="0.01" min="0" class="text-right be-input--grid" wire:model.live="lines.{{ $index }}.quantity" />
+                                        <x-erp.input type="number" step="0.01" min="0" class="text-right be-input--grid" wire:model.live.debounce.250ms="lines.{{ $index }}.quantity" />
                                     </td>
                                     <td>
                                         <x-erp.input wire:model="lines.{{ $index }}.description" class="be-input--grid" />
@@ -96,7 +96,7 @@
                                         @error("lines.$index.item_id") <span class="be-field__error">{{ $message }}</span> @enderror
                                     </td>
                                     <td>
-                                        <x-erp.input type="number" step="0.01" min="0" class="text-right be-input--grid" wire:model.live="lines.{{ $index }}.rate" />
+                                        <x-erp.input type="number" step="0.01" min="0" class="text-right be-input--grid" wire:model.live.debounce.250ms="lines.{{ $index }}.rate" />
                                     </td>
                                     <td class="num">{{ number_format((float) ($line['amount'] ?? 0), 2) }}</td>
                                     <td class="text-right">

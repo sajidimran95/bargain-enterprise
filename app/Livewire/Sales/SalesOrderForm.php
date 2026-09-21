@@ -207,7 +207,7 @@ class SalesOrderForm extends Component
             'dateLabel' => 'Order Date',
             'numberField' => 'number',
             'numberLabel' => 'SO #',
-            'itemOptions' => ItemCatalog::selectOptions(),
+            'itemOptions' => ItemCatalog::optionsForLineItems($this->lines),
         ])->layoutData([
             'title' => $this->editingId ? 'Edit Sales Order' : 'Create Sales Order',
             'windowTitle' => $this->editingId ? 'Edit Sales Order' : 'Create Sales Order',

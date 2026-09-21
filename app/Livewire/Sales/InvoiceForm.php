@@ -13,7 +13,6 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\TaxCode;
 use App\Support\DocumentNumbers;
-use App\Support\ItemCatalog;
 use App\Support\PaymentMethods;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rule;
@@ -482,9 +481,11 @@ class InvoiceForm extends Component
             : collect();
 
         return view('livewire.sales.invoice-form', [
-            'customers' => Customer::query()->active()->orderBy('display_name')->get(),
+            'customers' => Customer::query()
+                ->active()
+                ->orderBy('display_name')
+                ->get(['id', 'display_name', 'customer_number']),
             'taxCodes' => TaxCode::query()->where('is_active', true)->orderBy('code')->pluck('name', 'id')->all(),
-            'itemOptions' => ItemCatalog::selectOptions(500),
             'selectedCustomer' => $customer,
             'subtotal' => $subtotal,
             'taxRate' => $taxRate,

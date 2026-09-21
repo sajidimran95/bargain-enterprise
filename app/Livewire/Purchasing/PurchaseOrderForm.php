@@ -267,7 +267,7 @@ class PurchaseOrderForm extends Component
             'numberLabel' => 'PO #',
             'showExpected' => true,
             'rateLabel' => 'Cost',
-            'itemOptions' => ItemCatalog::selectOptions(purchase: true),
+            'itemOptions' => ItemCatalog::optionsForLineItems($this->lines, purchase: true),
         ])->layoutData([
             'title' => $this->editingId ? 'Edit Purchase Order' : 'Create Purchase Order',
             'windowTitle' => $this->editingId ? 'Edit Purchase Order' : 'Create Purchase Order',

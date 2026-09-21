@@ -93,7 +93,7 @@ class SalesReceiptForm extends Component
             'numberLabel' => 'Receipt #',
             'showPaymentMethod' => true,
             'paymentMethodOptions' => PaymentMethods::options(),
-            'itemOptions' => ItemCatalog::selectOptions(),
+            'itemOptions' => ItemCatalog::optionsForLineItems($this->lines),
         ])->layoutData([
             'title' => 'Create Sales Receipt',
             'windowTitle' => 'Create Sales Receipt',

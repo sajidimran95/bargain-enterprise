@@ -162,7 +162,7 @@ class InventoryAdjustmentIndex extends Component
             ->latest('id')
             ->paginate(30);
 
-        $itemOptions = ItemCatalog::activeItems()
+        $itemOptions = ItemCatalog::activeItems(150)
             ->mapWithKeys(fn (Item $item) => [
                 $item->id => ($item->barcode ?: $item->sku).' — '.($item->sales_description ?: $item->name).' (OH: '.$item->on_hand.')',
             ])

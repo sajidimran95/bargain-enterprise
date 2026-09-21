@@ -325,9 +325,12 @@ class CreditMemoForm extends Component
         $total = bcadd($subtotal, $taxTotal, 2);
 
         return view('livewire.sales.credit-memo-form', [
-            'customers' => Customer::query()->active()->orderBy('display_name')->get(),
+            'customers' => Customer::query()
+                ->active()
+                ->orderBy('display_name')
+                ->get(['id', 'display_name', 'customer_number']),
             'taxCodes' => TaxCode::query()->where('is_active', true)->orderBy('code')->pluck('name', 'id')->all(),
-            'itemOptions' => ItemCatalog::selectOptions(500),
+            'itemOptions' => ItemCatalog::optionsForLineItems($this->lines),
             'selectedCustomer' => $customer,
             'subtotal' => $subtotal,
             'taxRate' => $taxRate,

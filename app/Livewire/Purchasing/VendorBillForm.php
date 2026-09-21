@@ -1277,7 +1277,7 @@ class VendorBillForm extends Component
 
         return view('livewire.purchasing.vendor-bill-form', [
             'vendors' => Vendor::query()->active()->orderBy('display_name')->pluck('display_name', 'id')->all(),
-            'itemOptions' => ItemCatalog::selectOptions(500, purchase: true),
+            'itemOptions' => ItemCatalog::optionsForLineItems($this->lines, purchase: true),
             'poOptions' => ['' => $poPlaceholder] + $openPos->mapWithKeys(
                 fn (PurchaseOrder $po) => [$po->id => $po->number.' — '.number_format((float) $po->total, 2).($po->status === 'received' ? ' (received)' : ' ('.$po->status.')')]
             )->all(),
