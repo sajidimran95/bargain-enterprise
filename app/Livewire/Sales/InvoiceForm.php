@@ -393,6 +393,11 @@ class InvoiceForm extends Component
         return 'invoices.pdf';
     }
 
+    protected function documentPrintRouteName(): string
+    {
+        return 'invoices.print';
+    }
+
     protected function documentBatchListRouteName(): string
     {
         return 'invoices.batch';

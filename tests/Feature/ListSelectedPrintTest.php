@@ -42,7 +42,7 @@ class ListSelectedPrintTest extends TestCase
             ->assertDispatched('be-toast');
     }
 
-    public function test_invoice_list_print_opens_selected_invoice_pdf(): void
+    public function test_invoice_list_print_opens_letter_print_view(): void
     {
         $this->actingAs($this->owner);
 
@@ -64,14 +64,18 @@ class ListSelectedPrintTest extends TestCase
             ->call('printSelected')
             ->assertOk();
 
-        $this->get(route('invoices.pdf', $invoice))->assertOk();
+        $this->get(route('invoices.print', $invoice))
+            ->assertOk()
+            ->assertSee('Invoice #')
+            ->assertSee('INV-PRINT-1')
+            ->assertSee('Letter Print');
     }
 
-    public function test_po_receive_and_rtv_list_print_use_document_pdf_routes(): void
+    public function test_po_receive_and_rtv_list_print_open_letter_views(): void
     {
         $this->actingAs($this->owner);
 
-        $vendor = Vendor::factory()->create();
+        $vendor = Vendor::factory()->create(['display_name' => 'Print Vendor Co']);
         $po = PurchaseOrder::query()->create([
             'number' => 'PO-PRINT-1',
             'vendor_id' => $vendor->id,
@@ -114,8 +118,19 @@ class ListSelectedPrintTest extends TestCase
             ->call('printSelected')
             ->assertOk();
 
-        $this->get(route('purchase-orders.pdf', $po))->assertOk();
-        $this->get(route('goods-receipts.pdf', $receipt))->assertOk();
-        $this->get(route('vendor-bills.pdf', $rtv))->assertOk();
+        $this->get(route('purchase-orders.print', $po))
+            ->assertOk()
+            ->assertSee('PO-PRINT-1')
+            ->assertSee('Purchase Order');
+
+        $this->get(route('goods-receipts.print', $receipt))
+            ->assertOk()
+            ->assertSee('GR-PRINT-1')
+            ->assertSee('Receive Inventory');
+
+        $this->get(route('vendor-bills.print', $rtv))
+            ->assertOk()
+            ->assertSee('RTV-PRINT-1')
+            ->assertSee('Return to Vendor');
     }
 }

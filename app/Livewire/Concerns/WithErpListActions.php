@@ -46,7 +46,7 @@ trait WithErpListActions
     }
 
     /**
-     * Absolute PDF URL for the selected document, or null when this list has no document print.
+     * Absolute print-view URL for the selected document (letter HTML preview).
      */
     protected function selectedDocumentPdfUrl(int $id): ?string
     {

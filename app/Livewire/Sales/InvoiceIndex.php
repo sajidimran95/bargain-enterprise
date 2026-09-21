@@ -49,7 +49,7 @@ class InvoiceIndex extends Component
 
         $invoice = Invoice::query()->findOrFail($id);
 
-        return route('invoices.pdf', $invoice);
+        return route('invoices.print', $invoice);
     }
 
     public function exportExcel(): StreamedResponse

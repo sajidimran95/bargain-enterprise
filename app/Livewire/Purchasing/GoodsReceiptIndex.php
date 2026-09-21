@@ -40,7 +40,7 @@ class GoodsReceiptIndex extends Component
 
         $receipt = GoodsReceipt::query()->findOrFail($id);
 
-        return route('goods-receipts.pdf', $receipt);
+        return route('goods-receipts.print', $receipt);
     }
 
     public function createDraft(): void

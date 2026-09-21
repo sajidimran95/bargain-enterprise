@@ -66,14 +66,14 @@ class InvoiceBatch extends Component
             ->orderBy('invoice_date')
             ->orderBy('id')
             ->get()
-            ->map(fn (Invoice $invoice) => route('invoices.pdf', $invoice))
+            ->map(fn (Invoice $invoice) => route('invoices.print', $invoice))
             ->values()
             ->all();
 
         Invoice::query()->whereIn('id', $ids)->update(['print_later' => false]);
 
         $this->js('('.json_encode($urls).').forEach((url) => window.open(url, "_blank"))');
-        $this->dispatch('be-toast', message: count($ids).' invoice PDF(s) opened. Print Later cleared.');
+        $this->dispatch('be-toast', message: count($ids).' invoice print view(s) opened. Print Later cleared.');
         $this->selectAllVisible();
     }
 

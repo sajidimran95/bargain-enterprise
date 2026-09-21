@@ -53,6 +53,15 @@ class CreditMemoIndex extends Component
         $this->dispatch('be-toast', message: 'Draft credit memo created.');
     }
 
+    protected function selectedDocumentPdfUrl(int $id): ?string
+    {
+        abort_unless(auth()->user()?->hasPermission('invoice.view'), 403);
+
+        $memo = CreditMemo::query()->findOrFail($id);
+
+        return route('credit-memos.print', $memo);
+    }
+
     public function exportExcel(): StreamedResponse
     {
         abort_unless(auth()->user()?->hasPermission('invoice.view'), 403);

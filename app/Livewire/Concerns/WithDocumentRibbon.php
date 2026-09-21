@@ -90,15 +90,23 @@ trait WithDocumentRibbon
     {
         $doc = $this->resolveSavedDocument();
         if ($doc) {
-            $url = route($this->documentPdfRouteName(), $doc);
+            $url = route($this->documentPrintRouteName(), $doc);
             $this->js('window.open('.json_encode($url).', "_blank")');
-            $this->dispatch('be-toast', message: 'Opening PDF for '.$this->documentLabel($doc));
+            $this->dispatch('be-toast', message: 'Opening letter print view for '.$this->documentLabel($doc));
 
             return;
         }
 
         $this->js('window.print()');
-        $this->dispatch('be-toast', message: 'Printing form. Save first for a PDF.');
+        $this->dispatch('be-toast', message: 'Printing form. Save first for a letter print view.');
+    }
+
+    /**
+     * Route used by ribbon Print (HTML letter print preview, not PDF download).
+     */
+    protected function documentPrintRouteName(): string
+    {
+        return $this->documentPdfRouteName();
     }
 
     public function emailDocument(): void

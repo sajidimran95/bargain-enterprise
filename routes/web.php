@@ -1,10 +1,15 @@
 <?php
 
 use App\Http\Controllers\Purchasing\GoodsReceiptPdfController;
+use App\Http\Controllers\Purchasing\GoodsReceiptPrintController;
 use App\Http\Controllers\Purchasing\PurchaseOrderPdfController;
+use App\Http\Controllers\Purchasing\PurchaseOrderPrintController;
 use App\Http\Controllers\Purchasing\VendorBillPdfController;
+use App\Http\Controllers\Purchasing\VendorBillPrintController;
 use App\Http\Controllers\Sales\CreditMemoPdfController;
+use App\Http\Controllers\Sales\CreditMemoPrintController;
 use App\Http\Controllers\Sales\InvoicePdfController;
+use App\Http\Controllers\Sales\InvoicePrintController;
 use App\Http\Middleware\RedirectToWorkspace;
 use App\Livewire\Accounting\ChartOfAccounts;
 use App\Livewire\Accounting\JournalIndex;
@@ -188,11 +193,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('import/quickbooks', QbImportWizard::class)->name('import.index');
     });
 
-    // PDF routes stay outside workspace redirect.
+    // PDF / print routes stay outside workspace redirect.
+    Route::get('invoices/{invoice}/print', InvoicePrintController::class)->name('invoices.print');
     Route::get('invoices/{invoice}/pdf', InvoicePdfController::class)->name('invoices.pdf');
+    Route::get('credit-memos/{creditMemo}/print', CreditMemoPrintController::class)->name('credit-memos.print');
     Route::get('credit-memos/{creditMemo}/pdf', CreditMemoPdfController::class)->name('credit-memos.pdf');
+    Route::get('vendor-bills/{vendorBill}/print', VendorBillPrintController::class)->name('vendor-bills.print');
     Route::get('vendor-bills/{vendorBill}/pdf', VendorBillPdfController::class)->name('vendor-bills.pdf');
+    Route::get('purchase-orders/{purchaseOrder}/print', PurchaseOrderPrintController::class)->name('purchase-orders.print');
     Route::get('purchase-orders/{purchaseOrder}/pdf', PurchaseOrderPdfController::class)->name('purchase-orders.pdf');
+    Route::get('goods-receipts/{goodsReceipt}/print', GoodsReceiptPrintController::class)->name('goods-receipts.print');
     Route::get('goods-receipts/{goodsReceipt}/pdf', GoodsReceiptPdfController::class)->name('goods-receipts.pdf');
 });
 

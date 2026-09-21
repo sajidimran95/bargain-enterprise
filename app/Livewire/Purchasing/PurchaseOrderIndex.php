@@ -55,7 +55,7 @@ class PurchaseOrderIndex extends Component
 
         $order = PurchaseOrder::query()->findOrFail($id);
 
-        return route('purchase-orders.pdf', $order);
+        return route('purchase-orders.print', $order);
     }
 
     public function createDraft(): void

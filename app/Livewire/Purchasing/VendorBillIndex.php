@@ -59,7 +59,7 @@ class VendorBillIndex extends Component
 
         $bill = VendorBill::query()->findOrFail($id);
 
-        return route('vendor-bills.pdf', $bill);
+        return route('vendor-bills.print', $bill);
     }
 
     public function createDraft(): void

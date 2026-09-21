@@ -1115,6 +1115,11 @@ class VendorBillForm extends Component
         return 'vendor-bills.pdf';
     }
 
+    protected function documentPrintRouteName(): string
+    {
+        return 'vendor-bills.print';
+    }
+
     protected function documentBatchListRouteName(): string
     {
         return 'vendor-bills.index';

@@ -252,6 +252,11 @@ class CreditMemoForm extends Component
         return 'credit-memos.pdf';
     }
 
+    protected function documentPrintRouteName(): string
+    {
+        return 'credit-memos.print';
+    }
+
     protected function documentBatchListRouteName(): string
     {
         return 'credit-memos.index';
