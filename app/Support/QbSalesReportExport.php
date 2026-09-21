@@ -6,7 +6,8 @@ use App\Models\InvoiceLine;
 use Illuminate\Support\Collection;
 
 /**
- * Builds QuickBooks Desktop sales report row layouts for .xlsm export.
+ * Dynamic QuickBooks Desktop sales report builder.
+ * Columns come from config per layout; cell values resolve by header name.
  */
 class QbSalesReportExport
 {
@@ -15,60 +16,39 @@ class QbSalesReportExport
      */
     public static function layouts(): array
     {
-        return [
-            'item_detail' => 'Sales by Item Detail',
-            'customer_detail' => 'Sales by Customer Detail',
-            'ship_to_detail' => 'Sales by Ship To Address',
-            'rep_detail' => 'Sales by Rep Detail',
-            'item_summary' => 'Sales by Item Summary',
-            'customer_summary' => 'Sales by Customer Summary',
-        ];
+        return config('qb_sales_reports.layouts', []);
     }
 
     public static function filename(string $layout): string
     {
-        return match ($layout) {
-            'customer_detail' => 'sales-by-customer-detail.xlsm',
-            'ship_to_detail' => 'sales-by-ship-to-address.xlsm',
-            'rep_detail' => 'sales-by-rep-detail.xlsm',
-            'item_summary' => 'sales-by-item-summary.xlsm',
-            'customer_summary' => 'sales-by-customer-summary.xlsm',
-            default => 'sales-by-item-detail.xlsm',
-        };
+        return (string) config(
+            'qb_sales_reports.filenames.'.$layout,
+            'sales-by-item-detail.xlsm'
+        );
     }
 
     public static function title(string $layout): string
     {
-        return self::layouts()[$layout] ?? 'Sales by Item Detail';
+        return (string) (self::layouts()[$layout] ?? 'Sales by Item Detail');
     }
 
     /**
-     * Exact QuickBooks Desktop column headers (leading '' = group/label column).
-     *
      * @return list<string>
      */
     public static function headersFor(string $layout): array
     {
-        return match ($layout) {
-            'customer_detail' => [
-                '', 'Type', 'Date', 'Num', 'Name Address', 'Name Street1', 'Name City', 'Name State', 'Name Zip',
-                'Name Fax #', 'Memo', 'Name', 'Item', 'Qty', 'U/M', 'Sales Price', 'Amount', 'Balance',
-            ],
-            'ship_to_detail' => [
-                '', 'Type', 'Date', 'Num', 'Ship To Address 1', 'Ship To Address 2', 'Ship Zip',
-                'Name Address', 'Name Street1', 'Name City', 'Name State', 'Name Zip', 'Name Fax #',
-                'Item', 'Account', 'Qty', 'Sales Price', 'Amount',
-            ],
-            'rep_detail' => [
-                '', 'Type', 'Date', 'Num', 'Memo', 'Name', 'Item', 'Qty', 'U/M', 'Sales Price', 'Amount', 'Balance',
-            ],
-            'item_summary', 'customer_summary' => [
-                '', 'Qty', 'Amount', '% of Sales', 'Avg Price', 'COGS', 'Avg COGS', 'Gross Margin', 'Gross Margin %',
-            ],
-            default => [
-                '', 'Type', 'Date', 'Num', 'Memo', 'Name', 'Qty', 'U/M', 'Sales Price', 'Amount', 'Balance',
-            ],
-        };
+        /** @var list<string> $columns */
+        $columns = config('qb_sales_reports.columns.'.$layout, config('qb_sales_reports.columns.item_detail', []));
+
+        return array_values($columns);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function numericHeaders(): array
+    {
+        return array_values(config('qb_sales_reports.numeric_columns', []));
     }
 
     /**
@@ -77,13 +57,17 @@ class QbSalesReportExport
      */
     public function build(string $layout, Collection $lines): array
     {
+        if (! array_key_exists($layout, self::layouts())) {
+            $layout = 'item_detail';
+        }
+
         return match ($layout) {
-            'customer_detail' => $this->customerDetail($lines),
-            'ship_to_detail' => $this->shipToDetail($lines),
-            'rep_detail' => $this->repDetail($lines),
-            'item_summary' => $this->itemSummary($lines),
-            'customer_summary' => $this->customerSummary($lines),
-            default => $this->itemDetail($lines),
+            'customer_detail' => $this->groupedDetail($layout, $lines, fn (InvoiceLine $line) => (string) ($line->invoice?->customer_id ?: 'none'), fn (InvoiceLine $line) => $line->invoice?->customer?->display_name ?: 'Unassigned'),
+            'ship_to_detail' => $this->shipToDetail($layout, $lines),
+            'rep_detail' => $this->groupedDetail($layout, $lines, fn (InvoiceLine $line) => $line->invoice?->createdBy?->name ?: 'No sales rep', fn (InvoiceLine $line) => $line->invoice?->createdBy?->name ?: 'No sales rep'),
+            'item_summary' => $this->itemSummary($layout, $lines),
+            'customer_summary' => $this->customerSummary($layout, $lines),
+            default => $this->itemDetail($layout, $lines),
         };
     }
 
@@ -91,83 +75,72 @@ class QbSalesReportExport
      * @param  Collection<int, InvoiceLine>  $lines
      * @return array{headers: list<string>, rows: list<list<string|float|int|null>>}
      */
-    protected function itemDetail(Collection $lines): array
+    protected function itemDetail(string $layout, Collection $lines): array
     {
-        $headers = self::headersFor('item_detail');
+        $headers = self::headersFor($layout);
         $rows = [];
-        $grandQty = '0.0000';
-        $grandAmount = '0.00';
-        $grandBalance = '0.00';
+        $grand = $this->emptyTotals();
 
-        $byType = $lines->groupBy(fn (InvoiceLine $line) => $line->item?->itemType?->label
-            ?: $line->item?->type
-            ?: 'Inventory');
-
-        foreach ($byType as $typeLabel => $typeLines) {
-            $rows[] = $this->pad([$typeLabel], count($headers));
-            $typeQty = '0.0000';
-            $typeAmount = '0.00';
-            $typeBalance = '0.00';
+        foreach ($lines->groupBy(fn (InvoiceLine $line) => $this->typeLabel($line)) as $typeLabel => $typeLines) {
+            $rows[] = $this->labelRow($layout, (string) $typeLabel);
+            $typeTotals = $this->emptyTotals();
 
             foreach ($typeLines->groupBy(fn (InvoiceLine $line) => $line->item_id ?: 'none') as $itemLines) {
                 $label = $this->itemLabel($itemLines->first());
-                $rows[] = $this->pad([$label], count($headers));
-                $qty = '0.0000';
-                $amount = '0.00';
-                $balance = '0.00';
+                $rows[] = $this->labelRow($layout, $label);
+                $itemTotals = $this->emptyTotals();
 
                 foreach ($itemLines as $line) {
-                    $share = $this->lineBalanceShare($line);
-                    $rows[] = [
-                        '',
-                        'Invoice',
-                        $line->invoice?->invoice_date?->format('m/d/Y'),
-                        $line->invoice?->invoice_number,
-                        $line->invoice?->memo,
-                        $line->invoice?->customer?->display_name,
-                        $this->n4($line->quantity),
-                        $this->uom($line),
-                        $this->n2($line->rate),
-                        $this->n2($line->amount),
-                        $share,
-                    ];
-                    $qty = bcadd($qty, (string) $line->quantity, 4);
-                    $amount = bcadd($amount, (string) $line->amount, 2);
-                    $balance = bcadd($balance, $share, 2);
+                    $rows[] = $this->detailRow($layout, $line);
+                    $this->addLineToTotals($itemTotals, $line);
                 }
 
-                $rows[] = [
-                    'Total '.$label,
-                    '', '', '', '', '',
-                    $this->n4($qty), '', '',
-                    $this->n2($amount),
-                    $this->n2($balance),
-                ];
-                $typeQty = bcadd($typeQty, $qty, 4);
-                $typeAmount = bcadd($typeAmount, $amount, 2);
-                $typeBalance = bcadd($typeBalance, $balance, 2);
+                $rows[] = $this->totalRow($layout, 'Total '.$label, $itemTotals);
+                $this->mergeTotals($typeTotals, $itemTotals);
             }
 
-            $rows[] = [
-                'Total '.$typeLabel,
-                '', '', '', '', '',
-                $this->n4($typeQty), '', '',
-                $this->n2($typeAmount),
-                $this->n2($typeBalance),
-            ];
-            $grandQty = bcadd($grandQty, $typeQty, 4);
-            $grandAmount = bcadd($grandAmount, $typeAmount, 2);
-            $grandBalance = bcadd($grandBalance, $typeBalance, 2);
+            $rows[] = $this->totalRow($layout, 'Total '.$typeLabel, $typeTotals);
+            $this->mergeTotals($grand, $typeTotals);
         }
 
         if ($rows !== []) {
-            $rows[] = [
-                'TOTAL',
-                '', '', '', '', '',
-                $this->n4($grandQty), '', '',
-                $this->n2($grandAmount),
-                $this->n2($grandBalance),
-            ];
+            $rows[] = $this->totalRow($layout, 'TOTAL', $grand, grand: true);
+        }
+
+        return ['headers' => $headers, 'rows' => $rows];
+    }
+
+    /**
+     * @param  Collection<int, InvoiceLine>  $lines
+     * @param  callable(InvoiceLine): string  $groupKey
+     * @param  callable(InvoiceLine): string  $groupLabel
+     * @return array{headers: list<string>, rows: list<list<string|float|int|null>>}
+     */
+    protected function groupedDetail(string $layout, Collection $lines, callable $groupKey, callable $groupLabel): array
+    {
+        $headers = self::headersFor($layout);
+        $rows = [];
+        $grand = $this->emptyTotals();
+
+        $sorted = $lines->sortBy(fn (InvoiceLine $line) => $groupLabel($line));
+
+        foreach ($sorted->groupBy($groupKey) as $groupLines) {
+            /** @var Collection<int, InvoiceLine> $groupLines */
+            $label = $groupLabel($groupLines->first());
+            $rows[] = $this->labelRow($layout, $label);
+            $groupTotals = $this->emptyTotals();
+
+            foreach ($groupLines->sortBy(fn (InvoiceLine $line) => $line->invoice?->invoice_date?->timestamp ?? 0) as $line) {
+                $rows[] = $this->detailRow($layout, $line);
+                $this->addLineToTotals($groupTotals, $line);
+            }
+
+            $rows[] = $this->totalRow($layout, 'Total '.$label, $groupTotals);
+            $this->mergeTotals($grand, $groupTotals);
+        }
+
+        if ($rows !== []) {
+            $rows[] = $this->totalRow($layout, 'TOTAL', $grand, grand: true);
         }
 
         return ['headers' => $headers, 'rows' => $rows];
@@ -177,88 +150,11 @@ class QbSalesReportExport
      * @param  Collection<int, InvoiceLine>  $lines
      * @return array{headers: list<string>, rows: list<list<string|float|int|null>>}
      */
-    protected function customerDetail(Collection $lines): array
+    protected function shipToDetail(string $layout, Collection $lines): array
     {
-        $headers = self::headersFor('customer_detail');
+        $headers = self::headersFor($layout);
         $rows = [];
-        $grandQty = '0.0000';
-        $grandAmount = '0.00';
-        $grandBalance = '0.00';
-
-        $byCustomer = $lines->sortBy(fn (InvoiceLine $line) => $line->invoice?->customer?->display_name ?? '')
-            ->groupBy(fn (InvoiceLine $line) => $line->invoice?->customer_id ?: 'none');
-
-        foreach ($byCustomer as $customerLines) {
-            $customer = $customerLines->first()?->invoice?->customer;
-            $name = $customer?->display_name ?: 'Unassigned';
-            $rows[] = $this->pad([$name], count($headers));
-
-            $qty = '0.0000';
-            $amount = '0.00';
-            $balance = '0.00';
-
-            foreach ($customerLines->sortBy(fn (InvoiceLine $line) => $line->invoice?->invoice_date?->timestamp ?? 0) as $line) {
-                $share = $this->lineBalanceShare($line);
-                $rows[] = [
-                    '',
-                    'Invoice',
-                    $line->invoice?->invoice_date?->format('m/d/Y'),
-                    $line->invoice?->invoice_number,
-                    $this->nameAddress($customer),
-                    $customer?->bill_to_street1,
-                    $customer?->bill_to_city,
-                    $customer?->bill_to_state,
-                    $customer?->bill_to_zip,
-                    $customer?->fax,
-                    $line->description ?: $line->item?->sales_description ?: $line->item?->name,
-                    $name,
-                    $this->itemCodeLabel($line),
-                    $this->n4($line->quantity),
-                    $this->uom($line),
-                    $this->n2($line->rate),
-                    $this->n2($line->amount),
-                    $share,
-                ];
-                $qty = bcadd($qty, (string) $line->quantity, 4);
-                $amount = bcadd($amount, (string) $line->amount, 2);
-                $balance = bcadd($balance, $share, 2);
-            }
-
-            $rows[] = [
-                'Total '.$name,
-                '', '', '', '', '', '', '', '', '', '', '', '',
-                $this->n4($qty), '', '',
-                $this->n2($amount),
-                $this->n2($balance),
-            ];
-            $grandQty = bcadd($grandQty, $qty, 4);
-            $grandAmount = bcadd($grandAmount, $amount, 2);
-            $grandBalance = bcadd($grandBalance, $balance, 2);
-        }
-
-        if ($rows !== []) {
-            $rows[] = [
-                'TOTAL',
-                '', '', '', '', '', '', '', '', '', '', '', '',
-                $this->n4($grandQty), '', '',
-                $this->n2($grandAmount),
-                $this->n2($grandBalance),
-            ];
-        }
-
-        return ['headers' => $headers, 'rows' => $rows];
-    }
-
-    /**
-     * @param  Collection<int, InvoiceLine>  $lines
-     * @return array{headers: list<string>, rows: list<list<string|float|int|null>>}
-     */
-    protected function shipToDetail(Collection $lines): array
-    {
-        $headers = self::headersFor('ship_to_detail');
-        $rows = [];
-        $grandQty = '0.0000';
-        $grandAmount = '0.00';
+        $grand = $this->emptyTotals();
 
         $byShip = $lines->groupBy(function (InvoiceLine $line) {
             $c = $line->invoice?->customer;
@@ -267,69 +163,29 @@ class QbSalesReportExport
         });
 
         foreach ($byShip as $shipLabel => $shipLines) {
-            $rows[] = $this->pad([$shipLabel], count($headers));
-            $shipQty = '0.0000';
-            $shipAmount = '0.00';
+            $rows[] = $this->labelRow($layout, (string) $shipLabel);
+            $shipTotals = $this->emptyTotals();
 
             foreach ($shipLines->groupBy(fn (InvoiceLine $line) => $line->invoice?->customer_id ?: 'none') as $customerLines) {
-                $customer = $customerLines->first()?->invoice?->customer;
-                $name = $customer?->display_name ?: 'Unassigned';
-                $rows[] = $this->pad([$name], count($headers));
-                $qty = '0.0000';
-                $amount = '0.00';
+                $name = $customerLines->first()?->invoice?->customer?->display_name ?: 'Unassigned';
+                $rows[] = $this->labelRow($layout, $name);
+                $groupTotals = $this->emptyTotals();
 
                 foreach ($customerLines as $line) {
-                    $rows[] = [
-                        '',
-                        'Invoice',
-                        $line->invoice?->invoice_date?->format('m/d/Y'),
-                        $line->invoice?->invoice_number,
-                        $customer?->bill_to_street1,
-                        $customer?->bill_to_street2,
-                        $customer?->bill_to_zip,
-                        $this->nameAddress($customer),
-                        $customer?->bill_to_street1,
-                        $customer?->bill_to_city,
-                        $customer?->bill_to_state,
-                        $customer?->bill_to_zip,
-                        $customer?->fax,
-                        $this->itemCodeLabel($line),
-                        $line->item?->income_account,
-                        $this->n4($line->quantity),
-                        $this->n2($line->rate),
-                        $this->n2($line->amount),
-                    ];
-                    $qty = bcadd($qty, (string) $line->quantity, 4);
-                    $amount = bcadd($amount, (string) $line->amount, 2);
+                    $rows[] = $this->detailRow($layout, $line);
+                    $this->addLineToTotals($groupTotals, $line);
                 }
 
-                $rows[] = [
-                    'Total '.$name,
-                    '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-                    $this->n4($qty), '',
-                    $this->n2($amount),
-                ];
-                $shipQty = bcadd($shipQty, $qty, 4);
-                $shipAmount = bcadd($shipAmount, $amount, 2);
+                $rows[] = $this->totalRow($layout, 'Total '.$name, $groupTotals);
+                $this->mergeTotals($shipTotals, $groupTotals);
             }
 
-            $rows[] = [
-                'Total '.$shipLabel,
-                '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-                $this->n4($shipQty), '',
-                $this->n2($shipAmount),
-            ];
-            $grandQty = bcadd($grandQty, $shipQty, 4);
-            $grandAmount = bcadd($grandAmount, $shipAmount, 2);
+            $rows[] = $this->totalRow($layout, 'Total '.$shipLabel, $shipTotals);
+            $this->mergeTotals($grand, $shipTotals);
         }
 
         if ($rows !== []) {
-            $rows[] = [
-                'TOTAL',
-                '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-                $this->n4($grandQty), '',
-                $this->n2($grandAmount),
-            ];
+            $rows[] = $this->totalRow($layout, 'TOTAL', $grand, grand: true);
         }
 
         return ['headers' => $headers, 'rows' => $rows];
@@ -339,156 +195,29 @@ class QbSalesReportExport
      * @param  Collection<int, InvoiceLine>  $lines
      * @return array{headers: list<string>, rows: list<list<string|float|int|null>>}
      */
-    protected function repDetail(Collection $lines): array
+    protected function itemSummary(string $layout, Collection $lines): array
     {
-        $headers = self::headersFor('rep_detail');
+        $headers = self::headersFor($layout);
         $rows = [];
-        $grandQty = '0.0000';
-        $grandAmount = '0.00';
-        $grandBalance = '0.00';
+        $grand = $this->emptyTotals();
+        $totalSales = $this->totalSales($lines);
 
-        $byRep = $lines->groupBy(fn (InvoiceLine $line) => $line->invoice?->createdBy?->name ?: 'No sales rep');
-
-        foreach ($byRep as $rep => $repLines) {
-            $rows[] = $this->pad([$rep], count($headers));
-            $qty = '0.0000';
-            $amount = '0.00';
-            $balance = '0.00';
-
-            foreach ($repLines as $line) {
-                $share = $this->lineBalanceShare($line);
-                $rows[] = [
-                    '',
-                    'Invoice',
-                    $line->invoice?->invoice_date?->format('m/d/Y'),
-                    $line->invoice?->invoice_number,
-                    $line->invoice?->memo,
-                    $line->invoice?->customer?->display_name,
-                    $this->itemCodeLabel($line),
-                    $this->n4($line->quantity),
-                    $this->uom($line),
-                    $this->n2($line->rate),
-                    $this->n2($line->amount),
-                    $share,
-                ];
-                $qty = bcadd($qty, (string) $line->quantity, 4);
-                $amount = bcadd($amount, (string) $line->amount, 2);
-                $balance = bcadd($balance, $share, 2);
-            }
-
-            $rows[] = [
-                'Total '.$rep,
-                '', '', '', '', '', '',
-                $this->n4($qty), '', '',
-                $this->n2($amount),
-                $this->n2($balance),
-            ];
-            $grandQty = bcadd($grandQty, $qty, 4);
-            $grandAmount = bcadd($grandAmount, $amount, 2);
-            $grandBalance = bcadd($grandBalance, $balance, 2);
-        }
-
-        if ($rows !== []) {
-            $rows[] = [
-                'TOTAL',
-                '', '', '', '', '', '',
-                $this->n4($grandQty), '', '',
-                $this->n2($grandAmount),
-                $this->n2($grandBalance),
-            ];
-        }
-
-        return ['headers' => $headers, 'rows' => $rows];
-    }
-
-    /**
-     * @param  Collection<int, InvoiceLine>  $lines
-     * @return array{headers: list<string>, rows: list<list<string|float|int|null>>}
-     */
-    protected function itemSummary(Collection $lines): array
-    {
-        $headers = self::headersFor('item_summary');
-        $rows = [];
-        $grandQty = '0.0000';
-        $grandAmount = '0.00';
-        $grandCogs = '0.00';
-
-        $totalSales = '0.00';
-        foreach ($lines as $line) {
-            $totalSales = bcadd($totalSales, (string) $line->amount, 2);
-        }
-
-        $byType = $lines->groupBy(fn (InvoiceLine $line) => $line->item?->itemType?->label
-            ?: $line->item?->type
-            ?: 'Inventory');
-
-        foreach ($byType as $typeLabel => $typeLines) {
-            $rows[] = $this->pad([$typeLabel], count($headers));
-            $typeQty = '0.0000';
-            $typeAmount = '0.00';
-            $typeCogs = '0.00';
+        foreach ($lines->groupBy(fn (InvoiceLine $line) => $this->typeLabel($line)) as $typeLabel => $typeLines) {
+            $rows[] = $this->labelRow($layout, (string) $typeLabel);
+            $typeTotals = $this->emptyTotals();
 
             foreach ($typeLines->groupBy(fn (InvoiceLine $line) => $line->item_id ?: 'none') as $itemLines) {
-                $label = $this->itemLabel($itemLines->first());
-                $qty = '0.0000';
-                $amount = '0.00';
-                $cogs = '0.00';
-                foreach ($itemLines as $line) {
-                    $qty = bcadd($qty, (string) $line->quantity, 4);
-                    $amount = bcadd($amount, (string) $line->amount, 2);
-                    $unitCost = (string) ($line->item?->average_cost ?: $line->item?->purchase_cost ?: 0);
-                    $cogs = bcadd($cogs, bcmul($unitCost, (string) $line->quantity, 4), 2);
-                }
-                $avgPrice = bccomp($qty, '0', 4) === 0 ? '0.00' : bcdiv($amount, $qty, 4);
-                $avgCogs = bccomp($qty, '0', 4) === 0 ? '0.00' : bcdiv($cogs, $qty, 4);
-                $margin = bcsub($amount, $cogs, 2);
-                $pctSales = bccomp($totalSales, '0', 2) === 0 ? '0' : bcdiv($amount, $totalSales, 6);
-                $marginPct = bccomp($amount, '0', 2) === 0 ? '0' : bcdiv($margin, $amount, 6);
-
-                $rows[] = [
-                    $label,
-                    $this->n4($qty),
-                    $this->n2($amount),
-                    $this->n4($pctSales),
-                    $this->n2($avgPrice),
-                    $this->n2($cogs),
-                    $this->n2($avgCogs),
-                    $this->n2($margin),
-                    $this->n4($marginPct),
-                ];
-
-                $typeQty = bcadd($typeQty, $qty, 4);
-                $typeAmount = bcadd($typeAmount, $amount, 2);
-                $typeCogs = bcadd($typeCogs, $cogs, 2);
+                $agg = $this->aggregateLines($itemLines, $totalSales);
+                $rows[] = $this->summaryRow($layout, $this->itemLabel($itemLines->first()), $agg, $itemLines->first());
+                $this->mergeTotals($typeTotals, $agg);
             }
 
-            $rows[] = [
-                'Total '.$typeLabel,
-                $this->n4($typeQty),
-                $this->n2($typeAmount),
-                '', '',
-                $this->n2($typeCogs),
-                '',
-                $this->n2(bcsub($typeAmount, $typeCogs, 2)),
-                '',
-            ];
-            $grandQty = bcadd($grandQty, $typeQty, 4);
-            $grandAmount = bcadd($grandAmount, $typeAmount, 2);
-            $grandCogs = bcadd($grandCogs, $typeCogs, 2);
+            $rows[] = $this->totalRow($layout, 'Total '.$typeLabel, $typeTotals, withMetrics: true, totalSales: $totalSales);
+            $this->mergeTotals($grand, $typeTotals);
         }
 
         if ($rows !== []) {
-            $rows[] = [
-                'TOTAL',
-                $this->n4($grandQty),
-                $this->n2($grandAmount),
-                '1',
-                '',
-                $this->n2($grandCogs),
-                '',
-                $this->n2(bcsub($grandAmount, $grandCogs, 2)),
-                '',
-            ];
+            $rows[] = $this->totalRow($layout, 'TOTAL', $grand, grand: true, withMetrics: true, totalSales: $totalSales);
         }
 
         return ['headers' => $headers, 'rows' => $rows];
@@ -498,71 +227,273 @@ class QbSalesReportExport
      * @param  Collection<int, InvoiceLine>  $lines
      * @return array{headers: list<string>, rows: list<list<string|float|int|null>>}
      */
-    protected function customerSummary(Collection $lines): array
+    protected function customerSummary(string $layout, Collection $lines): array
     {
-        $headers = self::headersFor('customer_summary');
+        $headers = self::headersFor($layout);
         $rows = [];
-        $grandQty = '0.0000';
-        $grandAmount = '0.00';
-        $grandCogs = '0.00';
-
-        $totalSales = '0.00';
-        foreach ($lines as $line) {
-            $totalSales = bcadd($totalSales, (string) $line->amount, 2);
-        }
+        $grand = $this->emptyTotals();
+        $totalSales = $this->totalSales($lines);
 
         $byCustomer = $lines->sortBy(fn (InvoiceLine $line) => $line->invoice?->customer?->display_name ?? '')
             ->groupBy(fn (InvoiceLine $line) => $line->invoice?->customer_id ?: 'none');
 
         foreach ($byCustomer as $customerLines) {
             $name = $customerLines->first()?->invoice?->customer?->display_name ?: 'Unassigned';
-            $qty = '0.0000';
-            $amount = '0.00';
-            $cogs = '0.00';
-            foreach ($customerLines as $line) {
-                $qty = bcadd($qty, (string) $line->quantity, 4);
-                $amount = bcadd($amount, (string) $line->amount, 2);
-                $unitCost = (string) ($line->item?->average_cost ?: $line->item?->purchase_cost ?: 0);
-                $cogs = bcadd($cogs, bcmul($unitCost, (string) $line->quantity, 4), 2);
-            }
-            $avgPrice = bccomp($qty, '0', 4) === 0 ? '0.00' : bcdiv($amount, $qty, 4);
-            $avgCogs = bccomp($qty, '0', 4) === 0 ? '0.00' : bcdiv($cogs, $qty, 4);
-            $margin = bcsub($amount, $cogs, 2);
-            $pctSales = bccomp($totalSales, '0', 2) === 0 ? '0' : bcdiv($amount, $totalSales, 6);
-            $marginPct = bccomp($amount, '0', 2) === 0 ? '0' : bcdiv($margin, $amount, 6);
-
-            $rows[] = [
-                $name,
-                $this->n4($qty),
-                $this->n2($amount),
-                $this->n4($pctSales),
-                $this->n2($avgPrice),
-                $this->n2($cogs),
-                $this->n2($avgCogs),
-                $this->n2($margin),
-                $this->n4($marginPct),
-            ];
-
-            $grandQty = bcadd($grandQty, $qty, 4);
-            $grandAmount = bcadd($grandAmount, $amount, 2);
-            $grandCogs = bcadd($grandCogs, $cogs, 2);
+            $agg = $this->aggregateLines($customerLines, $totalSales);
+            $rows[] = $this->summaryRow($layout, $name, $agg, $customerLines->first());
+            $this->mergeTotals($grand, $agg);
         }
 
         if ($rows !== []) {
-            $rows[] = [
-                'TOTAL',
-                $this->n4($grandQty),
-                $this->n2($grandAmount),
-                '1',
-                '',
-                $this->n2($grandCogs),
-                '',
-                $this->n2(bcsub($grandAmount, $grandCogs, 2)),
-                '',
-            ];
+            $rows[] = $this->totalRow($layout, 'TOTAL', $grand, grand: true, withMetrics: true, totalSales: $totalSales);
         }
 
         return ['headers' => $headers, 'rows' => $rows];
+    }
+
+    /**
+     * @return list<string|float|int|null>
+     */
+    protected function detailRow(string $layout, InvoiceLine $line): array
+    {
+        return $this->mapHeaders($layout, $this->lineValues($line));
+    }
+
+    /**
+     * @param  array{qty: string, amount: string, balance: string, cogs: string, pct_sales: string, margin_pct: string}  $agg
+     * @return list<string|float|int|null>
+     */
+    protected function summaryRow(string $layout, string $label, array $agg, ?InvoiceLine $sample): array
+    {
+        $qty = $agg['qty'];
+        $amount = $agg['amount'];
+        $cogs = $agg['cogs'];
+        $avgPrice = bccomp($qty, '0', 4) === 0 ? '0.00' : bcdiv($amount, $qty, 4);
+        $avgCogs = bccomp($qty, '0', 4) === 0 ? '0.00' : bcdiv($cogs, $qty, 4);
+        $margin = bcsub($amount, $cogs, 2);
+        $customer = $sample?->invoice?->customer;
+
+        return $this->mapHeaders($layout, array_merge(
+            $sample ? $this->lineValues($sample) : [],
+            [
+                '' => $label,
+                'Type' => '',
+                'Date' => '',
+                'Num' => '',
+                'Memo' => '',
+                'Name' => $customer?->display_name,
+                'Name Address' => $this->nameAddress($customer),
+                'Name Street1' => $customer?->bill_to_street1,
+                'Name City' => $customer?->bill_to_city,
+                'Name State' => $customer?->bill_to_state,
+                'Name Zip' => $customer?->bill_to_zip,
+                'Name Fax #' => $customer?->fax,
+                'Ship To Address 1' => $customer?->bill_to_street1,
+                'Ship To Address 2' => $customer?->bill_to_street2,
+                'Ship Zip' => $customer?->bill_to_zip,
+                'Item' => $sample ? $this->itemCodeLabel($sample) : '',
+                'Account' => $sample?->item?->income_account,
+                'Qty' => $this->n4($qty),
+                'U/M' => $sample ? $this->uom($sample) : '',
+                'Sales Price' => $this->n2($avgPrice),
+                'Amount' => $this->n2($amount),
+                'Balance' => $this->n2($agg['balance']),
+                '% of Sales' => $this->n4($agg['pct_sales']),
+                'Avg Price' => $this->n2($avgPrice),
+                'COGS' => $this->n2($cogs),
+                'Avg COGS' => $this->n2($avgCogs),
+                'Gross Margin' => $this->n2($margin),
+                'Gross Margin %' => $this->n4($agg['margin_pct']),
+            ]
+        ));
+    }
+
+    /**
+     * @return list<string|float|int|null>
+     */
+    protected function labelRow(string $layout, string $label): array
+    {
+        return $this->mapHeaders($layout, ['' => $label]);
+    }
+
+    /**
+     * @param  array{qty: string, amount: string, balance: string, cogs: string}  $totals
+     * @return list<string|float|int|null>
+     */
+    protected function totalRow(
+        string $layout,
+        string $label,
+        array $totals,
+        bool $grand = false,
+        bool $withMetrics = false,
+        string $totalSales = '0.00',
+    ): array {
+        $qty = $totals['qty'];
+        $amount = $totals['amount'];
+        $cogs = $totals['cogs'];
+        $avgPrice = bccomp($qty, '0', 4) === 0 ? '0.00' : bcdiv($amount, $qty, 4);
+        $avgCogs = bccomp($qty, '0', 4) === 0 ? '0.00' : bcdiv($cogs, $qty, 4);
+        $margin = bcsub($amount, $cogs, 2);
+        $pctSales = $withMetrics
+            ? ($grand ? '1' : (bccomp($totalSales, '0', 2) === 0 ? '0' : bcdiv($amount, $totalSales, 6)))
+            : '';
+        $marginPct = $withMetrics
+            ? (bccomp($amount, '0', 2) === 0 ? '0' : bcdiv($margin, $amount, 6))
+            : '';
+
+        return $this->mapHeaders($layout, [
+            '' => $label,
+            'Qty' => $this->n4($qty),
+            'Amount' => $this->n2($amount),
+            'Balance' => $this->n2($totals['balance']),
+            'Sales Price' => $withMetrics ? $this->n2($avgPrice) : '',
+            '% of Sales' => $pctSales === '' ? '' : $this->n4($pctSales),
+            'Avg Price' => $withMetrics ? $this->n2($avgPrice) : '',
+            'COGS' => $this->n2($cogs),
+            'Avg COGS' => $withMetrics ? $this->n2($avgCogs) : '',
+            'Gross Margin' => $this->n2($margin),
+            'Gross Margin %' => $marginPct === '' ? '' : $this->n4($marginPct),
+        ]);
+    }
+
+    /**
+     * Resolve every configured header dynamically from a value map.
+     *
+     * @param  array<string, mixed>  $values
+     * @return list<string|float|int|null>
+     */
+    protected function mapHeaders(string $layout, array $values): array
+    {
+        $row = [];
+        foreach (self::headersFor($layout) as $header) {
+            $row[] = $values[$header] ?? '';
+        }
+
+        return $row;
+    }
+
+    /**
+     * Dynamic field bag for one invoice line (only headers present in a layout are used).
+     *
+     * @return array<string, mixed>
+     */
+    protected function lineValues(InvoiceLine $line): array
+    {
+        $customer = $line->invoice?->customer;
+        $share = $this->lineBalanceShare($line);
+        $cogs = $this->lineCogs($line);
+        $qty = (string) $line->quantity;
+        $amount = (string) $line->amount;
+        $avgPrice = bccomp($qty, '0', 4) === 0 ? '0.00' : bcdiv($amount, $qty, 4);
+        $avgCogs = bccomp($qty, '0', 4) === 0 ? '0.00' : bcdiv($cogs, $qty, 4);
+        $margin = bcsub($amount, $cogs, 2);
+        $marginPct = bccomp($amount, '0', 2) === 0 ? '0' : bcdiv($margin, $amount, 6);
+
+        return [
+            '' => '',
+            'Type' => 'Invoice',
+            'Date' => $line->invoice?->invoice_date?->format('m/d/Y'),
+            'Num' => $line->invoice?->invoice_number,
+            'Memo' => $line->invoice?->memo ?: ($line->description ?: $line->item?->sales_description ?: $line->item?->name),
+            'Name' => $customer?->display_name,
+            'Name Address' => $this->nameAddress($customer),
+            'Name Street1' => $customer?->bill_to_street1,
+            'Name City' => $customer?->bill_to_city,
+            'Name State' => $customer?->bill_to_state,
+            'Name Zip' => $customer?->bill_to_zip,
+            'Name Fax #' => $customer?->fax,
+            'Ship To Address 1' => $customer?->bill_to_street1,
+            'Ship To Address 2' => $customer?->bill_to_street2,
+            'Ship Zip' => $customer?->bill_to_zip,
+            'Item' => $this->itemCodeLabel($line),
+            'Account' => $line->item?->income_account ?: $line->item?->cogs_account,
+            'Qty' => $this->n4($line->quantity),
+            'U/M' => $this->uom($line),
+            'Sales Price' => $this->n2($line->rate),
+            'Amount' => $this->n2($line->amount),
+            'Balance' => $share,
+            '% of Sales' => '',
+            'Avg Price' => $this->n2($avgPrice),
+            'COGS' => $this->n2($cogs),
+            'Avg COGS' => $this->n2($avgCogs),
+            'Gross Margin' => $this->n2($margin),
+            'Gross Margin %' => $this->n4($marginPct),
+        ];
+    }
+
+    /**
+     * @return array{qty: string, amount: string, balance: string, cogs: string, pct_sales: string, margin_pct: string}
+     */
+    protected function emptyTotals(): array
+    {
+        return [
+            'qty' => '0.0000',
+            'amount' => '0.00',
+            'balance' => '0.00',
+            'cogs' => '0.00',
+            'pct_sales' => '0',
+            'margin_pct' => '0',
+        ];
+    }
+
+    /**
+     * @param  array{qty: string, amount: string, balance: string, cogs: string, pct_sales: string, margin_pct: string}  $totals
+     */
+    protected function addLineToTotals(array &$totals, InvoiceLine $line): void
+    {
+        $totals['qty'] = bcadd($totals['qty'], (string) $line->quantity, 4);
+        $totals['amount'] = bcadd($totals['amount'], (string) $line->amount, 2);
+        $totals['balance'] = bcadd($totals['balance'], $this->lineBalanceShare($line), 2);
+        $totals['cogs'] = bcadd($totals['cogs'], $this->lineCogs($line), 2);
+    }
+
+    /**
+     * @param  array{qty: string, amount: string, balance: string, cogs: string, pct_sales: string, margin_pct: string}  $into
+     * @param  array{qty: string, amount: string, balance: string, cogs: string, pct_sales?: string, margin_pct?: string}  $from
+     */
+    protected function mergeTotals(array &$into, array $from): void
+    {
+        $into['qty'] = bcadd($into['qty'], $from['qty'], 4);
+        $into['amount'] = bcadd($into['amount'], $from['amount'], 2);
+        $into['balance'] = bcadd($into['balance'], $from['balance'], 2);
+        $into['cogs'] = bcadd($into['cogs'], $from['cogs'], 2);
+    }
+
+    /**
+     * @param  Collection<int, InvoiceLine>  $lines
+     * @return array{qty: string, amount: string, balance: string, cogs: string, pct_sales: string, margin_pct: string}
+     */
+    protected function aggregateLines(Collection $lines, string $totalSales): array
+    {
+        $agg = $this->emptyTotals();
+        foreach ($lines as $line) {
+            $this->addLineToTotals($agg, $line);
+        }
+        $agg['pct_sales'] = bccomp($totalSales, '0', 2) === 0 ? '0' : bcdiv($agg['amount'], $totalSales, 6);
+        $margin = bcsub($agg['amount'], $agg['cogs'], 2);
+        $agg['margin_pct'] = bccomp($agg['amount'], '0', 2) === 0 ? '0' : bcdiv($margin, $agg['amount'], 6);
+
+        return $agg;
+    }
+
+    /**
+     * @param  Collection<int, InvoiceLine>  $lines
+     */
+    protected function totalSales(Collection $lines): string
+    {
+        $total = '0.00';
+        foreach ($lines as $line) {
+            $total = bcadd($total, (string) $line->amount, 2);
+        }
+
+        return $total;
+    }
+
+    protected function lineCogs(InvoiceLine $line): string
+    {
+        $unitCost = (string) ($line->item?->average_cost ?: $line->item?->purchase_cost ?: 0);
+
+        return bcmul($unitCost, (string) $line->quantity, 4);
     }
 
     protected function lineBalanceShare(InvoiceLine $line): string
@@ -579,6 +510,11 @@ class QbSalesReportExport
         }
 
         return $this->n2(bcmul($balance, bcdiv((string) $line->amount, $total, 8), 8));
+    }
+
+    protected function typeLabel(InvoiceLine $line): string
+    {
+        return (string) ($line->item?->itemType?->label ?: $line->item?->type ?: 'Inventory');
     }
 
     protected function itemLabel(?InvoiceLine $line): string
@@ -618,10 +554,6 @@ class QbSalesReportExport
             return '';
         }
 
-        if (method_exists($customer, 'formattedBillingAddress')) {
-            return str_replace("\n", ', ', $customer->formattedBillingAddress());
-        }
-
         return implode(', ', array_filter([
             $customer->company_name ?: $customer->display_name,
             $customer->bill_to_street1,
@@ -631,20 +563,8 @@ class QbSalesReportExport
                 $customer->bill_to_state,
                 $customer->bill_to_zip,
             ]))),
-        ]));
-    }
-
-    /**
-     * @param  list<string|float|int|null>  $cells
-     * @return list<string|float|int|null>
-     */
-    protected function pad(array $cells, int $count): array
-    {
-        while (count($cells) < $count) {
-            $cells[] = '';
-        }
-
-        return array_slice($cells, 0, $count);
+            $customer->bill_to_country,
+        ], fn ($part) => filled($part)));
     }
 
     protected function n2(mixed $value): string

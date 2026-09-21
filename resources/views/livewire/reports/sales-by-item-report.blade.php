@@ -44,10 +44,10 @@
     </x-slot:filters>
 
     @php
-        $numericHeaders = ['Qty', 'Sales Price', 'Amount', 'Balance', '% of Sales', 'Avg Price', 'COGS', 'Avg COGS', 'Gross Margin', 'Gross Margin %'];
+        $numericHeaders = \App\Support\QbSalesReportExport::numericHeaders();
     @endphp
 
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto pr-2">
         <table class="be-report-table be-table be-table--line-select be-report-table--wide">
             <thead>
                 <tr>

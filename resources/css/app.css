@@ -2519,17 +2519,17 @@
     }
 
     .be-report__sheet {
-        @apply m-0 flex min-h-0 flex-1 flex-col border-0 bg-white px-0 pb-0 pt-0;
+        @apply m-0 flex min-h-0 flex-1 flex-col border-0 bg-white pb-3 pl-4 pr-6 pt-0;
     }
 
     .be-report__header {
-        @apply relative mb-0 shrink-0 border-b px-4 py-3;
+        @apply relative mb-0 shrink-0 border-b px-0 py-3;
         border-color: #ddd;
         min-height: 4.5rem;
     }
 
     .be-report__meta {
-        @apply absolute left-4 top-3 text-[11px] leading-snug text-black;
+        @apply absolute left-0 top-3 text-[11px] leading-snug text-black;
     }
 
     .be-report__titles {
@@ -2549,7 +2549,7 @@
     }
 
     .be-report__grid {
-        @apply min-h-0 flex-1 overflow-auto;
+        @apply min-h-0 flex-1 overflow-auto pb-4 pr-2;
     }
 
     .be-report-table {
@@ -2564,6 +2564,11 @@
         @apply sticky top-0 z-[1] border-b border-t px-2 py-1 text-left font-semibold text-black;
         border-color: #9a9a9a;
         background: #ececec;
+    }
+
+    .be-report-table th:last-child,
+    .be-report-table td:last-child {
+        @apply pr-5;
     }
 
     .be-report-table th.num,
@@ -2615,6 +2620,14 @@
         .be-report__sheet {
             margin: 0;
             border: 0;
+            padding-left: 1rem;
+            padding-right: 1.5rem;
+            padding-bottom: 1rem;
+        }
+
+        .be-report-table th:last-child,
+        .be-report-table td:last-child {
+            padding-right: 1.25rem;
         }
     }
 

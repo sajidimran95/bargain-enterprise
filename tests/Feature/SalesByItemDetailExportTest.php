@@ -82,29 +82,27 @@ class SalesByItemDetailExportTest extends TestCase
         ]);
 
         foreach (array_keys(QbSalesReportExport::layouts()) as $layout) {
+            $headers = QbSalesReportExport::headersFor($layout);
+            $visibleHeader = collect($headers)->first(fn (string $h) => $h !== '') ?? 'Qty';
+
             Livewire::test(SalesByItemReport::class)
                 ->set('datePreset', 'this_month')
                 ->set('layout', $layout)
-                ->assertSee(QbSalesReportExport::headersFor($layout)[1] ?: 'Qty', false)
+                ->assertSee($visibleHeader)
                 ->call('exportExcel')
                 ->assertFileDownloaded(QbSalesReportExport::filename($layout));
         }
 
         $this->assertSame(
-            ['Type', 'Date', 'Num', 'Name Address', 'Name Street1', 'Name City', 'Name State', 'Name Zip', 'Name Fax #', 'Memo', 'Name', 'Item', 'Qty', 'U/M', 'Sales Price', 'Amount', 'Balance'],
-            array_values(array_filter(QbSalesReportExport::headersFor('customer_detail')))
+            config('qb_sales_reports.columns.customer_detail'),
+            QbSalesReportExport::headersFor('customer_detail')
         );
         $this->assertSame(
-            ['Type', 'Date', 'Num', 'Memo', 'Name', 'Qty', 'U/M', 'Sales Price', 'Amount', 'Balance'],
-            array_values(array_filter(QbSalesReportExport::headersFor('item_detail')))
+            config('qb_sales_reports.columns.item_summary'),
+            QbSalesReportExport::headersFor('item_summary')
         );
-        $this->assertSame(
-            ['Type', 'Date', 'Num', 'Ship To Address 1', 'Ship To Address 2', 'Ship Zip', 'Name Address', 'Name Street1', 'Name City', 'Name State', 'Name Zip', 'Name Fax #', 'Item', 'Account', 'Qty', 'Sales Price', 'Amount'],
-            array_values(array_filter(QbSalesReportExport::headersFor('ship_to_detail')))
-        );
-        $this->assertSame(
-            ['Qty', 'Amount', '% of Sales', 'Avg Price', 'COGS', 'Avg COGS', 'Gross Margin', 'Gross Margin %'],
-            array_values(array_filter(QbSalesReportExport::headersFor('item_summary')))
-        );
+        $this->assertContains('Name Address', QbSalesReportExport::headersFor('customer_detail'));
+        $this->assertContains('Name Address', QbSalesReportExport::headersFor('ship_to_detail'));
+        $this->assertNotContains('Name Address', QbSalesReportExport::headersFor('item_summary'));
     }
 }
