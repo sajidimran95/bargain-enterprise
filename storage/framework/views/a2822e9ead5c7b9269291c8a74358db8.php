@@ -83,6 +83,17 @@
 <?php $component = $__componentOriginal5abd15ccddcad372df58dab78ed00d60; ?>
 <?php unset($__componentOriginal5abd15ccddcad372df58dab78ed00d60); ?>
 <?php endif; ?>
+                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($user->canBeDeletedBy(auth()->user())): ?>
+                                    <button
+                                        type="button"
+                                        class="be-link-btn"
+                                        wire:click="deleteUser(<?php echo e($user->id); ?>)"
+                                        wire:confirm="Delete user <?php echo e($user->name); ?>? This cannot be undone."
+                                        @click.stop
+                                    >Delete</button>
+                                <?php else: ?>
+                                    <span class="text-[11px] text-gray-400" @click.stop title="Protected account">Protected</span>
+                                <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>

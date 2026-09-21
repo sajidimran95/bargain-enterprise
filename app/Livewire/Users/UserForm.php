@@ -170,6 +170,14 @@ class UserForm extends Component
 
         if ($this->editingId) {
             $user = User::query()->findOrFail($this->editingId);
+
+            if ($user->isPrimaryAdmin()) {
+                $this->email = $user->email;
+                if (! in_array($this->role, ['admin', 'owner'], true)) {
+                    $this->role = 'admin';
+                }
+            }
+
             $user->name = $this->name;
             $user->email = $this->email;
             if ($this->password !== '') {
@@ -193,6 +201,34 @@ class UserForm extends Component
         $this->password = '';
         $this->password_confirmation = '';
         $this->dispatch('be-toast', message: $message);
+
+        return $this->redirect(route('users.index'), navigate: true);
+    }
+
+    public function deleteUser(): mixed
+    {
+        abort_unless(auth()->user()?->hasPermission('users.manage'), 403);
+
+        if (! $this->editingId) {
+            return null;
+        }
+
+        $user = User::query()->findOrFail($this->editingId);
+        $actor = auth()->user();
+
+        if (! $user->canBeDeletedBy($actor instanceof User ? $actor : null)) {
+            $message = $user->isPrimaryAdmin()
+                ? 'The main admin account cannot be deleted.'
+                : 'You cannot delete your own account.';
+            $this->dispatch('be-toast', message: $message);
+
+            return null;
+        }
+
+        $user->roles()->detach();
+        $user->permissions()->detach();
+        $user->delete();
+        $this->dispatch('be-toast', message: 'User deleted.');
 
         return $this->redirect(route('users.index'), navigate: true);
     }
@@ -221,6 +257,10 @@ class UserForm extends Component
             $rolePermissionNames = $role?->permissions->pluck('name')->all() ?? [];
         }
 
+        $editingUser = $this->editingId
+            ? User::query()->find($this->editingId)
+            : null;
+
         return view('livewire.users.user-form', [
             'roleOptions' => ['' => 'Select role…'] + Role::query()
                 ->orderBy('label')
@@ -229,6 +269,9 @@ class UserForm extends Component
             'sections' => SystemPermissionCatalog::forRoleForm(),
             'rolePermissionNames' => $rolePermissionNames,
             'pageTitle' => $this->editingId ? 'Edit User' : 'Create User',
+            'editingUser' => $editingUser,
+            'canDelete' => $editingUser?->canBeDeletedBy(auth()->user()) ?? false,
+            'isPrimaryAdmin' => $editingUser?->isPrimaryAdmin() ?? false,
         ])->layoutData([
             'title' => $this->editingId ? 'Edit User' : 'Create User',
             'windowTitle' => $this->editingId ? 'Edit User' : 'Create User',

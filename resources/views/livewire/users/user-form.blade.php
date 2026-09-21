@@ -1,6 +1,15 @@
 <div class="be-page be-entity-page">
     <div class="be-doc-toolbar">
         <x-erp.button variant="primary" wire:click="save" type="button">Save</x-erp.button>
+        @if ($editingId && $canDelete)
+            <x-erp.button
+                type="button"
+                wire:click="deleteUser"
+                wire:confirm="Delete this user? This cannot be undone."
+            >Delete</x-erp.button>
+        @elseif ($editingId && $isPrimaryAdmin)
+            <span class="text-[11px] text-gray-500 self-center">Main admin — cannot delete</span>
+        @endif
         <x-erp.workspace-link route="users.index" class="be-btn">User List</x-erp.workspace-link>
         <x-erp.workspace-link route="roles.index" class="be-btn">Roles</x-erp.workspace-link>
         <span class="be-doc-toolbar__title">{{ $pageTitle }}</span>
@@ -24,7 +33,10 @@
                 </div>
                 <div class="be-field">
                     <label class="be-field__label">Email *</label>
-                    <x-erp.input type="email" wire:model="email" />
+                    <x-erp.input type="email" wire:model="email" :disabled="$isPrimaryAdmin" />
+                    @if ($isPrimaryAdmin)
+                        <span class="text-[11px] text-gray-500">Main admin email is locked.</span>
+                    @endif
                     @error('email') <span class="be-field__error">{{ $message }}</span> @enderror
                 </div>
                 <div class="be-field">

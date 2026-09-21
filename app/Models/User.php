@@ -88,4 +88,27 @@ class User extends Authenticatable
     {
         return $this->roles->first()?->label;
     }
+
+    /**
+     * The main system admin account that must never be deleted.
+     */
+    public function isPrimaryAdmin(): bool
+    {
+        $primaryEmail = strtolower((string) config('bargain.primary_admin_email', 'admin@gmail.com'));
+
+        return strtolower((string) $this->email) === $primaryEmail;
+    }
+
+    public function canBeDeletedBy(?User $actor): bool
+    {
+        if ($this->isPrimaryAdmin()) {
+            return false;
+        }
+
+        if ($actor && (int) $actor->id === (int) $this->id) {
+            return false;
+        }
+
+        return true;
+    }
 }

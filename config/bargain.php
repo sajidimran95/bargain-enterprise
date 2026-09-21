@@ -20,4 +20,11 @@ return [
         'negative_policy' => env('INVENTORY_NEGATIVE_POLICY', 'WARN'),
         'allow_manager_override' => env('INVENTORY_ALLOW_MANAGER_OVERRIDE', true),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Primary admin account (cannot be deleted)
+    |--------------------------------------------------------------------------
+    */
+    'primary_admin_email' => env('PRIMARY_ADMIN_EMAIL', 'admin@gmail.com'),
 ];

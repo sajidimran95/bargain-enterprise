@@ -30,6 +30,7 @@ Project tracking document: [`REQUIREMENTS.md`](REQUIREMENTS.md).
 
 | Email | Role | Password |
 |-------|------|----------|
+| admin@gmail.com | Admin | password |
 | owner@bargain.local | Owner | password |
 | manager@bargain.local | Manager | password |
 | sales@bargain.local | Sales / Counter | password |

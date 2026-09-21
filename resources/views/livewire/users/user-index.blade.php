@@ -27,6 +27,17 @@
                             <td>{{ $user->roles->pluck('label')->join(', ') ?: '—' }}</td>
                             <td class="whitespace-nowrap">
                                 <x-erp.workspace-link route="users.edit" :params="['user' => $user->id]" :title="'User: '.$user->name" class="be-link-btn" @click.stop>Edit</x-erp.workspace-link>
+                                @if ($user->canBeDeletedBy(auth()->user()))
+                                    <button
+                                        type="button"
+                                        class="be-link-btn"
+                                        wire:click="deleteUser({{ $user->id }})"
+                                        wire:confirm="Delete user {{ $user->name }}? This cannot be undone."
+                                        @click.stop
+                                    >Delete</button>
+                                @else
+                                    <span class="text-[11px] text-gray-400" @click.stop title="Protected account">Protected</span>
+                                @endif
                             </td>
                         </tr>
                     @empty

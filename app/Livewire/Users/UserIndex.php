@@ -29,6 +29,33 @@ class UserIndex extends Component
         $this->openWorkspaceEdit('users.edit', ['user' => $user->id], 'User: '.$user->name);
     }
 
+    public function deleteUser(int $id): void
+    {
+        abort_unless(auth()->user()?->hasPermission('users.manage'), 403);
+
+        $user = User::query()->findOrFail($id);
+        $actor = auth()->user();
+
+        if (! $user->canBeDeletedBy($actor instanceof User ? $actor : null)) {
+            $message = $user->isPrimaryAdmin()
+                ? 'The main admin account cannot be deleted.'
+                : 'You cannot delete your own account.';
+            $this->dispatch('be-toast', message: $message);
+
+            return;
+        }
+
+        $user->roles()->detach();
+        $user->permissions()->detach();
+        $user->delete();
+
+        if ($this->selectedLineId === $id) {
+            $this->selectedLineId = null;
+        }
+
+        $this->dispatch('be-toast', message: 'User deleted.');
+    }
+
     public function render()
     {
         $users = User::query()

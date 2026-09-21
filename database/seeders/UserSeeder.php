@@ -10,6 +10,7 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $users = [
+            ['email' => 'admin@gmail.com', 'name' => 'Admin', 'role' => 'admin'],
             ['email' => 'owner@bargain.local', 'name' => 'System Owner', 'role' => 'owner'],
             ['email' => 'manager@bargain.local', 'name' => 'Operations Manager', 'role' => 'manager'],
             ['email' => 'sales@bargain.local', 'name' => 'Counter Staff', 'role' => 'sales'],
