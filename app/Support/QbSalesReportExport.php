@@ -43,6 +43,35 @@ class QbSalesReportExport
     }
 
     /**
+     * Exact QuickBooks Desktop column headers (leading '' = group/label column).
+     *
+     * @return list<string>
+     */
+    public static function headersFor(string $layout): array
+    {
+        return match ($layout) {
+            'customer_detail' => [
+                '', 'Type', 'Date', 'Num', 'Name Address', 'Name Street1', 'Name City', 'Name State', 'Name Zip',
+                'Name Fax #', 'Memo', 'Name', 'Item', 'Qty', 'U/M', 'Sales Price', 'Amount', 'Balance',
+            ],
+            'ship_to_detail' => [
+                '', 'Type', 'Date', 'Num', 'Ship To Address 1', 'Ship To Address 2', 'Ship Zip',
+                'Name Address', 'Name Street1', 'Name City', 'Name State', 'Name Zip', 'Name Fax #',
+                'Item', 'Account', 'Qty', 'Sales Price', 'Amount',
+            ],
+            'rep_detail' => [
+                '', 'Type', 'Date', 'Num', 'Memo', 'Name', 'Item', 'Qty', 'U/M', 'Sales Price', 'Amount', 'Balance',
+            ],
+            'item_summary', 'customer_summary' => [
+                '', 'Qty', 'Amount', '% of Sales', 'Avg Price', 'COGS', 'Avg COGS', 'Gross Margin', 'Gross Margin %',
+            ],
+            default => [
+                '', 'Type', 'Date', 'Num', 'Memo', 'Name', 'Qty', 'U/M', 'Sales Price', 'Amount', 'Balance',
+            ],
+        };
+    }
+
+    /**
      * @param  Collection<int, InvoiceLine>  $lines
      * @return array{headers: list<string>, rows: list<list<string|float|int|null>>}
      */
@@ -64,7 +93,7 @@ class QbSalesReportExport
      */
     protected function itemDetail(Collection $lines): array
     {
-        $headers = ['', 'Type', 'Date', 'Num', 'Memo', 'Name', 'Qty', 'U/M', 'Sales Price', 'Amount', 'Balance'];
+        $headers = self::headersFor('item_detail');
         $rows = [];
         $grandQty = '0.0000';
         $grandAmount = '0.00';
@@ -150,10 +179,7 @@ class QbSalesReportExport
      */
     protected function customerDetail(Collection $lines): array
     {
-        $headers = [
-            '', 'Type', 'Date', 'Num', 'Name Address', 'Name Street1', 'Name City', 'Name State', 'Name Zip',
-            'Name Fax #', 'Memo', 'Name', 'Item', 'Qty', 'U/M', 'Sales Price', 'Amount', 'Balance',
-        ];
+        $headers = self::headersFor('customer_detail');
         $rows = [];
         $grandQty = '0.0000';
         $grandAmount = '0.00';
@@ -229,11 +255,7 @@ class QbSalesReportExport
      */
     protected function shipToDetail(Collection $lines): array
     {
-        $headers = [
-            '', 'Type', 'Date', 'Num', 'Ship To Address 1', 'Ship To Address 2', 'Ship Zip',
-            'Name Address', 'Name Street1', 'Name City', 'Name State', 'Name Zip', 'Name Fax #',
-            'Item', 'Account', 'Qty', 'Sales Price', 'Amount',
-        ];
+        $headers = self::headersFor('ship_to_detail');
         $rows = [];
         $grandQty = '0.0000';
         $grandAmount = '0.00';
@@ -319,7 +341,7 @@ class QbSalesReportExport
      */
     protected function repDetail(Collection $lines): array
     {
-        $headers = ['', 'Type', 'Date', 'Num', 'Memo', 'Name', 'Item', 'Qty', 'U/M', 'Sales Price', 'Amount', 'Balance'];
+        $headers = self::headersFor('rep_detail');
         $rows = [];
         $grandQty = '0.0000';
         $grandAmount = '0.00';
@@ -385,7 +407,7 @@ class QbSalesReportExport
      */
     protected function itemSummary(Collection $lines): array
     {
-        $headers = ['', 'Qty', 'Amount', '% of Sales', 'Avg Price', 'COGS', 'Avg COGS', 'Gross Margin', 'Gross Margin %'];
+        $headers = self::headersFor('item_summary');
         $rows = [];
         $grandQty = '0.0000';
         $grandAmount = '0.00';
@@ -478,7 +500,7 @@ class QbSalesReportExport
      */
     protected function customerSummary(Collection $lines): array
     {
-        $headers = ['', 'Qty', 'Amount', '% of Sales', 'Avg Price', 'COGS', 'Avg COGS', 'Gross Margin', 'Gross Margin %'];
+        $headers = self::headersFor('customer_summary');
         $rows = [];
         $grandQty = '0.0000';
         $grandAmount = '0.00';
@@ -596,11 +618,19 @@ class QbSalesReportExport
             return '';
         }
 
+        if (method_exists($customer, 'formattedBillingAddress')) {
+            return str_replace("\n", ', ', $customer->formattedBillingAddress());
+        }
+
         return implode(', ', array_filter([
+            $customer->company_name ?: $customer->display_name,
             $customer->bill_to_street1,
-            $customer->bill_to_city,
-            $customer->bill_to_state,
-            $customer->bill_to_zip,
+            $customer->bill_to_street2,
+            trim(implode(', ', array_filter([
+                $customer->bill_to_city,
+                $customer->bill_to_state,
+                $customer->bill_to_zip,
+            ]))),
         ]));
     }
 

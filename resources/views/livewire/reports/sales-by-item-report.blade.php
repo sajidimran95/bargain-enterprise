@@ -43,76 +43,59 @@
         </div>
     </x-slot:filters>
 
-    <table class="be-report-table be-table be-table--line-select be-report-table--wide">
-        <thead>
-            <tr>
-                <th>Type</th>
-                <th>Date</th>
-                <th>Num</th>
-                <th>Memo</th>
-                <th>Name</th>
-                <th class="num">Qty</th>
-                <th>U/M</th>
-                <th class="num">Sales Price</th>
-                <th class="num">Amount</th>
-                <th class="num">Balance</th>
-            </tr>
-        </thead>
-        <tbody x-data="{ selectedLine: null, collapsed: {} }">
-            @forelse ($groups as $group)
-                @php($groupKey = 'g-'.$loop->index)
-                <tr
-                    class="be-report-table__group"
-                    @click="collapsed['{{ $groupKey }}'] = !collapsed['{{ $groupKey }}']"
-                >
-                    <td colspan="10">
-                        <span
-                            class="be-report-table__group-toggle"
-                            x-text="collapsed['{{ $groupKey }}'] ? '▶' : '▼'"
-                        ></span>
-                        {{ $group['item_label'] }}
-                    </td>
+    @php
+        $numericHeaders = ['Qty', 'Sales Price', 'Amount', 'Balance', '% of Sales', 'Avg Price', 'COGS', 'Avg COGS', 'Gross Margin', 'Gross Margin %'];
+    @endphp
+
+    <div class="overflow-x-auto">
+        <table class="be-report-table be-table be-table--line-select be-report-table--wide">
+            <thead>
+                <tr>
+                    @foreach ($headers as $header)
+                        <th class="{{ in_array($header, $numericHeaders, true) ? 'num' : '' }}">{{ $header }}</th>
+                    @endforeach
                 </tr>
-                @foreach ($group['lines'] as $line)
-                    <tr
-                        wire:key="sale-line-{{ $line->id }}"
-                        x-show="!collapsed['{{ $groupKey }}']"
-                        @click="selectedLine = 'line-{{ $line->id }}'"
-                        :class="selectedLine === 'line-{{ $line->id }}' ? 'is-selected' : ''"
-                    >
-                        <td>Invoice</td>
-                        <td>{{ $line->invoice?->invoice_date?->format('m/d/Y') }}</td>
-                        <td>{{ $line->invoice?->invoice_number }}</td>
-                        <td>{{ $line->invoice?->memo }}</td>
-                        <td>{{ $line->invoice?->customer?->display_name }}</td>
-                        <td class="num">{{ number_format((float) $line->quantity, 0) }}</td>
-                        <td>{{ $line->item?->unitOfMeasure?->abbreviation ?: $line->item?->unitOfMeasure?->name }}</td>
-                        <td class="num">{{ number_format((float) $line->rate, 2) }}</td>
-                        <td class="num">{{ number_format((float) $line->amount, 2) }}</td>
-                        <td class="num">{{ number_format((float) $this->lineBalanceShare($line), 2) }}</td>
+            </thead>
+            <tbody>
+                @forelse ($rows as $row)
+                    @php
+                        $label = trim((string) ($row[0] ?? ''));
+                        $othersEmpty = true;
+                        foreach ($row as $i => $value) {
+                            if ($i === 0) {
+                                continue;
+                            }
+                            if (trim((string) $value) !== '') {
+                                $othersEmpty = false;
+                                break;
+                            }
+                        }
+                        $isGroup = $label !== '' && $othersEmpty;
+                        $isGrand = strtolower($label) === 'total';
+                        $isTotal = str_starts_with(strtolower($label), 'total');
+                        $rowClass = $isGroup ? 'be-report-table__group' : ($isGrand ? 'be-report-table__total' : ($isTotal ? 'be-report-table__subtotal' : ''));
+                    @endphp
+                    <tr class="{{ $rowClass }}">
+                        @foreach ($row as $colIndex => $cell)
+                            @php
+                                $header = $headers[$colIndex] ?? '';
+                                $isNum = in_array($header, $numericHeaders, true);
+                            @endphp
+                            <td class="{{ $isNum ? 'num' : '' }}">
+                                @if ($isNum && $cell !== '' && $cell !== null && is_numeric($cell))
+                                    {{ $header === 'Qty' ? number_format((float) $cell, 0) : number_format((float) $cell, 2) }}
+                                @else
+                                    {{ $cell }}
+                                @endif
+                            </td>
+                        @endforeach
                     </tr>
-                @endforeach
-                <tr class="be-report-table__subtotal" x-show="!collapsed['{{ $groupKey }}']">
-                    <td colspan="5" class="text-right">Total {{ $group['item_label'] }}</td>
-                    <td class="num">{{ number_format((float) $group['qty'], 0) }}</td>
-                    <td></td>
-                    <td></td>
-                    <td class="num">{{ number_format((float) $group['amount'], 2) }}</td>
-                    <td class="num">{{ number_format((float) $group['balance'], 2) }}</td>
-                </tr>
-            @empty
-                <tr><td colspan="10">No sales in this date range.</td></tr>
-            @endforelse
-            @if ($groups->isNotEmpty())
-                <tr class="be-report-table__total">
-                    <td colspan="5" class="text-right">TOTAL</td>
-                    <td class="num">{{ number_format((float) $grandQty, 0) }}</td>
-                    <td></td>
-                    <td></td>
-                    <td class="num">{{ number_format((float) $grandAmount, 2) }}</td>
-                    <td class="num">{{ number_format((float) $grandBalance, 2) }}</td>
-                </tr>
-            @endif
-        </tbody>
-    </table>
+                @empty
+                    <tr>
+                        <td colspan="{{ max(count($headers), 1) }}">No sales in this date range.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
 </x-erp.report-shell>

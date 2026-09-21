@@ -85,8 +85,26 @@ class SalesByItemDetailExportTest extends TestCase
             Livewire::test(SalesByItemReport::class)
                 ->set('datePreset', 'this_month')
                 ->set('layout', $layout)
+                ->assertSee(QbSalesReportExport::headersFor($layout)[1] ?: 'Qty', false)
                 ->call('exportExcel')
                 ->assertFileDownloaded(QbSalesReportExport::filename($layout));
         }
+
+        $this->assertSame(
+            ['Type', 'Date', 'Num', 'Name Address', 'Name Street1', 'Name City', 'Name State', 'Name Zip', 'Name Fax #', 'Memo', 'Name', 'Item', 'Qty', 'U/M', 'Sales Price', 'Amount', 'Balance'],
+            array_values(array_filter(QbSalesReportExport::headersFor('customer_detail')))
+        );
+        $this->assertSame(
+            ['Type', 'Date', 'Num', 'Memo', 'Name', 'Qty', 'U/M', 'Sales Price', 'Amount', 'Balance'],
+            array_values(array_filter(QbSalesReportExport::headersFor('item_detail')))
+        );
+        $this->assertSame(
+            ['Type', 'Date', 'Num', 'Ship To Address 1', 'Ship To Address 2', 'Ship Zip', 'Name Address', 'Name Street1', 'Name City', 'Name State', 'Name Zip', 'Name Fax #', 'Item', 'Account', 'Qty', 'Sales Price', 'Amount'],
+            array_values(array_filter(QbSalesReportExport::headersFor('ship_to_detail')))
+        );
+        $this->assertSame(
+            ['Qty', 'Amount', '% of Sales', 'Avg Price', 'COGS', 'Avg COGS', 'Gross Margin', 'Gross Margin %'],
+            array_values(array_filter(QbSalesReportExport::headersFor('item_summary')))
+        );
     }
 }

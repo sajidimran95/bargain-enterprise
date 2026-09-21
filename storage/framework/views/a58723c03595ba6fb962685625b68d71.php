@@ -52,79 +52,63 @@
         </div>
      <?php $__env->endSlot(); ?>
 
-    <table class="be-report-table be-table be-table--line-select be-report-table--wide">
-        <thead>
-            <tr>
-                <th>Type</th>
-                <th>Date</th>
-                <th>Num</th>
-                <th>Memo</th>
-                <th>Name</th>
-                <th class="num">Qty</th>
-                <th>U/M</th>
-                <th class="num">Sales Price</th>
-                <th class="num">Amount</th>
-                <th class="num">Balance</th>
-            </tr>
-        </thead>
-        <tbody x-data="{ selectedLine: null, collapsed: {} }">
-            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__empty_1 = true; $__currentLoopData = $groups; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $group): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-                <?php ($groupKey = 'g-'.$loop->index); ?>
-                <tr
-                    class="be-report-table__group"
-                    @click="collapsed['<?php echo e($groupKey); ?>'] = !collapsed['<?php echo e($groupKey); ?>']"
-                >
-                    <td colspan="10">
-                        <span
-                            class="be-report-table__group-toggle"
-                            x-text="collapsed['<?php echo e($groupKey); ?>'] ? '▶' : '▼'"
-                        ></span>
-                        <?php echo e($group['item_label']); ?>
+    <?php
+        $numericHeaders = ['Qty', 'Sales Price', 'Amount', 'Balance', '% of Sales', 'Avg Price', 'COGS', 'Avg COGS', 'Gross Margin', 'Gross Margin %'];
+    ?>
 
-                    </td>
+    <div class="overflow-x-auto">
+        <table class="be-report-table be-table be-table--line-select be-report-table--wide">
+            <thead>
+                <tr>
+                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__currentLoopData = $headers; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $header): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <th class="<?php echo e(in_array($header, $numericHeaders, true) ? 'num' : ''); ?>"><?php echo e($header); ?></th>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                 </tr>
-                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__currentLoopData = $group['lines']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $line): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                    <tr
-                        wire:key="sale-line-<?php echo e($line->id); ?>"
-                        x-show="!collapsed['<?php echo e($groupKey); ?>']"
-                        @click="selectedLine = 'line-<?php echo e($line->id); ?>'"
-                        :class="selectedLine === 'line-<?php echo e($line->id); ?>' ? 'is-selected' : ''"
-                    >
-                        <td>Invoice</td>
-                        <td><?php echo e($line->invoice?->invoice_date?->format('m/d/Y')); ?></td>
-                        <td><?php echo e($line->invoice?->invoice_number); ?></td>
-                        <td><?php echo e($line->invoice?->memo); ?></td>
-                        <td><?php echo e($line->invoice?->customer?->display_name); ?></td>
-                        <td class="num"><?php echo e(number_format((float) $line->quantity, 0)); ?></td>
-                        <td><?php echo e($line->item?->unitOfMeasure?->abbreviation ?: $line->item?->unitOfMeasure?->name); ?></td>
-                        <td class="num"><?php echo e(number_format((float) $line->rate, 2)); ?></td>
-                        <td class="num"><?php echo e(number_format((float) $line->amount, 2)); ?></td>
-                        <td class="num"><?php echo e(number_format((float) $this->lineBalanceShare($line), 2)); ?></td>
+            </thead>
+            <tbody>
+                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__empty_1 = true; $__currentLoopData = $rows; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                    <?php
+                        $label = trim((string) ($row[0] ?? ''));
+                        $othersEmpty = true;
+                        foreach ($row as $i => $value) {
+                            if ($i === 0) {
+                                continue;
+                            }
+                            if (trim((string) $value) !== '') {
+                                $othersEmpty = false;
+                                break;
+                            }
+                        }
+                        $isGroup = $label !== '' && $othersEmpty;
+                        $isGrand = strtolower($label) === 'total';
+                        $isTotal = str_starts_with(strtolower($label), 'total');
+                        $rowClass = $isGroup ? 'be-report-table__group' : ($isGrand ? 'be-report-table__total' : ($isTotal ? 'be-report-table__subtotal' : ''));
+                    ?>
+                    <tr class="<?php echo e($rowClass); ?>">
+                        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__currentLoopData = $row; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $colIndex => $cell): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <?php
+                                $header = $headers[$colIndex] ?? '';
+                                $isNum = in_array($header, $numericHeaders, true);
+                            ?>
+                            <td class="<?php echo e($isNum ? 'num' : ''); ?>">
+                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($isNum && $cell !== '' && $cell !== null && is_numeric($cell)): ?>
+                                    <?php echo e($header === 'Qty' ? number_format((float) $cell, 0) : number_format((float) $cell, 2)); ?>
+
+                                <?php else: ?>
+                                    <?php echo e($cell); ?>
+
+                                <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                            </td>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                     </tr>
-                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
-                <tr class="be-report-table__subtotal" x-show="!collapsed['<?php echo e($groupKey); ?>']">
-                    <td colspan="5" class="text-right">Total <?php echo e($group['item_label']); ?></td>
-                    <td class="num"><?php echo e(number_format((float) $group['qty'], 0)); ?></td>
-                    <td></td>
-                    <td></td>
-                    <td class="num"><?php echo e(number_format((float) $group['amount'], 2)); ?></td>
-                    <td class="num"><?php echo e(number_format((float) $group['balance'], 2)); ?></td>
-                </tr>
-            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                <tr><td colspan="10">No sales in this date range.</td></tr>
-            <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
-            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($groups->isNotEmpty()): ?>
-                <tr class="be-report-table__total">
-                    <td colspan="5" class="text-right">TOTAL</td>
-                    <td class="num"><?php echo e(number_format((float) $grandQty, 0)); ?></td>
-                    <td></td>
-                    <td></td>
-                    <td class="num"><?php echo e(number_format((float) $grandAmount, 2)); ?></td>
-                    <td class="num"><?php echo e(number_format((float) $grandBalance, 2)); ?></td>
-                </tr>
-            <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
-        </tbody>
-    </table>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                    <tr>
+                        <td colspan="<?php echo e(max(count($headers), 1)); ?>">No sales in this date range.</td>
+                    </tr>
+                <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+            </tbody>
+        </table>
+    </div>
  <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal1a5737427d04f5e63c498f38666d4996)): ?>

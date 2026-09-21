@@ -196,21 +196,11 @@ class SalesByItemReport extends Component
 
     public function render()
     {
-        $groups = $this->groupedRows();
-        $grandQty = '0.0000';
-        $grandAmount = '0.00';
-        $grandBalance = '0.00';
-        foreach ($groups as $group) {
-            $grandQty = bcadd($grandQty, $group['qty'], 4);
-            $grandAmount = bcadd($grandAmount, $group['amount'], 2);
-            $grandBalance = bcadd($grandBalance, $group['balance'], 2);
-        }
+        $payload = app(QbSalesReportExport::class)->build($this->layout, $this->exportLines());
 
         return view('livewire.reports.sales-by-item-report', [
-            'groups' => $groups,
-            'grandQty' => $grandQty,
-            'grandAmount' => $grandAmount,
-            'grandBalance' => $grandBalance,
+            'headers' => $payload['headers'],
+            'rows' => $payload['rows'],
             'datePresetOptions' => $this->datePresetOptions(),
             'sortByOptions' => $this->salesSortOptions(),
             'layoutOptions' => QbSalesReportExport::layouts(),
