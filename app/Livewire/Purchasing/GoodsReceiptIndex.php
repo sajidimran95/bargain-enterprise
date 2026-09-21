@@ -34,6 +34,15 @@ class GoodsReceiptIndex extends Component
         $this->openWorkspaceEdit('goods-receipts.edit', ['goodsReceipt' => $receipt->id], 'Receipt: '.$receipt->number);
     }
 
+    protected function selectedDocumentPdfUrl(int $id): ?string
+    {
+        abort_unless(auth()->user()?->hasPermission('purchase.view'), 403);
+
+        $receipt = GoodsReceipt::query()->findOrFail($id);
+
+        return route('goods-receipts.pdf', $receipt);
+    }
+
     public function createDraft(): void
     {
         abort_unless(auth()->user()?->hasPermission('purchase.create'), 403);

@@ -87,6 +87,7 @@
 <?php $component = $__componentOriginal5abd15ccddcad372df58dab78ed00d60; ?>
 <?php unset($__componentOriginal5abd15ccddcad372df58dab78ed00d60); ?>
 <?php endif; ?>
+                                <a href="<?php echo e(route('goods-receipts.pdf', $receipt)); ?>" class="be-link-btn" target="_blank" @click.stop>PDF</a>
                             </td>
                         </tr>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>

@@ -49,6 +49,15 @@ class PurchaseOrderIndex extends Component
         $this->openWorkspaceEdit('purchase-orders.edit', ['purchaseOrder' => $order->id], 'PO: '.$order->number);
     }
 
+    protected function selectedDocumentPdfUrl(int $id): ?string
+    {
+        abort_unless(auth()->user()?->hasPermission('purchase.view'), 403);
+
+        $order = PurchaseOrder::query()->findOrFail($id);
+
+        return route('purchase-orders.pdf', $order);
+    }
+
     public function createDraft(): void
     {
         abort_unless(auth()->user()?->hasPermission('purchase.create'), 403);

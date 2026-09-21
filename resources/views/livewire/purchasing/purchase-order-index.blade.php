@@ -71,6 +71,7 @@
                                 @if (! in_array($order->status, ['partial', 'received', 'cancelled'], true))
                                     <x-erp.workspace-link route="purchase-orders.edit" :params="['purchaseOrder' => $order->id]" :title="'PO: '.$order->number" class="be-link-btn" @click.stop>Edit</x-erp.workspace-link>
                                 @endif
+                                <a href="{{ route('purchase-orders.pdf', $order) }}" class="be-link-btn" target="_blank" @click.stop>PDF</a>
                             </td>
                         </tr>
                     @empty

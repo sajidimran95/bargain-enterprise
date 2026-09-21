@@ -53,6 +53,15 @@ class VendorBillIndex extends Component
         $this->openWorkspaceEdit('vendor-bills.edit', ['vendorBill' => $bill->id], 'Bill: '.$bill->bill_number);
     }
 
+    protected function selectedDocumentPdfUrl(int $id): ?string
+    {
+        abort_unless(auth()->user()?->hasPermission('purchase.view'), 403);
+
+        $bill = VendorBill::query()->findOrFail($id);
+
+        return route('vendor-bills.pdf', $bill);
+    }
+
     public function createDraft(): void
     {
         abort_unless(auth()->user()?->hasPermission('purchase.create'), 403);

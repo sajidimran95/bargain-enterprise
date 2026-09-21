@@ -31,6 +31,7 @@
                             <td>{{ $receipt->memo }}</td>
                             <td class="whitespace-nowrap">
                                 <x-erp.workspace-link route="goods-receipts.edit" :params="['goodsReceipt' => $receipt->id]" :title="'Receipt: '.$receipt->number" class="be-link-btn" @click.stop>Edit</x-erp.workspace-link>
+                                <a href="{{ route('goods-receipts.pdf', $receipt) }}" class="be-link-btn" target="_blank" @click.stop>PDF</a>
                             </td>
                         </tr>
                     @empty

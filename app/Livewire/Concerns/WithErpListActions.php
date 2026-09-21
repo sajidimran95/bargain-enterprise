@@ -25,6 +25,35 @@ trait WithErpListActions
     }
 
     /**
+     * Print the selected list row as its document PDF (not the list page).
+     */
+    public function printSelected(): void
+    {
+        if (! $this->selectedLineId) {
+            $this->dispatch('be-toast', message: 'Select a row first, then Print.');
+
+            return;
+        }
+
+        $url = $this->selectedDocumentPdfUrl((int) $this->selectedLineId);
+        if ($url === null || $url === '') {
+            $this->dispatch('be-toast', message: 'No printable document for the selected row.');
+
+            return;
+        }
+
+        $this->js('window.open('.json_encode($url).', "_blank")');
+    }
+
+    /**
+     * Absolute PDF URL for the selected document, or null when this list has no document print.
+     */
+    protected function selectedDocumentPdfUrl(int $id): ?string
+    {
+        return null;
+    }
+
+    /**
      * Open a named workspace route for edit (used by list double-click / Edit).
      *
      * @param  array<string, mixed>  $params

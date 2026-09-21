@@ -43,6 +43,15 @@ class InvoiceIndex extends Component
         $this->openWorkspaceEdit('invoices.edit', ['invoice' => $invoice->id], 'Invoice: '.$invoice->invoice_number);
     }
 
+    protected function selectedDocumentPdfUrl(int $id): ?string
+    {
+        abort_unless(auth()->user()?->hasPermission('invoice.view'), 403);
+
+        $invoice = Invoice::query()->findOrFail($id);
+
+        return route('invoices.pdf', $invoice);
+    }
+
     public function exportExcel(): StreamedResponse
     {
         abort_unless(auth()->user()?->hasPermission('invoice.view'), 403);

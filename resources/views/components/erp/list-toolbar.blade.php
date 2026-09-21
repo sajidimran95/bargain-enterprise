@@ -53,7 +53,7 @@
         @endif
 
         @if ($showPrint)
-            <x-erp.button type="button" onclick="window.print()">Print</x-erp.button>
+            <x-erp.button type="button" wire:click="printSelected">Print</x-erp.button>
         @endif
 
         @if ($showExcel)

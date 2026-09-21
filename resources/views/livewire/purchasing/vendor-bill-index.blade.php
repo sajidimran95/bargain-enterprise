@@ -54,6 +54,7 @@
                             <td class="num">{{ number_format((float) $bill->balance_due, 2) }}</td>
                             <td class="whitespace-nowrap">
                                 <x-erp.workspace-link :route="$editRoute" :params="['vendorBill' => $bill->id]" :title="$editTitle" class="be-link-btn" @click.stop>Edit</x-erp.workspace-link>
+                                <a href="{{ route('vendor-bills.pdf', $bill) }}" class="be-link-btn" target="_blank" @click.stop>PDF</a>
                             </td>
                         </tr>
                     @empty
