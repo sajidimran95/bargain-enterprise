@@ -164,6 +164,7 @@ return [
         ['label' => 'Company Information…', 'route' => 'company.info'],
         ['label' => 'Preferences…', 'route' => 'settings.index'],
         ['label' => 'Manage Sales Tax…', 'route' => 'settings.index'],
+        ['label' => 'Payment Method List', 'route' => 'payment-methods.index'],
         ['separator' => true],
         ['label' => 'Chart of Accounts', 'route' => 'accounting.chart'],
         ['label' => 'Make General Journal Entries', 'route' => 'accounting.journals'],
