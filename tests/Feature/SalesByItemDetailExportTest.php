@@ -104,5 +104,143 @@ class SalesByItemDetailExportTest extends TestCase
         $this->assertContains('Name Address', QbSalesReportExport::headersFor('customer_detail'));
         $this->assertContains('Name Address', QbSalesReportExport::headersFor('ship_to_detail'));
         $this->assertNotContains('Name Address', QbSalesReportExport::headersFor('item_summary'));
+        $this->assertSame([
+            '', 'Type', 'Date', 'Num', 'Name Address', 'Name Street1', 'Name Street2', 'Name City', 'Name State', 'Name Zip',
+            'Name Tax ID', 'Name Account #', 'Memo', 'Name', 'Item', 'Item Description', 'Class', 'Qty', 'Sales Price',
+            'Amount', 'Balance', 'Account Type', 'Paid Date', 'Ship To City', 'Ship To Address 1', 'Ship To Address 2',
+            'Ship To State', 'Ship Zip',
+        ], QbSalesReportExport::headersFor('customer_detail'));
+    }
+
+    public function test_customize_report_opens_the_customer_detail_dialog(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $owner = User::factory()->create();
+        $owner->assignRole('owner');
+        $this->actingAs($owner);
+
+        Livewire::test(SalesByItemReport::class)
+            ->set('layout', 'customer_detail')
+            ->call('customizeReport')
+            ->assertSee('Modify Report: Sales by Customer Detail')
+            ->assertSee('Display')
+            ->assertSee('Filters')
+            ->assertSee('(left margin)')
+            ->assertSee('Name Street2')
+            ->assertSee('Accrual includes every invoice.')
+            ->assertSee('Ascending order')
+            ->assertSee('Revert')
+            ->call('closeModifyReport')
+            ->assertDontSee('Modify Report: Sales by Customer Detail');
+    }
+
+    public function test_customer_detail_excel_columns_follow_the_checked_list(): void
+    {
+        [$owner] = $this->customerDetailSale();
+        $this->actingAs($owner);
+
+        Livewire::test(SalesByItemReport::class)
+            ->set('datePreset', 'this_month')
+            ->set('layout', 'customer_detail')
+            ->assertSee('Suite 4')
+            ->assertSee('ACCT-44')
+            ->call('customizeReport')
+            ->set('draftVisibleColumns', ['0', '1', '2', '3'])
+            ->call('applyModifyReport')
+            ->assertDontSee('Name Street2')
+            ->assertSee('Type');
+
+        $line = InvoiceLine::query()->with(['item', 'invoice.customer.taxCode', 'invoice.paymentAllocations.payment'])->first();
+        $payload = app(QbSalesReportExport::class)->build('customer_detail', collect([$line]));
+        $detail = collect($payload['rows'])->first(fn (array $row) => ($row[1] ?? null) === 'Invoice');
+        $index = array_flip($payload['headers']);
+
+        $this->assertSame('Suite 4', $detail[$index['Name Street2']]);
+        $this->assertSame('ACCT-44', $detail[$index['Name Account #']]);
+        $this->assertSame('SODA-COKE', $detail[$index['Item']]);
+        $this->assertSame('Coke 24ct', $detail[$index['Item Description']]);
+        $this->assertSame('Income', $detail[$index['Account Type']]);
+        $this->assertSame('20.00', $detail[$index['Balance']]);
+    }
+
+    public function test_cash_basis_includes_only_paid_invoices(): void
+    {
+        [$owner, $openNumber, $paidNumber] = $this->customerDetailSale(withPaidInvoice: true);
+        $this->actingAs($owner);
+
+        Livewire::test(SalesByItemReport::class)
+            ->set('datePreset', 'this_month')
+            ->set('layout', 'customer_detail')
+            ->set('basis', 'cash')
+            ->assertSee($paidNumber)
+            ->assertDontSee($openNumber);
+    }
+
+    /**
+     * @return array{0: User, 1: string, 2: string}
+     */
+    private function customerDetailSale(bool $withPaidInvoice = false): array
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $owner = User::factory()->create();
+        $owner->assignRole('owner');
+
+        $customer = Customer::factory()->create([
+            'display_name' => '4 EVER',
+            'customer_number' => 'ACCT-44',
+            'bill_to_street1' => '123 Main',
+            'bill_to_street2' => 'Suite 4',
+            'bill_to_city' => 'Nashville',
+            'bill_to_state' => 'TN',
+            'bill_to_zip' => '37201',
+            'is_active' => true,
+        ]);
+        $item = Item::factory()->create([
+            'sku' => 'SODA-COKE',
+            'barcode' => 'SODA-COKE',
+            'name' => 'Coke 24ct',
+            'sales_description' => 'Coke 24ct',
+            'is_active' => true,
+        ]);
+
+        $openNumber = 'INV-OPEN-1';
+        $this->makeInvoice($customer, $item, $owner, $openNumber, paid: false);
+
+        $paidNumber = 'INV-PAID-1';
+        if ($withPaidInvoice) {
+            $this->makeInvoice($customer, $item, $owner, $paidNumber, paid: true);
+        }
+
+        return [$owner, $openNumber, $paidNumber];
+    }
+
+    private function makeInvoice(Customer $customer, Item $item, User $owner, string $number, bool $paid): void
+    {
+        $invoice = Invoice::query()->create([
+            'invoice_number' => $number,
+            'customer_id' => $customer->id,
+            'invoice_date' => now()->toDateString(),
+            'status' => $paid ? 'paid' : 'open',
+            'memo' => 'Weekly drop',
+            'subtotal' => 20,
+            'tax_total' => 0,
+            'total' => 20,
+            'amount_paid' => $paid ? 20 : 0,
+            'balance_due' => $paid ? 0 : 20,
+            'created_by' => $owner->id,
+        ]);
+
+        InvoiceLine::query()->create([
+            'invoice_id' => $invoice->id,
+            'item_id' => $item->id,
+            'description' => 'Coke 24ct',
+            'quantity' => 2,
+            'rate' => 10,
+            'amount' => 20,
+            'taxable' => true,
+            'tax_amount' => 0,
+            'line_order' => 0,
+        ]);
     }
 }

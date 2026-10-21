@@ -35,8 +35,10 @@ return [
             '', 'Type', 'Date', 'Num', 'Memo', 'Name', 'Qty', 'U/M', 'Sales Price', 'Amount', 'Balance',
         ],
         'customer_detail' => [
-            '', 'Type', 'Date', 'Num', 'Name Address', 'Name Street1', 'Name City', 'Name State', 'Name Zip',
-            'Name Fax #', 'Memo', 'Name', 'Item', 'Qty', 'U/M', 'Sales Price', 'Amount', 'Balance',
+            '', 'Type', 'Date', 'Num', 'Name Address', 'Name Street1', 'Name Street2', 'Name City', 'Name State', 'Name Zip',
+            'Name Tax ID', 'Name Account #', 'Memo', 'Name', 'Item', 'Item Description', 'Class', 'Qty', 'Sales Price',
+            'Amount', 'Balance', 'Account Type', 'Paid Date', 'Ship To City', 'Ship To Address 1', 'Ship To Address 2',
+            'Ship To State', 'Ship Zip',
         ],
         'ship_to_detail' => [
             '', 'Type', 'Date', 'Num', 'Ship To Address 1', 'Ship To Address 2', 'Ship Zip',

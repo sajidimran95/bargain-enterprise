@@ -52,19 +52,65 @@ class QbSalesReportExport
     }
 
     /**
+     * @param  array{headers: list<string>, rows: list<list<string|float|int|null>>}  $payload
+     * @param  list<int|string>  $indexes
+     * @return array{headers: list<string>, rows: list<list<string|float|int|null>>}
+     */
+    public static function selectColumns(array $payload, array $indexes): array
+    {
+        /** @var list<string> $headers */
+        $headers = $payload['headers'];
+        $keep = [];
+
+        foreach ($indexes as $index) {
+            $index = (int) $index;
+            if (array_key_exists($index, $headers)) {
+                $keep[] = $index;
+            }
+        }
+
+        if ($keep === []) {
+            $keep = array_keys($headers);
+        }
+
+        return [
+            'headers' => array_map(fn (int $index) => $headers[$index], $keep),
+            'rows' => array_map(
+                fn (array $row) => array_map(fn (int $index) => $row[$index] ?? '', $keep),
+                $payload['rows']
+            ),
+        ];
+    }
+
+    /**
      * @param  Collection<int, InvoiceLine>  $lines
      * @return array{headers: list<string>, rows: list<list<string|float|int|null>>}
      */
-    public function build(string $layout, Collection $lines): array
-    {
+    public function build(
+        string $layout,
+        Collection $lines,
+        string $totalBy = 'default',
+        string $sortBy = 'default',
+        string $sortDirection = 'asc',
+    ): array {
         if (! array_key_exists($layout, self::layouts())) {
             $layout = 'item_detail';
         }
 
+        if (! str_ends_with($layout, 'summary') && $totalBy === 'none') {
+            return $this->flatDetail($layout, $lines, $sortBy, $sortDirection);
+        }
+
+        if (! str_ends_with($layout, 'summary') && $totalBy !== 'default') {
+            [$groupKey, $groupLabel] = $this->totalByGrouping($totalBy);
+
+            return $this->groupedDetail($layout, $lines, $groupKey, $groupLabel, $sortBy, $sortDirection);
+        }
+
         return match ($layout) {
-            'customer_detail' => $this->groupedDetail($layout, $lines, fn (InvoiceLine $line) => (string) ($line->invoice?->customer_id ?: 'none'), fn (InvoiceLine $line) => $line->invoice?->customer?->display_name ?: 'Unassigned'),
+            'customer_detail' => $this->groupedDetail($layout, $lines, fn (InvoiceLine $line) => (string) ($line->invoice?->customer_id ?: 'none'), fn (InvoiceLine $line) => $line->invoice?->customer?->display_name ?: 'Unassigned', $sortBy, $sortDirection),
             'ship_to_detail' => $this->shipToDetail($layout, $lines),
-            'rep_detail' => $this->groupedDetail($layout, $lines, fn (InvoiceLine $line) => $line->invoice?->createdBy?->name ?: 'No sales rep', fn (InvoiceLine $line) => $line->invoice?->createdBy?->name ?: 'No sales rep'),
+            'rep_detail' => $this->groupedDetail($layout, $lines, fn (InvoiceLine $line) => $line->invoice?->createdBy?->name ?: 'No sales rep', fn (InvoiceLine $line) => $line->invoice?->createdBy?->name ?: 'No sales rep', $sortBy, $sortDirection),
             'item_summary' => $this->itemSummary($layout, $lines),
             'customer_summary' => $this->customerSummary($layout, $lines),
             default => $this->itemDetail($layout, $lines),
@@ -116,8 +162,14 @@ class QbSalesReportExport
      * @param  callable(InvoiceLine): string  $groupLabel
      * @return array{headers: list<string>, rows: list<list<string|float|int|null>>}
      */
-    protected function groupedDetail(string $layout, Collection $lines, callable $groupKey, callable $groupLabel): array
-    {
+    protected function groupedDetail(
+        string $layout,
+        Collection $lines,
+        callable $groupKey,
+        callable $groupLabel,
+        string $sortBy = 'default',
+        string $sortDirection = 'asc',
+    ): array {
         $headers = self::headersFor($layout);
         $rows = [];
         $grand = $this->emptyTotals();
@@ -129,14 +181,48 @@ class QbSalesReportExport
             $label = $groupLabel($groupLines->first());
             $rows[] = $this->labelRow($layout, $label);
             $groupTotals = $this->emptyTotals();
+            $running = '0.00';
 
-            foreach ($groupLines->sortBy(fn (InvoiceLine $line) => $line->invoice?->invoice_date?->timestamp ?? 0) as $line) {
-                $rows[] = $this->detailRow($layout, $line);
+            foreach ($this->sortLines($groupLines, $sortBy, $sortDirection) as $line) {
+                $running = bcadd($running, (string) $line->amount, 2);
+                $rows[] = $this->detailRow(
+                    $layout,
+                    $line,
+                    $layout === 'customer_detail' ? $this->n2($running) : null,
+                );
                 $this->addLineToTotals($groupTotals, $line);
             }
 
             $rows[] = $this->totalRow($layout, 'Total '.$label, $groupTotals);
             $this->mergeTotals($grand, $groupTotals);
+        }
+
+        if ($rows !== []) {
+            $rows[] = $this->totalRow($layout, 'TOTAL', $grand, grand: true);
+        }
+
+        return ['headers' => $headers, 'rows' => $rows];
+    }
+
+    /**
+     * @param  Collection<int, InvoiceLine>  $lines
+     * @return array{headers: list<string>, rows: list<list<string|float|int|null>>}
+     */
+    protected function flatDetail(string $layout, Collection $lines, string $sortBy, string $sortDirection): array
+    {
+        $headers = self::headersFor($layout);
+        $rows = [];
+        $grand = $this->emptyTotals();
+        $running = '0.00';
+
+        foreach ($this->sortLines($lines, $sortBy, $sortDirection) as $line) {
+            $running = bcadd($running, (string) $line->amount, 2);
+            $rows[] = $this->detailRow(
+                $layout,
+                $line,
+                $layout === 'customer_detail' ? $this->n2($running) : null,
+            );
+            $this->addLineToTotals($grand, $line);
         }
 
         if ($rows !== []) {
@@ -254,9 +340,20 @@ class QbSalesReportExport
     /**
      * @return list<string|float|int|null>
      */
-    protected function detailRow(string $layout, InvoiceLine $line): array
+    protected function detailRow(string $layout, InvoiceLine $line, ?string $runningBalance = null): array
     {
-        return $this->mapHeaders($layout, $this->lineValues($line));
+        $values = $this->lineValues($line);
+
+        if ($runningBalance !== null) {
+            $values['Balance'] = $runningBalance;
+        }
+
+        if ($layout === 'customer_detail') {
+            $values['Item'] = $line->item?->barcode ?: $line->item?->sku ?: '';
+            $values['Memo'] = (string) ($line->invoice?->memo ?? '');
+        }
+
+        return $this->mapHeaders($layout, $values);
     }
 
     /**
@@ -398,14 +495,23 @@ class QbSalesReportExport
             'Name' => $customer?->display_name,
             'Name Address' => $this->nameAddress($customer),
             'Name Street1' => $customer?->bill_to_street1,
+            'Name Street2' => $customer?->bill_to_street2,
             'Name City' => $customer?->bill_to_city,
             'Name State' => $customer?->bill_to_state,
             'Name Zip' => $customer?->bill_to_zip,
+            'Name Tax ID' => $customer?->taxCode?->name ?: $customer?->taxCode?->code,
+            'Name Account #' => $customer?->customer_number,
             'Name Fax #' => $customer?->fax,
+            'Ship To City' => $customer?->bill_to_city,
             'Ship To Address 1' => $customer?->bill_to_street1,
             'Ship To Address 2' => $customer?->bill_to_street2,
+            'Ship To State' => $customer?->bill_to_state,
             'Ship Zip' => $customer?->bill_to_zip,
             'Item' => $this->itemCodeLabel($line),
+            'Item Description' => $line->description ?: $line->item?->sales_description ?: $line->item?->name,
+            'Class' => $line->invoice?->class ?: $line->item?->category?->name ?: '',
+            'Account Type' => 'Income',
+            'Paid Date' => $this->paidDate($line),
             'Account' => $line->item?->income_account ?: $line->item?->cogs_account,
             'Qty' => $this->n4($line->quantity),
             'U/M' => $this->uom($line),
@@ -546,6 +652,69 @@ class QbSalesReportExport
         return (string) ($line->item?->unitOfMeasure?->abbreviation
             ?: $line->item?->unitOfMeasure?->name
             ?: '');
+    }
+
+    /**
+     * @return array{0: callable(InvoiceLine): string, 1: callable(InvoiceLine): string}
+     */
+    protected function totalByGrouping(string $totalBy): array
+    {
+        return match ($totalBy) {
+            'item' => [
+                fn (InvoiceLine $line) => (string) ($line->item_id ?: 'none'),
+                fn (InvoiceLine $line) => $this->itemLabel($line),
+            ],
+            'class' => [
+                fn (InvoiceLine $line) => $line->invoice?->class ?: $line->item?->category?->name ?: 'No class',
+                fn (InvoiceLine $line) => $line->invoice?->class ?: $line->item?->category?->name ?: 'No class',
+            ],
+            'rep' => [
+                fn (InvoiceLine $line) => (string) ($line->invoice?->created_by ?: 'none'),
+                fn (InvoiceLine $line) => $line->invoice?->createdBy?->name ?: 'No sales rep',
+            ],
+            default => [
+                fn (InvoiceLine $line) => (string) ($line->invoice?->customer_id ?: 'none'),
+                fn (InvoiceLine $line) => $line->invoice?->customer?->display_name ?: 'Unassigned',
+            ],
+        };
+    }
+
+    /**
+     * @param  Collection<int, InvoiceLine>  $lines
+     * @return Collection<int, InvoiceLine>
+     */
+    protected function sortLines(Collection $lines, string $sortBy, string $sortDirection): Collection
+    {
+        $descending = $sortDirection === 'desc';
+
+        $sorted = match ($sortBy) {
+            'amount' => $lines->sortBy(fn (InvoiceLine $line) => (float) $line->amount, SORT_REGULAR, $descending),
+            'num' => $lines->sortBy(fn (InvoiceLine $line) => (string) ($line->invoice?->invoice_number ?? ''), SORT_REGULAR, $descending),
+            'name' => $lines->sortBy(fn (InvoiceLine $line) => (string) ($line->invoice?->customer?->display_name ?? ''), SORT_REGULAR, $descending),
+            'item' => $lines->sortBy(fn (InvoiceLine $line) => (string) ($line->item?->name ?? ''), SORT_REGULAR, $descending),
+            default => $lines->sortBy(fn (InvoiceLine $line) => $line->invoice?->invoice_date?->timestamp ?? 0, SORT_REGULAR, $descending),
+        };
+
+        return $sorted->values();
+    }
+
+    protected function paidDate(InvoiceLine $line): string
+    {
+        $invoice = $line->invoice;
+        if ($invoice === null || bccomp((string) $invoice->balance_due, '0', 2) > 0) {
+            return '';
+        }
+
+        $date = $invoice->paymentAllocations
+            ->map(fn ($allocation) => $allocation->payment?->payment_date)
+            ->filter()
+            ->max();
+
+        if ($date === null) {
+            return '';
+        }
+
+        return $date->format('m/d/Y');
     }
 
     protected function nameAddress(mixed $customer): string

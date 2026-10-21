@@ -2447,6 +2447,90 @@
         border-color: var(--be-border);
     }
 
+    .be-report-popup__panel--modify {
+        @apply flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden bg-white p-0;
+    }
+
+    .be-modify-report__header {
+        @apply flex items-center gap-2 border-b px-4 py-3;
+        border-color: var(--be-border);
+    }
+
+    .be-modify-report__close {
+        @apply text-lg leading-none text-gray-500;
+    }
+
+    .be-modify-report__title {
+        @apply text-[15px] font-semibold text-gray-900;
+    }
+
+    .be-modify-report__tabs {
+        @apply flex gap-4 border-b px-4;
+        border-color: var(--be-border);
+    }
+
+    .be-modify-report__tab {
+        @apply border-b-2 border-transparent px-1 py-2 text-[13px] text-gray-600;
+    }
+
+    .be-modify-report__tab--active {
+        @apply border-blue-600 font-semibold text-blue-600;
+    }
+
+    .be-modify-report__body {
+        @apply overflow-auto px-4 py-3;
+    }
+
+    .be-modify-report__legend {
+        @apply mb-2 mt-3 text-[11px] font-semibold uppercase tracking-wide text-gray-500;
+    }
+
+    .be-modify-report__dates {
+        @apply grid gap-3 md:grid-cols-3;
+    }
+
+    .be-modify-report__basis {
+        @apply flex gap-4 text-[13px] text-gray-800;
+    }
+
+    .be-modify-report__help {
+        @apply mt-1 text-[12px] text-gray-500;
+    }
+
+    .be-modify-report__columns {
+        @apply grid gap-4 md:grid-cols-2;
+    }
+
+    .be-modify-report__checklist {
+        @apply max-h-64 overflow-auto rounded border bg-white p-2;
+        border-color: var(--be-border);
+    }
+
+    .be-modify-report__check {
+        @apply flex items-center gap-2 py-0.5 text-[13px] text-gray-800;
+    }
+
+    .be-modify-report__sort {
+        @apply flex flex-col gap-3;
+    }
+
+    .be-modify-report__filters {
+        @apply grid gap-4 md:grid-cols-[12rem_1fr];
+    }
+
+    .be-modify-report__filter {
+        @apply block w-full px-2 py-1.5 text-left text-[13px] text-gray-800 hover:bg-gray-50;
+    }
+
+    .be-modify-report__filter--active {
+        @apply bg-blue-50 font-semibold text-blue-700;
+    }
+
+    .be-modify-report__footer {
+        @apply flex justify-end gap-2 border-t bg-gray-50 px-4 py-3;
+        border-color: var(--be-border);
+    }
+
     .be-report__saved-comment {
         @apply mt-2 text-[12px] text-gray-700;
     }
