@@ -135,6 +135,10 @@ class WorkspaceManager
      */
     public function openTab(string $routeName, array $params = [], ?string $title = null, ?string $id = null): array
     {
+        if ($routeName === 'credit-memos.apply' && blank($params['creditMemo'] ?? null)) {
+            return $this->openTab('credit-memos.index');
+        }
+
         $definition = WorkspaceCatalog::get($routeName);
         if ($definition === null) {
             throw new \InvalidArgumentException("Unknown workspace route [{$routeName}].");

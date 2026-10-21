@@ -57,7 +57,11 @@ class PaymentMethods
             return '—';
         }
 
-        return self::options()[$code] ?? $code;
+        $labels = Cache::remember('payment_methods.labels', 300, function () {
+            return PaymentMethod::query()->pluck('name', 'code')->all();
+        });
+
+        return $labels[$code] ?? self::options()[$code] ?? $code;
     }
 
     public static function isValid(?string $code): bool
@@ -72,5 +76,6 @@ class PaymentMethods
     public static function forgetCachedOptions(): void
     {
         Cache::forget('payment_methods.options');
+        Cache::forget('payment_methods.labels');
     }
 }

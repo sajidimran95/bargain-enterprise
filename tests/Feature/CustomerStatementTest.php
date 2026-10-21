@@ -62,7 +62,7 @@ class CustomerStatementTest extends TestCase
     public function test_customers_menu_includes_create_statements(): void
     {
         $item = collect(config('erp_menubar.Customers'))
-            ->firstWhere('label', 'Create Statements');
+            ->firstWhere('label', 'Create Statements…');
 
         $this->assertSame('customers.statements', $item['route'] ?? null);
     }

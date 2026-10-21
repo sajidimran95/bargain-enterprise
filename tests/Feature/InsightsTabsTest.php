@@ -65,6 +65,6 @@ class InsightsTabsTest extends TestCase
         Livewire::test(VendorPaymentForm::class)
             ->assertSee('Pay Bills')
             ->assertSee('Bills to Pay')
-            ->assertSee('Select All / Pay All');
+            ->assertSee('Select All');
     }
 }

@@ -141,7 +141,7 @@
                     </div>
 
                     <div class="grid gap-3 md:grid-cols-[1fr_180px]">
-                        <div>
+<div>
                             <div class="be-kv"><span class="be-kv__label">Company Name</span><span>{{ $selected->company_name }}</span></div>
                             <div class="be-kv"><span class="be-kv__label">Full Name</span><span>{{ $selected->fullName() }}</span></div>
                             <div class="be-kv"><span class="be-kv__label">Price Level</span><span>{{ $selected->priceLevel?->name ?? '—' }}</span></div>

@@ -102,6 +102,15 @@ class WorkspaceNavigationTest extends TestCase
         $this->assertSame(1, $tab['refresh_token']);
     }
 
+    public function test_apply_credits_without_a_memo_opens_the_credit_list(): void
+    {
+        $this->actingAs($this->owner);
+
+        Livewire::test(Shell::class)
+            ->call('openRoute', 'credit-memos.apply')
+            ->assertSet('activeTabId', 'credit-memos.index');
+    }
+
     public function test_workspace_manager_persists_in_session(): void
     {
         $this->actingAs($this->owner);
