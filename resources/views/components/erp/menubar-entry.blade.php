@@ -1,6 +1,11 @@
 @props(['entry'])
 
-@if (! empty($entry['separator']))
+@php
+    $visible = empty($entry['roles']) || (auth()->check() && auth()->user()->hasRole((array) $entry['roles']));
+@endphp
+
+@if (! $visible)
+@elseif (! empty($entry['separator']))
     <div class="be-menubar__sep" role="separator"></div>
 @elseif (! empty($entry['children']))
     <div class="be-menubar__submenu" role="none">

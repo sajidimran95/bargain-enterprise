@@ -13,6 +13,7 @@ use App\Http\Controllers\Sales\InvoicePrintController;
 use App\Http\Middleware\RedirectToWorkspace;
 use App\Livewire\Accounting\ChartOfAccounts;
 use App\Livewire\Accounting\JournalIndex;
+use App\Livewire\Admin\MaintenanceTerminal;
 use App\Livewire\Audit\AuditLogIndex;
 use App\Livewire\Banking\BankAccountForm;
 use App\Livewire\Banking\BankingIndex;
@@ -204,6 +205,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('purchase-orders/{purchaseOrder}/pdf', PurchaseOrderPdfController::class)->name('purchase-orders.pdf');
     Route::get('goods-receipts/{goodsReceipt}/print', GoodsReceiptPrintController::class)->name('goods-receipts.print');
     Route::get('goods-receipts/{goodsReceipt}/pdf', GoodsReceiptPdfController::class)->name('goods-receipts.pdf');
+
+    Route::get('admin/terminal', MaintenanceTerminal::class)->name('admin.terminal');
 });
 
 require __DIR__.'/auth.php';

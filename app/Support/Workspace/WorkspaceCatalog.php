@@ -96,6 +96,7 @@ class WorkspaceCatalog
             'employees.payroll' => ['type' => 'employees', 'title' => 'Turn On Payroll', 'closable' => true],
             'audit.index' => ['type' => 'audit', 'title' => 'Audit Log', 'closable' => true],
             'import.index' => ['type' => 'import', 'title' => 'JapsPOS Import', 'closable' => true],
+            'admin.terminal' => ['type' => 'admin-terminal', 'title' => 'Maintenance Terminal', 'closable' => true],
             'profile' => ['type' => 'profile', 'title' => 'Profile', 'closable' => true],
         ];
     }
@@ -191,6 +192,7 @@ class WorkspaceCatalog
             'verification.verify',
             'verification.send',
             'logout',
+            'admin.terminal',
             'invoices.pdf',
             'credit-memos.pdf',
         ];

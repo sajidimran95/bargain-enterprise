@@ -176,6 +176,8 @@ return [
         ['separator' => true],
         ['label' => 'Import from JapsPOS…', 'route' => 'import.index'],
         ['label' => 'Audit Log', 'route' => 'audit.index'],
+        ['separator' => true],
+        ['label' => 'Maintenance Terminal', 'route' => 'admin.terminal', 'roles' => ['admin', 'owner']],
     ],
 
     'Customers' => [
