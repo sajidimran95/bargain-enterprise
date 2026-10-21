@@ -163,6 +163,87 @@ class SalesByItemDetailExportTest extends TestCase
         $this->assertSame('20.00', $detail[$index['Balance']]);
     }
 
+    public function test_filters_tab_lists_the_nashville_choose_filters(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $owner = User::factory()->create();
+        $owner->assignRole('owner');
+        $this->actingAs($owner);
+
+        Livewire::test(SalesByItemReport::class)
+            ->call('customizeReport')
+            ->set('modifyTab', 'filters')
+            ->assertSee('Choose Filter')
+            ->assertSee('Current Filter Choices')
+            ->assertSee('Report Type')
+            ->assertSee('Account')
+            ->assertSee('Name Zip')
+            ->assertSee('Name Street1')
+            ->assertSee('Item')
+            ->assertSee('TransactionType')
+            ->assertSee('Workers Comp Code')
+            ->assertSee('P.O. Number')
+            ->assertSee('Remove Selected Filter');
+    }
+
+    public function test_name_zip_item_and_customer_group_filters_limit_the_sales_report(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $owner = User::factory()->create();
+        $owner->assignRole('owner');
+        $this->actingAs($owner);
+
+        $nashville = Customer::factory()->create([
+            'display_name' => 'Nashville Buyer',
+            'bill_to_state' => 'TN',
+            'bill_to_zip' => '37201',
+            'is_active' => true,
+        ]);
+        $memphis = Customer::factory()->create([
+            'display_name' => 'Memphis Buyer',
+            'bill_to_state' => 'TX',
+            'bill_to_zip' => '38103',
+            'is_active' => true,
+        ]);
+        $cola = Item::factory()->create([
+            'sku' => 'ZIP-COLA',
+            'name' => 'Zip Cola',
+            'is_active' => true,
+        ]);
+        $river = Item::factory()->create([
+            'sku' => 'RIVER-COLA',
+            'name' => 'River Cola',
+            'is_active' => true,
+        ]);
+        $this->makeInvoice($nashville, $cola, $owner, 'INV-NASH-1', paid: false);
+        $this->makeInvoice($memphis, $river, $owner, 'INV-MEM-1', paid: false);
+
+        Livewire::test(SalesByItemReport::class)
+            ->set('datePreset', 'this_month')
+            ->set('layout', 'customer_detail')
+            ->assertSee('Nashville Buyer')
+            ->assertSee('Memphis Buyer')
+            ->call('customizeReport')
+            ->set('modifyTab', 'filters')
+            ->set('filterChoice', 'name_zip')
+            ->set('draftFilters.extra.name_zip', '37201')
+            ->call('applyModifyReport')
+            ->assertSee('Nashville Buyer')
+            ->assertDontSee('Memphis Buyer')
+            ->set('filters.extra.name_zip', '')
+            ->set('filters.item', [(string) $river->id])
+            ->assertSee('Memphis Buyer')
+            ->assertDontSee('Nashville Buyer')
+            ->set('filters.item', [])
+            ->set('filters.group', ['inside_tn'])
+            ->assertSee('Nashville Buyer')
+            ->assertDontSee('Memphis Buyer')
+            ->set('filters.group', [])
+            ->set('filters.extra.fob', 'dock')
+            ->assertDontSee('Nashville Buyer')
+            ->assertDontSee('Memphis Buyer');
+    }
+
     public function test_cash_basis_includes_only_paid_invoices(): void
     {
         [$owner, $openNumber, $paidNumber] = $this->customerDetailSale(withPaidInvoice: true);

@@ -19,7 +19,8 @@
 </head>
 <body>
     <div class="header">
-        <div class="company">{{ config('bargain.company_name', config('app.name')) }}</div>
+        <div class="company">{{ \App\Support\CompanyProfile::name() }}</div>
+        <x-erp.company-lines class="subtitle" />
         <div class="title">{{ $title }}</div>
         @if (! empty($subtitle))
             <div class="subtitle">{{ $subtitle }}</div>

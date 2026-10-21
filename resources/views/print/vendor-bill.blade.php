@@ -10,7 +10,8 @@
 @section('toolbar', $docLabel.' '.$bill->bill_number.' — Letter Print')
 
 @section('content')
-    <h1>{{ config('bargain.company_name', config('app.name')) }}</h1>
+    <h1>{{ \App\Support\CompanyProfile::name() }}</h1>
+    <x-erp.company-lines />
     <div class="muted">{{ $docLabel }}</div>
     <p>
         <strong>{{ $isCredit ? 'Credit #' : 'Bill #' }}:</strong> {{ $bill->bill_number }}<br>

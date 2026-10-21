@@ -186,15 +186,19 @@
                         </div>
                     </div>
                 @else
-                    <div class="be-modify-report__filters">
+                    <div class="be-modify-report__filters" x-data="{ q: '' }">
                         <div>
                             <p class="be-modify-report__legend">Choose Filter</p>
-                            <button type="button" class="be-modify-report__filter {{ $filterChoice === 'type' ? 'be-modify-report__filter--active' : '' }}" wire:click="$set('filterChoice', 'type')">Report Type</button>
-                            <button type="button" class="be-modify-report__filter {{ $filterChoice === 'name' ? 'be-modify-report__filter--active' : '' }}" wire:click="$set('filterChoice', 'name')">Name</button>
-                            <button type="button" class="be-modify-report__filter {{ $filterChoice === 'item' ? 'be-modify-report__filter--active' : '' }}" wire:click="$set('filterChoice', 'item')">Item</button>
+                            <input type="text" class="be-input mb-2" x-model="q" placeholder="Search filters">
+                            <div class="be-modify-report__filter-list">
+                                <button type="button" class="be-modify-report__filter {{ $filterChoice === 'report_type' ? 'be-modify-report__filter--active' : '' }}" x-show="('report type').includes(q.toLowerCase())" wire:click="$set('filterChoice', 'report_type')">Report Type</button>
+                                @foreach ($filterFields as $key => $field)
+                                    <button type="button" class="be-modify-report__filter {{ $filterChoice === $key ? 'be-modify-report__filter--active' : '' }}" x-show="({{ \Illuminate\Support\Js::from(mb_strtolower($field['label'])) }}).includes(q.toLowerCase())" wire:click="$set('filterChoice', '{{ $key }}')">{{ $field['label'] }}</button>
+                                @endforeach
+                            </div>
                         </div>
                         <div>
-                            @if ($filterChoice === 'type')
+                            @if ($filterChoice === 'report_type')
                                 <label class="be-field__label">Report type</label>
                                 <select class="be-input" wire:model.live="draftLayout">
                                     @foreach ($layoutOptions as $value => $label)
@@ -202,11 +206,196 @@
                                     @endforeach
                                 </select>
                                 <p class="be-modify-report__help">Sales by Customer Detail uses the same columns as the Nashville customer detail report.</p>
-                            @else
-                                <label class="be-field__label">{{ $filterChoice === 'item' ? 'Item' : 'Name' }}</label>
-                                <input class="be-input" type="text" wire:model="draftSearch" placeholder="Customer, item, SKU, or barcode">
-                                <p class="be-modify-report__help">Matches the customer name, item name, SKU, or barcode on each sales line.</p>
+                            @elseif ($editor = ($filterFields[$filterChoice] ?? null))
+                                <label class="be-field__label">{{ $editor['label'] }}</label>
+                                @switch($editor['type'])
+                                    @case('multi')
+                                        @php $options = $filterOptions['fields'][$filterChoice] ?? []; @endphp
+                                        <div x-data="{ find: '' }">
+                                            @if (count($options) > 8)
+                                                <input type="text" class="be-input mb-2" x-model="find" placeholder="Search">
+                                            @endif
+                                            <div class="be-modify-report__checklist">
+                                                @forelse ($options as $optionValue => $optionLabel)
+                                                    <label class="be-modify-report__check" x-show="({{ \Illuminate\Support\Js::from(mb_strtolower((string) $optionLabel)) }}).includes(find.toLowerCase())">
+                                                        <input type="checkbox" value="{{ $optionValue }}" wire:model.live="draftFilters.extra.{{ $filterChoice }}">
+                                                        {{ $optionLabel }}
+                                                    </label>
+                                                @empty
+                                                    <p class="be-modify-report__help">No {{ strtolower($editor['label']) }} values yet.</p>
+                                                @endforelse
+                                            </div>
+                                        </div>
+                                        @if (count($options) > 1)
+                                            <div class="mt-2 flex gap-2">
+                                                <button type="button" class="be-modify-report__mini" wire:click="selectAllFilter('{{ $filterChoice }}')">Select All</button>
+                                                <button type="button" class="be-modify-report__mini" wire:click="clearDraftFilter('{{ $filterChoice }}')">Clear All</button>
+                                            </div>
+                                        @endif
+                                        @break
+                                    @case('choice')
+                                        <select class="be-input" wire:model.live="draftFilters.extra.{{ $filterChoice }}">
+                                            <option value="">{{ $editor['all'] ?? 'All' }}</option>
+                                            @foreach ($editor['options'] as $optionValue => $optionLabel)
+                                                <option value="{{ $optionValue }}">{{ $optionLabel }}</option>
+                                            @endforeach
+                                        </select>
+                                        @break
+                                    @case('text')
+                                        <input type="text" class="be-input" wire:model.blur="draftFilters.extra.{{ $filterChoice }}">
+                                        @break
+                                    @case('number')
+                                        <div class="grid grid-cols-[8rem_1fr] gap-2">
+                                            <select class="be-input" wire:model.live="draftFilters.extra.{{ $filterChoice }}.op">
+                                                <option value="">Any</option>
+                                                @foreach (['>=', '<=', '='] as $op)
+                                                    <option value="{{ $op }}">{{ $op }}</option>
+                                                @endforeach
+                                            </select>
+                                            <input type="number" step="any" class="be-input" wire:model.blur="draftFilters.extra.{{ $filterChoice }}.value">
+                                        </div>
+                                        @break
+                                    @case('range')
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <p class="be-field__label">From</p>
+                                                <input type="date" class="be-input" wire:model.live="draftFilters.extra.{{ $filterChoice }}.from">
+                                            </div>
+                                            <div>
+                                                <p class="be-field__label">To</p>
+                                                <input type="date" class="be-input" wire:model.live="draftFilters.extra.{{ $filterChoice }}.to">
+                                            </div>
+                                        </div>
+                                        @break
+                                    @case('builtin')
+                                        @switch($filterChoice)
+                                            @case('date')
+                                                <select class="be-input mb-2" wire:model.live="draftDatePreset">
+                                                    @foreach ($datePresetOptions as $value => $label)
+                                                        <option value="{{ $value }}">{{ $label }}</option>
+                                                    @endforeach
+                                                </select>
+                                                <div class="grid grid-cols-2 gap-2">
+                                                    <div>
+                                                        <p class="be-field__label">From</p>
+                                                        <input type="date" class="be-input" wire:model="draftFrom" wire:change="markDraftDatesCustom">
+                                                    </div>
+                                                    <div>
+                                                        <p class="be-field__label">To</p>
+                                                        <input type="date" class="be-input" wire:model="draftTo" wire:change="markDraftDatesCustom">
+                                                    </div>
+                                                </div>
+                                                <p class="be-modify-report__help">Same as the report date range on the Display tab.</p>
+                                                @break
+                                            @case('class')
+                                                <div x-data="{ find: '' }">
+                                                    <input type="text" class="be-input mb-2" x-model="find" placeholder="Search">
+                                                    <div class="be-modify-report__checklist" id="mr_class_list">
+                                                        @forelse ($filterOptions['classes'] as $id => $name)
+                                                            <label class="be-modify-report__check" x-show="({{ \Illuminate\Support\Js::from(mb_strtolower((string) $name)) }}).includes(find.toLowerCase())">
+                                                                <input type="checkbox" value="{{ $id }}" wire:model.live="draftFilters.class">
+                                                                {{ $name }}
+                                                            </label>
+                                                        @empty
+                                                            <p class="be-modify-report__help">No classes yet.</p>
+                                                        @endforelse
+                                                    </div>
+                                                </div>
+                                                @if (count($filterOptions['classes']) > 1)
+                                                    <div class="mt-2 flex gap-2">
+                                                        <button type="button" class="be-modify-report__mini" wire:click="selectAllFilter('class')">Select All</button>
+                                                        <button type="button" class="be-modify-report__mini" wire:click="clearDraftFilter('class')">Clear All</button>
+                                                    </div>
+                                                @endif
+                                                <p class="be-modify-report__help">Choose a class (the product category) or several classes from the list.</p>
+                                                @break
+                                            @case('group')
+                                                <div class="be-modify-report__checklist">
+                                                    @foreach ($filterOptions['groups'] as $id => $name)
+                                                        <label class="be-modify-report__check">
+                                                            <input type="checkbox" value="{{ $id }}" wire:model.live="draftFilters.group">
+                                                            {{ $name }}
+                                                        </label>
+                                                    @endforeach
+                                                </div>
+                                                <div class="mt-2 flex gap-2">
+                                                    <button type="button" class="be-modify-report__mini" wire:click="selectAllFilter('group')">Select All</button>
+                                                    <button type="button" class="be-modify-report__mini" wire:click="clearDraftFilter('group')">Clear All</button>
+                                                </div>
+                                                <p class="be-modify-report__help">Inside TN or Outside TN, from the customer's Name State.</p>
+                                                @break
+                                            @case('item')
+                                                <select class="be-input mb-2" wire:model.live="draftFilters.item_type">
+                                                    <option value="">All sales items</option>
+                                                    <option value="inventory">All inventory items</option>
+                                                    <option value="service">All services</option>
+                                                </select>
+                                                <input type="text" class="be-input" wire:model.live.debounce.300ms="itemLookup" placeholder="Search item name or SKU" autocomplete="off">
+                                                @if (trim($itemLookup) !== '')
+                                                    <div class="be-modify-report__checklist mt-2">
+                                                        @forelse ($filterOptions['items']['matches'] as $id => $name)
+                                                            <label class="be-modify-report__check">
+                                                                <input type="checkbox" value="{{ $id }}" wire:model.live="draftFilters.item">
+                                                                {{ $name }}
+                                                            </label>
+                                                        @empty
+                                                            <p class="be-modify-report__help">No matching items.</p>
+                                                        @endforelse
+                                                    </div>
+                                                @endif
+                                                @if ($filterOptions['items']['selected'] !== [])
+                                                    <p class="be-field__label mt-2">Selected</p>
+                                                    <div class="be-modify-report__checklist">
+                                                        @foreach ($filterOptions['items']['selected'] as $id => $name)
+                                                            <label class="be-modify-report__check">
+                                                                <input type="checkbox" value="{{ $id }}" wire:model.live="draftFilters.item">
+                                                                {{ $name }}
+                                                            </label>
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+                                                <p class="be-modify-report__help">Type a name or SKU. Matches appear under the search box. Chosen items stay listed below it. Leave the search empty to include every item of that type.</p>
+                                                @break
+                                            @case('name')
+                                                <select class="be-input" wire:model.live="draftFilters.name">
+                                                    <option value="">All customers/jobs</option>
+                                                    @foreach ($filterOptions['customers'] as $id => $name)
+                                                        <option value="{{ $id }}">{{ $name }}</option>
+                                                    @endforeach
+                                                </select>
+                                                @break
+                                            @case('state')
+                                                <input type="text" class="be-input" wire:model.blur="draftFilters.state" placeholder="e.g. TN">
+                                                <p class="be-modify-report__help">Enter the words (or characters) that must be in the Name State field.</p>
+                                                @break
+                                        @endswitch
+                                        @break
+                                @endswitch
+                                @if (! empty($editor['help']) && $editor['type'] !== 'builtin')
+                                    <p class="be-modify-report__help">{{ $editor['help'] }}</p>
+                                @endif
                             @endif
+                        </div>
+                        <div>
+                            <p class="be-modify-report__legend">Current Filter Choices</p>
+                            <table class="be-modify-report__choice-table">
+                                <thead>
+                                    <tr>
+                                        <th>Filter</th>
+                                        <th>Set To</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($filterChoices as $key => $choice)
+                                        @continue(! $choice[3] && ! in_array($key, ['date', 'item', 'name', 'report_type'], true))
+                                        <tr class="{{ $filterChoice === $key ? 'be-modify-report__choice-row--active' : '' }}" title="{{ $choice[2] }}" wire:click="$set('filterChoice', '{{ $key }}')">
+                                            <td>{{ $choice[0] }}</td>
+                                            <td>{{ $choice[1] }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                            <button type="button" class="be-modify-report__mini mt-2 w-full" wire:click="clearDraftFilter">Remove Selected Filter</button>
                         </div>
                     </div>
                 @endif

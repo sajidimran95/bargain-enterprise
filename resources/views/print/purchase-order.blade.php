@@ -4,7 +4,8 @@
 @section('toolbar', 'Purchase Order '.$order->number.' — Letter Print')
 
 @section('content')
-    <h1>{{ config('bargain.company_name', config('app.name')) }}</h1>
+    <h1>{{ \App\Support\CompanyProfile::name() }}</h1>
+    <x-erp.company-lines />
     <div class="muted">Purchase Order</div>
     <p>
         <strong>PO #:</strong> {{ $order->number }}<br>

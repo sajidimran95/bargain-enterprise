@@ -2,7 +2,6 @@
 
 namespace App\Support;
 
-use App\Models\Setting;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use ZipArchive;
 
@@ -130,10 +129,7 @@ class XlsxExporter
 
     protected function resolveCompanyName(): string
     {
-        return (string) (
-            Setting::getValue('company.name', config('bargain.company_name', config('app.name')))
-            ?: config('bargain.company_name', config('app.name'))
-        );
+        return CompanyProfile::name();
     }
 
     /**

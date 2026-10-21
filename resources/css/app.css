@@ -2448,7 +2448,7 @@
     }
 
     .be-report-popup__panel--modify {
-        @apply flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden bg-white p-0;
+        @apply flex max-h-[90vh] w-full max-w-6xl flex-col overflow-hidden bg-white p-0;
     }
 
     .be-modify-report__header {
@@ -2515,7 +2515,31 @@
     }
 
     .be-modify-report__filters {
-        @apply grid gap-4 md:grid-cols-[12rem_1fr];
+        @apply grid items-start gap-3 lg:grid-cols-[14rem_minmax(0,1fr)_16rem];
+    }
+
+    .be-modify-report__filter-list {
+        @apply max-h-80 overflow-auto rounded border bg-white;
+        border-color: var(--be-border);
+    }
+
+    .be-modify-report__mini {
+        @apply rounded border bg-white px-2 py-0.5 text-[12px] text-gray-800;
+        border-color: var(--be-border);
+    }
+
+    .be-modify-report__choice-table {
+        @apply w-full border-collapse text-[12px];
+    }
+
+    .be-modify-report__choice-table th,
+    .be-modify-report__choice-table td {
+        @apply border px-1.5 py-1 text-left align-top;
+        border-color: var(--be-border);
+    }
+
+    .be-modify-report__choice-row--active td {
+        @apply bg-blue-50 font-semibold text-blue-700;
     }
 
     .be-modify-report__filter {

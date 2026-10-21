@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Livewire\Settings\MyCompany;
+use App\Models\Invoice;
 use App\Models\Setting;
 use App\Models\User;
+use App\Support\CompanyProfile;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -62,12 +64,40 @@ class MyCompanyInfoTest extends TestCase
             ->set('city', 'Nashville')
             ->set('federal_ein', '12-3456789')
             ->call('save')
-            ->assertHasNoErrors();
+            ->assertHasNoErrors()
+            ->assertDispatched('be-toast')
+            ->assertDispatched('be-company-saved');
 
         $this->assertSame('Bargain Wholesale LLC', Setting::getValue('company.name'));
         $this->assertSame('Bargain Wholesale Limited Liability Co', Setting::getValue('company.legal_name'));
         $this->assertSame('555-0100', Setting::getValue('company.phone'));
         $this->assertSame('Nashville', Setting::getValue('company.city'));
         $this->assertSame('12-3456789', Setting::getValue('company.federal_ein'));
+    }
+
+    public function test_saved_company_information_is_printed_on_the_invoice(): void
+    {
+        Setting::setValue('company.name', 'Saved Wholesale', 'string', 'company');
+        Setting::setValue('company.city', 'Nashville', 'string', 'company');
+        Setting::setValue('company.state', 'TN', 'string', 'company');
+        Setting::setValue('company.phone', '615-555-0100', 'string', 'company');
+
+        $invoice = new Invoice([
+            'invoice_number' => 'INV-1',
+            'invoice_date' => '2026-10-21',
+            'subtotal' => 0,
+            'tax_total' => 0,
+            'total' => 0,
+            'balance_due' => 0,
+        ]);
+        $invoice->setRelation('customer', null);
+        $invoice->setRelation('lines', collect());
+
+        $html = view('print.invoice', ['invoice' => $invoice])->render();
+
+        $this->assertStringContainsString('Saved Wholesale', $html);
+        $this->assertStringContainsString('Nashville, TN', $html);
+        $this->assertStringContainsString('Phone: 615-555-0100', $html);
+        $this->assertSame('Saved Wholesale', CompanyProfile::name());
     }
 }

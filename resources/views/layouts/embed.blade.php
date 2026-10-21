@@ -6,9 +6,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>
         @isset($title)
-            {{ $title }} — {{ config('bargain.company_name') }}
+            {{ $title }} — {{ \App\Support\CompanyProfile::name() }}
         @else
-            {{ config('bargain.company_name') }}
+            {{ \App\Support\CompanyProfile::name() }}
         @endisset
     </title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -58,5 +58,6 @@
             }, { capture: true, once: true });
         })();
     </script>
+    @include('layouts.partials.embed-save')
 </body>
 </html>

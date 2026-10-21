@@ -4,7 +4,8 @@
 @section('toolbar', 'Credit Memo '.$creditMemo->credit_number.' — Letter Print')
 
 @section('content')
-    <h1>{{ config('bargain.company_name', config('app.name')) }}</h1>
+    <h1>{{ \App\Support\CompanyProfile::name() }}</h1>
+    <x-erp.company-lines />
     <div class="muted">Credit Memo</div>
     <p>
         <strong>Credit #:</strong> {{ $creditMemo->credit_number }}<br>

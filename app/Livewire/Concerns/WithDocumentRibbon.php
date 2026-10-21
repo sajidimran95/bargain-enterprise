@@ -5,6 +5,7 @@ namespace App\Livewire\Concerns;
 use App\Mail\DocumentMail;
 use App\Models\Item;
 use App\Services\DocumentPdfService;
+use App\Support\CompanyProfile;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -148,7 +149,7 @@ trait WithDocumentRibbon
 
         Mail::to($this->emailTo)->send(new DocumentMail(
             headline: $this->emailSubject,
-            intro: 'Please find attached '.$number.' from '.config('bargain.company_name', config('app.name')).'.',
+            intro: 'Please find attached '.$number.' from '.CompanyProfile::name().'.',
             pdf: [
                 'filename' => str($number)->slug('-').'.pdf',
                 'content' => $content,

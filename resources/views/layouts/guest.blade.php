@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ config('bargain.company_name') }} — Sign In</title>
+    <title>{{ \App\Support\CompanyProfile::name() }} — Sign In</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
@@ -12,7 +12,7 @@
     <div class="flex min-h-screen flex-col items-center justify-center px-4" style="background:#e8e8e8">
         <div class="mb-4 text-center">
             <div class="text-[11px] font-semibold uppercase tracking-wide text-white px-3 py-1" style="background:#1e3a5f">
-                {{ \App\Models\Setting::getValue('company.name', config('bargain.company_name')) }}
+                {{ \App\Support\CompanyProfile::name() }}
             </div>
             <p class="mt-2 text-[13px] font-semibold text-gray-800">{{ config('bargain.product_name') }}</p>
             <p class="text-[11px] text-gray-500">Wholesale Distribution POS</p>

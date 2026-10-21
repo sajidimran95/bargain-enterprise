@@ -7,6 +7,7 @@ use App\Livewire\Concerns\WithReportFilters;
 use App\Models\InvoiceLine;
 use App\Support\QbDatePresets;
 use App\Support\QbSalesReportExport;
+use App\Support\SalesReportFilterCatalog;
 use App\Support\XlsxExporter;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
@@ -33,7 +34,15 @@ class SalesByItemReport extends Component
 
     public string $columnSearch = '';
 
-    public string $filterChoice = 'name';
+    public string $filterChoice = 'account';
+
+    public string $itemLookup = '';
+
+    /** @var array<string, mixed> */
+    public array $filters = [];
+
+    /** @var array<string, mixed> */
+    public array $draftFilters = [];
 
     /** @var list<int|string> */
     public array $visibleColumns = [];
@@ -58,8 +67,6 @@ class SalesByItemReport extends Component
 
     public string $draftTotalBy = 'default';
 
-    public string $draftSearch = '';
-
     /** @var list<int|string> */
     public array $draftVisibleColumns = [];
 
@@ -75,6 +82,8 @@ class SalesByItemReport extends Component
         }
 
         $this->visibleColumns = $this->columnIndexes($this->layout);
+        $this->filters = SalesReportFilterCatalog::blank();
+        $this->draftFilters = $this->filters;
     }
 
     public function updatedLayout(string $value): void
@@ -121,11 +130,13 @@ class SalesByItemReport extends Component
         $this->draftSortBy = $this->sortBy;
         $this->draftSortDirection = $this->sortDirection;
         $this->draftTotalBy = $this->totalBy;
-        $this->draftSearch = $this->search;
+        $this->draftFilters = SalesReportFilterCatalog::normalize($this->filters);
         $this->draftVisibleColumns = $this->visibleColumns === []
             ? $this->columnIndexes($this->layout)
             : array_map('strval', $this->visibleColumns);
         $this->columnSearch = '';
+        $this->filterChoice = 'account';
+        $this->itemLookup = '';
         $this->modifyTab = 'display';
         $this->showModifyReport = true;
     }
@@ -143,7 +154,8 @@ class SalesByItemReport extends Component
         $this->draftSortBy = 'default';
         $this->draftSortDirection = 'asc';
         $this->draftTotalBy = 'default';
-        $this->draftSearch = '';
+        $this->draftFilters = SalesReportFilterCatalog::blank();
+        $this->itemLookup = '';
         $this->draftVisibleColumns = $this->columnIndexes($this->draftLayout);
     }
 
@@ -163,13 +175,43 @@ class SalesByItemReport extends Component
         $this->totalBy = in_array($this->draftTotalBy, ['default', 'customer', 'item', 'class', 'rep', 'none'], true)
             ? $this->draftTotalBy
             : 'default';
-        $this->search = $this->draftSearch;
+        $this->filters = SalesReportFilterCatalog::normalize($this->draftFilters);
 
         $allowed = array_keys(QbSalesReportExport::headersFor($this->layout));
         $selected = array_values(array_intersect(array_map('intval', $this->draftVisibleColumns), $allowed));
         $this->visibleColumns = array_map('strval', $selected === [] ? $allowed : $selected);
         $this->showModifyReport = false;
         $this->shareUrl = $this->buildShareUrl();
+    }
+
+    public function clearDraftFilter(?string $key = null): void
+    {
+        $key ??= $this->filterChoice;
+
+        if ($key === 'date') {
+            $this->draftDatePreset = 'last_week';
+            [$this->draftFrom, $this->draftTo] = QbDatePresets::dateStrings('last_week');
+
+            return;
+        }
+
+        if ($key === 'report_type') {
+            $this->draftLayout = $this->layout;
+            $this->draftVisibleColumns = $this->columnIndexes($this->layout);
+
+            return;
+        }
+
+        $this->draftFilters = SalesReportFilterCatalog::clear($this->draftFilters, $key);
+        if ($key === 'item') {
+            $this->itemLookup = '';
+        }
+    }
+
+    public function selectAllFilter(string $key): void
+    {
+        $options = SalesReportFilterCatalog::options($this->itemLookup, $this->draftFilters['item'] ?? []);
+        $this->draftFilters = SalesReportFilterCatalog::selectAll($this->draftFilters, $key, $options);
     }
 
     public function exportExcel(): StreamedResponse
@@ -233,19 +275,11 @@ class SalesByItemReport extends Component
                 'invoice.customer.taxCode',
                 'invoice.createdBy',
                 'invoice.paymentAllocations.payment',
-            ])
-            ->whereHas('invoice', function ($query) {
-                $query->whereNotIn('status', ['draft', 'pending'])
-                    ->where('is_pending', false)
-                    ->whereDate('invoice_date', '>=', $this->from)
-                    ->whereDate('invoice_date', '<=', $this->to)
-                    ->when($this->basis === 'cash', function ($paid) {
-                        $paid->where(function ($settled) {
-                            $settled->where('balance_due', '<=', 0)
-                                ->orWhere('status', 'paid');
-                        });
-                    });
-            })
+            ]);
+
+        SalesReportFilterCatalog::apply($lines, $this->filters, $this->from, $this->to, $this->basis);
+
+        $lines = $lines
             ->when(filled($this->search), function ($query) {
                 $term = trim($this->search);
                 $like = '%'.$term.'%';
@@ -342,11 +376,22 @@ class SalesByItemReport extends Component
     {
         $payload = $this->reportPayload();
         $draftHeaders = QbSalesReportExport::headersFor($this->draftLayout);
+        $showFilterCatalog = $this->showModifyReport && $this->modifyTab === 'filters';
+        $filterOptions = $showFilterCatalog
+            ? SalesReportFilterCatalog::options($this->itemLookup, $this->draftFilters['item'] ?? [])
+            : [];
+        $filterChoices = $showFilterCatalog
+            ? ['report_type' => ['Report Type', QbSalesReportExport::title($this->draftLayout), '', true]]
+                + SalesReportFilterCatalog::choices($this->draftFilters, $filterOptions, $this->draftFrom, $this->draftTo)
+            : [];
 
         return view('livewire.reports.sales-by-item-report', [
             'headers' => $payload['headers'],
             'rows' => $payload['rows'],
             'draftHeaders' => $draftHeaders,
+            'filterFields' => SalesReportFilterCatalog::fields(),
+            'filterOptions' => $filterOptions,
+            'filterChoices' => $filterChoices,
             'datePresetOptions' => $this->datePresetOptions(),
             'sortByOptions' => $this->salesSortOptions(),
             'layoutOptions' => QbSalesReportExport::layouts(),
@@ -413,6 +458,11 @@ class SalesByItemReport extends Component
             $this->sortBy,
             $this->sortDirection,
         );
+
+        $detailLevel = (string) ($this->filters['extra']['detail_level'] ?? '');
+        if (in_array($detailLevel, ['summary', 'detail'], true)) {
+            $payload['rows'] = SalesReportFilterCatalog::filterDetailLevel($payload['rows'], $detailLevel);
+        }
 
         return QbSalesReportExport::selectColumns($payload, $this->visibleColumns);
     }

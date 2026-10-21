@@ -4,7 +4,7 @@
     $isWorkspaceEmbed = request()->boolean('embed')
         || request()->header('X-Workspace-Embed') === '1'
         || request()->header('Sec-Fetch-Dest') === 'iframe';
-    $companyName = \App\Models\Setting::getValue('company.name', config('bargain.company_name'));
+    $companyName = \App\Support\CompanyProfile::name();
     $productName = config('bargain.product_name');
 @endphp
 @if ($isWorkspaceEmbed)
@@ -46,6 +46,7 @@
             document.addEventListener('input', () => window.beWorkspace.setDirty(true), { once: true, capture: true });
         })();
     </script>
+    @include('layouts.partials.embed-save')
 </body>
 </html>
 @else

@@ -28,7 +28,7 @@
 @php
     $showFilterBar = $showFilterBar ?? ($showDates || $showBasis || isset($filters));
     $datePresetOptions = $datePresetOptions ?? \App\Support\QbDatePresets::options();
-    $companyName = \App\Models\Setting::getValue('company.name', config('bargain.company_name'));
+    $companyName = \App\Support\CompanyProfile::name();
     $showAnyPopup = $showCommentModal || $showShareModal || $showMemorizeModal || $showEmailModal;
 @endphp
 

@@ -16,6 +16,7 @@ use App\Models\VendorPayment;
 use App\Models\VendorPaymentAllocation;
 use App\Services\DocumentPdfService;
 use App\Services\InventoryService;
+use App\Support\CompanyProfile;
 use App\Support\DocumentNumbers;
 use App\Support\ItemCatalog;
 use App\Support\PaymentMethods;
@@ -1178,7 +1179,7 @@ class VendorBillForm extends Component
 
         Mail::to($this->emailTo)->send(new DocumentMail(
             headline: $this->emailSubject,
-            intro: 'Please find attached '.$number.' from '.config('bargain.company_name', config('app.name')).'.',
+            intro: 'Please find attached '.$number.' from '.CompanyProfile::name().'.',
             pdf: [
                 'filename' => str($number)->slug('-').'.pdf',
                 'content' => $content,

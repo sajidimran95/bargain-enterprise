@@ -8,5 +8,8 @@ A PDF copy is attached to this email.
 @endif
 
 Thanks,<br>
-{{ config('bargain.company_name', config('app.name')) }}
+{{ \App\Support\CompanyProfile::name() }}
+@foreach (\App\Support\CompanyProfile::lines() as $line)
+<br>{{ $line }}
+@endforeach
 </x-mail::message>

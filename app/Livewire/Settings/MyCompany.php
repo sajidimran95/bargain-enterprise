@@ -3,6 +3,7 @@
 namespace App\Livewire\Settings;
 
 use App\Models\Setting;
+use App\Support\CompanyProfile;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -41,7 +42,7 @@ class MyCompany extends Component
     {
         abort_unless(auth()->user()?->hasPermission('settings.manage'), 403);
 
-        $this->company_name = (string) Setting::getValue('company.name', config('bargain.company_name'));
+        $this->company_name = CompanyProfile::name();
         $this->legal_name = (string) Setting::getValue('company.legal_name', $this->company_name);
         $this->phone = (string) Setting::getValue('company.phone', '');
         $this->fax = (string) Setting::getValue('company.fax', '');
@@ -93,6 +94,7 @@ class MyCompany extends Component
         config(['bargain.company_name' => $this->company_name]);
 
         $this->dispatch('be-toast', message: 'Company information saved.');
+        $this->dispatch('be-company-saved', name: $this->company_name);
     }
 
     public function render()

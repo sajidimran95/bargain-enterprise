@@ -4,7 +4,8 @@
 @section('toolbar', 'Invoice '.$invoice->invoice_number.' — Letter Print')
 
 @section('content')
-    <h1>{{ config('bargain.company_name', config('app.name')) }}</h1>
+    <h1>{{ \App\Support\CompanyProfile::name() }}</h1>
+    <x-erp.company-lines />
     <div class="muted">Invoice</div>
     <p>
         <strong>Invoice #:</strong> {{ $invoice->invoice_number }}<br>

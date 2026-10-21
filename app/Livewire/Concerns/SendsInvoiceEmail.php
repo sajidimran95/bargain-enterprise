@@ -5,6 +5,7 @@ namespace App\Livewire\Concerns;
 use App\Mail\DocumentMail;
 use App\Models\Invoice;
 use App\Services\DocumentPdfService;
+use App\Support\CompanyProfile;
 use Illuminate\Support\Facades\Mail;
 
 trait SendsInvoiceEmail
@@ -46,7 +47,7 @@ trait SendsInvoiceEmail
 
         Mail::to($this->emailTo)->send(new DocumentMail(
             headline: 'Invoice '.$invoice->invoice_number,
-            intro: 'Please find attached invoice '.$invoice->invoice_number.' from '.config('bargain.company_name', config('app.name')).'.',
+            intro: 'Please find attached invoice '.$invoice->invoice_number.' from '.CompanyProfile::name().'.',
             pdf: [
                 'filename' => 'invoice-'.$invoice->invoice_number.'.pdf',
                 'content' => $content,

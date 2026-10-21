@@ -15,7 +15,8 @@
     </style>
 </head>
 <body>
-    <h1>{{ config('bargain.company_name', config('app.name')) }}</h1>
+    <h1>{{ \App\Support\CompanyProfile::name() }}</h1>
+    <x-erp.company-lines />
     <div class="muted">Goods Receipt / Receive Inventory</div>
     <p>
         <strong>Receipt #:</strong> {{ $receipt->number }}<br>

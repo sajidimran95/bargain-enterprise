@@ -76,6 +76,14 @@ document.addEventListener('alpine:init', () => {
             if (data.type === 'be-workspace-title' && data.tabId && data.title) {
                 this.$wire.setTabTitle(data.tabId, data.title);
             }
+            if (data.type === 'be-toast' && data.message) {
+                window.dispatchEvent(new CustomEvent('be-toast', { detail: { message: data.message } }));
+            }
+            if (data.type === 'be-company-name' && data.name) {
+                document.querySelectorAll('.be-titlebar__company').forEach((el) => {
+                    el.textContent = data.name;
+                });
+            }
             if (data.type === 'be-workspace-close' && data.tabId) {
                 this.$wire.closeTab(data.tabId);
             }

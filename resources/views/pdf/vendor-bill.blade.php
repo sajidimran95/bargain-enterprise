@@ -17,7 +17,8 @@
     </style>
 </head>
 <body>
-    <h1>{{ config('bargain.company_name', config('app.name')) }}</h1>
+    <h1>{{ \App\Support\CompanyProfile::name() }}</h1>
+    <x-erp.company-lines />
     <div class="muted">
         @if ($bill->isCreditDocument())
             {{ str_starts_with((string) $bill->bill_number, 'RTV-') ? 'Return to Vendor (RTV)' : 'Vendor Credit' }}
