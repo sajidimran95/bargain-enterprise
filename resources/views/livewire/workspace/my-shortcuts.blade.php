@@ -1,10 +1,54 @@
-<div class="be-sidebar__body">
+<div
+    class="be-sidebar__body"
+    x-data="{
+        q: '',
+        matches(label) {
+            const query = this.q.toLowerCase().trim();
+            return ! query || String(label).includes(query);
+        },
+        hasMatches() {
+            const query = this.q.toLowerCase().trim();
+            if (! query) {
+                return true;
+            }
+            return [...(this.$refs.shortcutNav?.querySelectorAll('[data-label]') || [])]
+                .some((el) => el.dataset.label.includes(query));
+        },
+        openFirstMatch() {
+            const query = this.q.toLowerCase().trim();
+            if (! query || ! this.$refs.shortcutNav) {
+                return;
+            }
+            const hit = [...this.$refs.shortcutNav.querySelectorAll('[data-label]')].find((el) => {
+                return el.dataset.label.includes(query);
+            });
+            const route = hit?.dataset.route;
+            if (route && typeof beOpenWorkspace === 'function') {
+                beOpenWorkspace(route);
+            }
+        },
+    }"
+>
+    <div class="be-sidebar__search">
+        <input
+            type="search"
+            class="be-input be-input--sidebar"
+            placeholder="Search Company or Help"
+            x-model="q"
+            x-ref="shortcutSearch"
+            @keydown.enter.prevent="openFirstMatch()"
+            aria-label="Search Company or Help"
+        >
+    </div>
+
     <nav class="be-sidebar__nav" x-ref="shortcutNav" aria-label="Navigation">
         @forelse ($shortcuts as $item)
             <div
                 class="be-sidebar__link-wrap"
                 wire:key="shortcut-{{ $item['key'] }}"
                 data-label="{{ strtolower($item['label']) }}"
+                data-route="{{ $item['route'] }}"
+                x-show="matches(@js(strtolower($item['label'])))"
             >
                 <a
                     href="{{ route('dashboard', ['open' => $item['route']]) }}"
@@ -18,6 +62,7 @@
         @empty
             <p class="be-sidebar__muted px-2">No navigation items. Use the gear under My Shortcuts to add some.</p>
         @endforelse
+        <p class="be-sidebar__muted px-2" x-show="q.trim() && ! hasMatches()" x-cloak>No matching pages.</p>
     </nav>
 
     <div class="be-sidebar__myshortcuts" x-data="{ expanded: true }">

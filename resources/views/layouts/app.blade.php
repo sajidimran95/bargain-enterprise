@@ -126,17 +126,6 @@
 
         <div class="be-shell">
             <aside class="be-sidebar" aria-label="Navigation">
-                <div class="be-sidebar__search">
-                    <input
-                        type="search"
-                        class="be-input be-input--sidebar"
-                        placeholder="Search Company or Help"
-                        x-ref="shortcutSearch"
-                        @input="filterShortcuts($event.target.value)"
-                        aria-label="Search Company or Help"
-                    >
-                </div>
-
                 <livewire:workspace.my-shortcuts />
             </aside>
 
@@ -163,28 +152,6 @@
         function erpShell() {
             return {
                 toast: { show: false, message: '' },
-                filterShortcuts(value) {
-                    const q = (value || '').toLowerCase().trim();
-                    const nav = this.$el.querySelector('.be-sidebar__nav');
-                    if (!nav) {
-                        return;
-                    }
-                    nav.querySelectorAll('[data-label]').forEach((el) => {
-                        el.style.display = !q || el.dataset.label.includes(q) ? '' : 'none';
-                    });
-                    if (!q) {
-                        return;
-                    }
-                    nav.querySelectorAll('.be-sidebar__group').forEach((group) => {
-                        if (group.style.display === 'none') {
-                            return;
-                        }
-                        const data = group._x_dataStack && group._x_dataStack[0];
-                        if (data) {
-                            data.open = true;
-                        }
-                    });
-                },
                 handleShortcuts(e) {
                     const tag = (e.target.tagName || '').toLowerCase();
                     const typing = ['input', 'textarea', 'select'].includes(tag) || e.target.isContentEditable;
