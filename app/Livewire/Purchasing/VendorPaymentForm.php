@@ -74,14 +74,25 @@ class VendorPaymentForm extends Component
             });
     }
 
-    public function toggleBill(int $billId): void
+    public function updatedSelectedBills(mixed $value, string $key): void
     {
-        $bill = VendorBill::query()->findOrFail($billId);
-        $checked = ! ($this->selectedBills[$billId] ?? false);
+        $billId = (int) $key;
+        if ($billId <= 0) {
+            return;
+        }
+
+        $checked = filter_var($value, FILTER_VALIDATE_BOOLEAN);
         $this->selectedBills[$billId] = $checked;
-        $this->allocations[$billId] = $checked
-            ? number_format((float) $bill->balance_due, 2, '.', '')
-            : '';
+
+        if ($checked) {
+            $bill = VendorBill::query()->find($billId);
+            $this->allocations[$billId] = $bill
+                ? number_format((float) $bill->balance_due, 2, '.', '')
+                : '';
+        } else {
+            $this->allocations[$billId] = '';
+        }
+
         $this->syncAmountFromAllocations();
     }
 

@@ -86,8 +86,8 @@
                                         <td @click.stop>
                                             <input
                                                 type="checkbox"
-                                                wire:click="toggleBill({{ $bill->id }})"
-                                                @checked(isset($selectedBills[$bill->id]) && $selectedBills[$bill->id])
+                                                wire:model.live="selectedBills.{{ $bill->id }}"
+                                                wire:key="bill-check-{{ $bill->id }}"
                                             >
                                         </td>
                                         <td>{{ $bill->bill_date?->format('m/d/Y') }}</td>

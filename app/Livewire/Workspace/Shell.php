@@ -168,6 +168,8 @@ class Shell extends Component
             'customers.edit', 'customers.show' => ['customer'],
             'vendors.edit', 'vendors.show' => ['vendor'],
             'items.edit' => ['item'],
+            'invoices.edit' => ['invoice'],
+            'sales-orders.edit' => ['salesOrder'],
             'credit-memos.apply' => ['creditMemo'],
             default => [],
         };

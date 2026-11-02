@@ -21,11 +21,20 @@ class AccountingService
             $normalized = [];
 
             foreach ($lines as $line) {
-                $account = $line['account'] instanceof Account
-                    ? $line['account']
-                    : Account::query()->where(function ($q) use ($line) {
-                        $q->where('number', $line['account'])->orWhere('name', $line['account']);
-                    })->firstOrFail();
+                if ($line['account'] instanceof Account) {
+                    $account = $line['account'];
+                } else {
+                    $accountKey = (string) $line['account'];
+                    $account = Account::query()->where(function ($q) use ($accountKey) {
+                        $q->where('number', $accountKey)->orWhere('name', $accountKey);
+                    })->first();
+
+                    if ($account === null) {
+                        throw new RuntimeException(
+                            "Chart of Accounts is missing [{$accountKey}]. Run: php artisan db:seed --class=ChartOfAccountsSeeder"
+                        );
+                    }
+                }
 
                 $debit = number_format((float) ($line['debit'] ?? 0), 2, '.', '');
                 $credit = number_format((float) ($line['credit'] ?? 0), 2, '.', '');
@@ -63,6 +72,14 @@ class AccountingService
 
     public function account(string $number): Account
     {
-        return Account::query()->where('number', $number)->firstOrFail();
+        $account = Account::query()->where('number', $number)->first();
+
+        if ($account === null) {
+            throw new RuntimeException(
+                "Chart of Accounts is missing [{$number}]. Run: php artisan db:seed --class=ChartOfAccountsSeeder"
+            );
+        }
+
+        return $account;
     }
 }

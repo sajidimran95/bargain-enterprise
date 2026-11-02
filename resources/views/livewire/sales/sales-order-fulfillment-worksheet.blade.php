@@ -47,8 +47,8 @@
                                     <td>
                                         <input
                                             type="checkbox"
-                                            wire:click="toggleOrder({{ $order->id }})"
-                                            @checked(! empty($selectedOrders[$order->id]))
+                                            wire:model.live="selectedOrders.{{ $order->id }}"
+                                            wire:key="so-check-{{ $order->id }}"
                                         >
                                     </td>
                                     <td>{{ $order->order_date?->format('m/d/Y') }}</td>

@@ -3,6 +3,7 @@
 namespace App\Livewire\Sales;
 
 use App\Actions\Sales\CreateInvoiceAction;
+use App\Livewire\Concerns\WithErpListActions;
 use App\Models\Invoice;
 use App\Models\SalesOrder;
 use App\Services\InventoryService;
@@ -18,6 +19,7 @@ use Livewire\WithPagination;
 #[Title('Sales Order Fulfillment')]
 class SalesOrderFulfillmentWorksheet extends Component
 {
+    use WithErpListActions;
     use WithPagination;
 
     #[Url]
@@ -57,7 +59,14 @@ class SalesOrderFulfillmentWorksheet extends Component
     {
         abort_unless(auth()->user()?->hasPermission('invoice.create'), 403);
 
-        $ids = collect($this->selectedOrders)->filter()->keys()->map(fn ($id) => (int) $id)->all();
+        $ids = collect($this->selectedOrders)
+            ->filter(fn (mixed $selected): bool => filter_var($selected, FILTER_VALIDATE_BOOLEAN))
+            ->keys()
+            ->map(fn (mixed $id): int => (int) $id)
+            ->filter(fn (int $id): bool => $id > 0)
+            ->values()
+            ->all();
+
         if ($ids === []) {
             $this->dispatch('be-toast', message: 'Select at least one sales order.');
 
@@ -65,6 +74,9 @@ class SalesOrderFulfillmentWorksheet extends Component
         }
 
         $created = 0;
+        /** @var list<string> $errors */
+        $errors = [];
+        $firstInvoiceId = null;
 
         foreach (SalesOrder::query()->with(['lines.item', 'customer'])->whereIn('id', $ids)->where('status', 'open')->get() as $order) {
             if ($order->lines->isEmpty()) {
@@ -80,8 +92,8 @@ class SalesOrderFulfillmentWorksheet extends Component
             ])->all();
 
             try {
-                DB::transaction(function () use ($createInvoice, $inventory, $order, $lines, &$created) {
-                    $createInvoice->handle([
+                $invoice = DB::transaction(function () use ($createInvoice, $inventory, $order, $lines, &$created) {
+                    $invoice = $createInvoice->handle([
                         'customer_id' => $order->customer_id,
                         'invoice_number' => DocumentNumbers::next(Invoice::class, 'invoice_number', 'INV-'),
                         'invoice_date' => now()->toDateString(),
@@ -99,17 +111,29 @@ class SalesOrderFulfillmentWorksheet extends Component
 
                     $order->update(['status' => 'invoiced']);
                     $created++;
+
+                    return $invoice;
                 });
+
+                $firstInvoiceId ??= $invoice->id;
             } catch (\Throwable $e) {
-                $this->dispatch('be-toast', message: $order->number.': '.$e->getMessage());
+                $errors[] = $order->number.': '.$e->getMessage();
             }
         }
 
         $this->selectedOrders = [];
         $this->resetPage();
-        $this->dispatch('be-toast', message: $created > 0
-            ? "Created {$created} invoice(s) from selected sales orders."
-            : 'No invoices created.');
+
+        if ($created > 0) {
+            $this->dispatch('be-toast', message: "Created {$created} invoice(s) from selected sales orders.");
+            if ($firstInvoiceId !== null) {
+                $this->openWorkspaceEdit('invoices.edit', ['invoice' => $firstInvoiceId], 'Invoice');
+            }
+
+            return;
+        }
+
+        $this->dispatch('be-toast', message: $errors[0] ?? 'No invoices created.');
     }
 
     protected function ordersQuery()
