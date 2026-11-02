@@ -58,12 +58,14 @@ trait WithErpListActions
      *
      * @param  array<string, mixed>  $params
      */
-    public function openWorkspaceEdit(string $routeName, array $params, ?string $title = null): void
+    public function openWorkspaceEdit(string $routeName, array $params = [], ?string $title = null): void
     {
+        $routeParams = $params === [] ? new \stdClass : $params;
+
         $this->js(
-            'if(window.parent&&window.parent!==window){window.parent.postMessage({type:"be-workspace-open",route:'.json_encode($routeName).',params:'.json_encode($params).',title:'.json_encode($title).'},"*");}'
-            .'else if(window.beWorkspace&&typeof window.beWorkspace.open==="function"){window.beWorkspace.open('.json_encode($routeName).','.json_encode($params).','.json_encode($title).');}'
-            .'else if(typeof beOpenWorkspace==="function"){beOpenWorkspace('.json_encode($routeName).','.json_encode($params).','.json_encode($title).');}'
+            'if(window.parent&&window.parent!==window){window.parent.postMessage({type:"be-workspace-open",route:'.json_encode($routeName).',params:'.json_encode($routeParams).',title:'.json_encode($title).'},"*");}'
+            .'else if(window.beWorkspace&&typeof window.beWorkspace.open==="function"){window.beWorkspace.open('.json_encode($routeName).','.json_encode($routeParams).','.json_encode($title).');}'
+            .'else if(typeof beOpenWorkspace==="function"){beOpenWorkspace('.json_encode($routeName).','.json_encode($routeParams).','.json_encode($title).');}'
             .'else{window.location.assign('.json_encode(WorkspaceCatalog::embedUrl($routeName, $params)).');}'
         );
     }

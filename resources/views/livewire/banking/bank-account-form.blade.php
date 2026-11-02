@@ -1,7 +1,7 @@
 <div class="be-page">
     <x-erp.toolbar>
         <x-erp.button type="button" variant="primary" wire:click="save">Save</x-erp.button>
-        <a href="{{ route('banking.index') }}" class="be-btn">Cancel</a>
+        <x-erp.workspace-link route="banking.index" title="Bank Accounts" class="be-btn">Cancel</x-erp.workspace-link>
         <span class="ml-auto text-[11px] text-gray-500">New Bank Account</span>
     </x-erp.toolbar>
 

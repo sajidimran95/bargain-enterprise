@@ -33,7 +33,7 @@ class BankAccountForm extends Component
         $this->name = $this->gl_name;
     }
 
-    public function save(): mixed
+    public function save(): void
     {
         abort_unless(auth()->user()?->hasPermission('banking.manage'), 403);
 
@@ -66,7 +66,14 @@ class BankAccountForm extends Component
 
         $this->dispatch('be-toast', message: 'Bank account created.');
 
-        return $this->redirect(route('banking.index'), navigate: true);
+        $this->js(
+            'if(window.parent&&window.parent!==window){'
+            .'window.parent.postMessage({type:"be-workspace-open",route:"banking.index",params:{},title:"Bank Accounts"},"*");'
+            .'const tabId=new URLSearchParams(window.location.search).get("tab_id");'
+            .'if(tabId){window.parent.postMessage({type:"be-workspace-close",tabId:tabId},"*");}'
+            .'}else if(typeof beOpenWorkspace==="function"){beOpenWorkspace("banking.index",{},"Bank Accounts");}'
+            .'else{window.location.assign('.json_encode(route('banking.index')).');}'
+        );
     }
 
     public function render()

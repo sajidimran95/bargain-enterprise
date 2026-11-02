@@ -3,10 +3,13 @@
 namespace Tests\Feature;
 
 use App\Livewire\Accounting\ChartOfAccounts;
+use App\Livewire\Banking\BankAccountForm;
+use App\Livewire\Banking\BankingIndex;
 use App\Livewire\Inventory\InventoryAdjustmentIndex;
 use App\Livewire\Sales\InvoiceForm;
 use App\Livewire\Sales\InvoiceIndex;
 use App\Models\Account;
+use App\Models\BankAccount;
 use App\Models\Customer;
 use App\Models\Item;
 use App\Models\User;
@@ -129,6 +132,47 @@ class ErpNavigationAndToolbarTest extends TestCase
 
         $this->assertDatabaseCount('purchase_orders', 0);
         $this->assertDatabaseCount('quotes', 0);
+    }
+
+    public function test_bank_accounts_new_account_opens_create_workspace_route(): void
+    {
+        $this->actingAs($this->owner);
+
+        $this->get(route('banking.index'))
+            ->assertOk()
+            ->assertSee('New Account')
+            ->assertSee('wire:click="openNewAccount"', false);
+
+        Livewire::test(BankingIndex::class)
+            ->call('openNewAccount')
+            ->assertOk();
+    }
+
+    public function test_new_bank_account_form_saves_account(): void
+    {
+        $this->actingAs($this->owner);
+
+        Livewire::test(BankAccountForm::class)
+            ->set('name', 'Payroll Checking')
+            ->set('bank_name', 'Demo First Bank')
+            ->set('account_number_mask', '****9999')
+            ->set('opening_balance', '100.00')
+            ->set('gl_number', '1099')
+            ->set('gl_name', 'Payroll Checking')
+            ->call('save')
+            ->assertHasNoErrors()
+            ->assertDispatched('be-toast');
+
+        $this->assertDatabaseHas('accounts', [
+            'number' => '1099',
+            'name' => 'Payroll Checking',
+            'subtype' => 'bank',
+        ]);
+        $this->assertDatabaseHas('bank_accounts', [
+            'name' => 'Payroll Checking',
+            'bank_name' => 'Demo First Bank',
+        ]);
+        $this->assertSame(1, BankAccount::query()->where('name', 'Payroll Checking')->count());
     }
 
     public function test_invoice_create_form_saves_document(): void

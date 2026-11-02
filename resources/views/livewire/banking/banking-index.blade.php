@@ -1,5 +1,9 @@
 <div class="be-page" x-data @be-focus-list-search.window="$refs.listSearch?.focus()">
-    <x-erp.list-toolbar heading="Bank Accounts" new-route="banking.create" new-label="New Account" :title="$accounts->total().' bank accounts'" />
+    <x-erp.list-toolbar heading="Bank Accounts" :title="$accounts->total().' bank accounts'">
+        <x-slot:new>
+            <x-erp.button type="button" variant="primary" wire:click="openNewAccount">New Account</x-erp.button>
+        </x-slot:new>
+    </x-erp.list-toolbar>
 
     <div class="be-panel be-list-panel">
         <div class="be-panel__body">

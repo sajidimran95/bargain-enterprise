@@ -3,7 +3,6 @@
 namespace App\Livewire\Banking;
 
 use App\Livewire\Concerns\WithErpListActions;
-use App\Models\Account;
 use App\Models\BankAccount;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -23,32 +22,11 @@ class BankingIndex extends Component
         abort_unless(auth()->user()?->hasPermission('banking.view'), 403);
     }
 
-    public function createBankAccount(): void
+    public function openNewAccount(): void
     {
         abort_unless(auth()->user()?->hasPermission('banking.manage'), 403);
 
-        $nextGl = (int) Account::query()->where('type', 'asset')->max('number') + 10;
-        $glNumber = (string) $nextGl;
-
-        $account = Account::query()->create([
-            'number' => $glNumber,
-            'name' => 'Bank Account '.$glNumber,
-            'type' => 'asset',
-            'subtype' => 'bank',
-            'is_active' => true,
-            'is_system' => false,
-        ]);
-
-        BankAccount::query()->create([
-            'account_id' => $account->id,
-            'name' => $account->name,
-            'bank_name' => 'New Bank',
-            'opening_balance' => 0,
-            'is_active' => true,
-        ]);
-
-        $this->resetPage();
-        $this->dispatch('be-toast', message: 'Bank account created.');
+        $this->openWorkspaceEdit('banking.create', [], 'New Bank Account');
     }
 
     public function exportExcel(): StreamedResponse

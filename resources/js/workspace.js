@@ -68,7 +68,8 @@ document.addEventListener('alpine:init', () => {
             }
 
             if (data.type === 'be-workspace-open' && data.route) {
-                this.$wire.openRoute(data.route, data.params || {}, data.title || null, data.id || null);
+                const params = data.params && !Array.isArray(data.params) ? data.params : {};
+                this.$wire.openRoute(data.route, params, data.title || null, data.id || null);
             }
             if (data.type === 'be-workspace-dirty' && data.tabId) {
                 this.$wire.setTabDirty(data.tabId, !!data.dirty);
