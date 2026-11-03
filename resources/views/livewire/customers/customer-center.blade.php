@@ -6,7 +6,7 @@
         <x-erp.button type="button" wire:click="focusSearch">Find</x-erp.button>
         @if ($selected)
             @can('update', $selected)
-                <x-erp.workspace-link route="customers.edit" :params="['customer' => $selected]" :title="'Customer: '.$selected->display_name" class="be-btn">Edit</x-erp.workspace-link>
+                <x-erp.workspace-link route="customers.edit" :params="['customer' => $selected->id]" :title="'Customer: '.$selected->display_name" class="be-btn">Edit</x-erp.workspace-link>
             @endcan
             @can('create', App\Models\Customer::class)
                 <x-erp.button wire:click="duplicate">Duplicate</x-erp.button>
@@ -135,7 +135,7 @@
                         <h2 class="be-detail-block__title">Customer Information</h2>
                         <div class="flex gap-1">
                             @can('update', $selected)
-                                <x-erp.workspace-link route="customers.edit" :params="['customer' => $selected]" :title="'Customer: '.$selected->display_name" class="be-btn be-btn--primary">Edit Customer</x-erp.workspace-link>
+                                <x-erp.workspace-link route="customers.edit" :params="['customer' => $selected->id]" :title="'Customer: '.$selected->display_name" class="be-btn be-btn--primary">Edit Customer</x-erp.workspace-link>
                             @endcan
                         </div>
                     </div>

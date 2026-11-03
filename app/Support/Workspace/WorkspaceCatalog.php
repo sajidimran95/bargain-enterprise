@@ -2,6 +2,7 @@
 
 namespace App\Support\Workspace;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Route;
 
 class WorkspaceCatalog
@@ -135,6 +136,8 @@ class WorkspaceCatalog
      */
     public static function tabId(string $routeName, array $params = []): string
     {
+        $params = self::scalarRouteParams($params);
+
         if ($params === []) {
             return $routeName;
         }
@@ -161,7 +164,7 @@ class WorkspaceCatalog
      */
     public static function embedUrl(string $routeName, array $params = [], ?string $tabId = null): string
     {
-        $url = route($routeName, $params, absolute: false);
+        $url = route($routeName, self::scalarRouteParams($params), absolute: false);
         $separator = str_contains($url, '?') ? '&' : '?';
         $url .= $separator.'embed=1';
 
@@ -170,6 +173,43 @@ class WorkspaceCatalog
         }
 
         return $url;
+    }
+
+    /**
+     * Coerce Eloquent models / JSON-decoded objects into scalar route keys.
+     * Workspace postMessage serializes models as arrays; route() then 500s.
+     *
+     * @param  array<string, mixed>  $params
+     * @return array<string, mixed>
+     */
+    public static function scalarRouteParams(array $params): array
+    {
+        $normalized = [];
+
+        foreach ($params as $key => $value) {
+            if ($value instanceof Model) {
+                $normalized[$key] = $value->getRouteKey();
+
+                continue;
+            }
+
+            if (is_array($value)) {
+                if (array_key_exists('id', $value) && (is_string($value['id']) || is_numeric($value['id']))) {
+                    $normalized[$key] = $value['id'];
+
+                    continue;
+                }
+
+                // Keep nested scalar query bags (e.g. filters) when they are not models.
+                $normalized[$key] = $value;
+
+                continue;
+            }
+
+            $normalized[$key] = $value;
+        }
+
+        return $normalized;
     }
 
     /**

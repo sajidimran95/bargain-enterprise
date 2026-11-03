@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Livewire\Sales\CreditMemoIndex;
 use App\Livewire\Sales\InvoiceIndex;
 use App\Livewire\Workspace\Shell;
+use App\Models\Customer;
 use App\Models\User;
+use App\Support\Workspace\WorkspaceCatalog;
 use App\Support\Workspace\WorkspaceManager;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -242,5 +244,25 @@ class WorkspaceNavigationTest extends TestCase
         $this->assertSame('dashboard.home', $home['route']);
         $this->assertStringContainsString('embed=1', $home['url']);
         $this->assertStringContainsString('dashboard/home', $home['url']);
+    }
+
+    public function test_customer_edit_tab_accepts_serialized_model_params(): void
+    {
+        $this->actingAs($this->owner);
+
+        $customer = Customer::factory()->create(['display_name' => 'Walk-in-Customer']);
+        $serialized = $customer->toArray();
+
+        $url = WorkspaceCatalog::embedUrl('customers.edit', ['customer' => $serialized]);
+        $this->assertStringContainsString('/customers/'.$customer->id.'/edit', $url);
+        $this->assertStringContainsString('embed=1', $url);
+
+        $manager = app(WorkspaceManager::class);
+        $tab = $manager->openTab('customers.edit', ['customer' => $serialized], 'Customer: Walk-in-Customer');
+
+        $this->assertSame($customer->id, $tab['params']['customer']);
+        $this->assertStringContainsString('/customers/'.$customer->id.'/edit', $tab['url']);
+
+        $this->get($tab['url'])->assertOk();
     }
 }
