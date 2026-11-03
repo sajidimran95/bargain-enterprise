@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Livewire\Sales\SalesOrderForm;
 use App\Livewire\Sales\SalesOrderFulfillmentWorksheet;
+use App\Models\Account;
 use App\Models\Customer;
+use App\Models\Invoice;
 use App\Models\Item;
 use App\Models\SalesOrder;
 use App\Models\User;
@@ -118,5 +120,43 @@ class SalesOrderOnSoQtyTest extends TestCase
         $this->assertSame('0.0000', number_format((float) $item->on_so_qty, 4, '.', ''));
         $this->assertSame('36.0000', number_format((float) $item->on_hand, 4, '.', ''));
         $this->assertSame('invoiced', $order->fresh()->status);
+    }
+
+    public function test_fulfillment_auto_creates_missing_chart_accounts(): void
+    {
+        $this->actingAs($this->owner);
+
+        Account::query()->whereIn('number', ['1200', '4000'])->delete();
+
+        $customer = Customer::factory()->create(['is_active' => true]);
+        $item = Item::factory()->create([
+            'type' => 'inventory_part',
+            'is_active' => true,
+            'on_hand' => 20,
+            'on_so_qty' => 0,
+            'average_cost' => 2,
+            'sales_price' => 10,
+        ]);
+
+        Livewire::test(SalesOrderForm::class)
+            ->set('customer_id', (string) $customer->id)
+            ->set('lines.0.item_id', (string) $item->id)
+            ->set('lines.0.quantity', '2')
+            ->set('lines.0.rate', '10')
+            ->set('lines.0.amount', '20.00')
+            ->set('lines.0.taxable', false)
+            ->call('save');
+
+        $order = SalesOrder::query()->latest('id')->firstOrFail();
+
+        Livewire::test(SalesOrderFulfillmentWorksheet::class)
+            ->set('selectedOrders.'.$order->id, true)
+            ->call('createInvoices')
+            ->assertDispatched('be-toast');
+
+        $this->assertSame('invoiced', $order->fresh()->status);
+        $this->assertSame(1, Invoice::query()->where('sales_order_id', $order->id)->count());
+        $this->assertTrue(Account::query()->where('number', '1200')->exists());
+        $this->assertTrue(Account::query()->where('number', '4000')->exists());
     }
 }

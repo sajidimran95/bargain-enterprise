@@ -8,6 +8,7 @@ use App\Models\Invoice;
 use App\Models\SalesOrder;
 use App\Services\InventoryService;
 use App\Support\DocumentNumbers;
+use App\Support\SystemAccounts;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -72,6 +73,8 @@ class SalesOrderFulfillmentWorksheet extends Component
 
             return;
         }
+
+        SystemAccounts::ensureAll();
 
         $created = 0;
         /** @var list<string> $errors */

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Account;
 use App\Models\JournalEntry;
 use App\Models\JournalLine;
+use App\Support\SystemAccounts;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -25,13 +26,11 @@ class AccountingService
                     $account = $line['account'];
                 } else {
                     $accountKey = (string) $line['account'];
-                    $account = Account::query()->where(function ($q) use ($accountKey) {
-                        $q->where('number', $accountKey)->orWhere('name', $accountKey);
-                    })->first();
+                    $account = SystemAccounts::findOrEnsure($accountKey);
 
                     if ($account === null) {
                         throw new RuntimeException(
-                            "Chart of Accounts is missing [{$accountKey}]. Run: php artisan db:seed --class=ChartOfAccountsSeeder"
+                            "Chart of Accounts is missing [{$accountKey}]. Open Company → Chart of Accounts or run: php artisan db:seed --class=ChartOfAccountsSeeder"
                         );
                     }
                 }
@@ -72,14 +71,6 @@ class AccountingService
 
     public function account(string $number): Account
     {
-        $account = Account::query()->where('number', $number)->first();
-
-        if ($account === null) {
-            throw new RuntimeException(
-                "Chart of Accounts is missing [{$number}]. Run: php artisan db:seed --class=ChartOfAccountsSeeder"
-            );
-        }
-
-        return $account;
+        return SystemAccounts::ensure($number);
     }
 }
